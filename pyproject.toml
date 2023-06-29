@@ -1,0 +1,22 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "microcore"
+authors = [
+    {name = "Vitalii Stepanenko", email = "mail@vitalii.in"},
+]
+dependencies = [
+    "openai~=0.27.8",
+    "python-dotenv~=1.0.0",
+    "Jinja2~=3.1.2",
+    "colorama~=0.4.6",
+    "PyYAML~=6.0"
+]
+version = "0.0.1"
+
+dynamic = ["description"]
+
+[tool.flit.module]
+py_modules = ["__init__"]

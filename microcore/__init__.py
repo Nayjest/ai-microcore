@@ -1,3 +1,6 @@
+"""
+Minimalistic core for large language model applications
+"""
 import dotenv
 from os import PathLike
 from jinja2 import Environment, FileSystemLoader, ChoiceLoader
