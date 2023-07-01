@@ -1,4 +1,5 @@
 import microcore
+import microcore.ui
 from colorama import Fore
 
 _orig_llm = microcore.llm
