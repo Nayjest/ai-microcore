@@ -1,5 +1,18 @@
-# MicroCore
-A minimalistic core for large language model applications.
+# MicroCore: A Minimalistic Foundation for Large Language Model Applications
+
+This package is rooted in a design philosophy that promotes following guiding principles:
+* Maximum simplicity: Keeping It Simple (KIS) is elevated to its peak.
+* Separation of business logic: This encourages the decoupling of business logic from implementation specifics.
+* Emphasis on working conveniently with complex prompt templates.
+* Laconic code.
+
+By adhering to this approach, MicroCore aims to deliver a range of benefits 
+that address the specific needs of the rapidly evolving field of AI application development:
+
+* Rapid prototyping / RnD / experimentation.
+* Smooth sub-systems interchangeability without need of massive codebase changes.
+* Code designed be well accepted by AI agents with introspective code generation.
+* Clean and easy-to-follow examples to aid learning and development.
 
 ## Core Functions
 
@@ -46,6 +59,13 @@ This loader is dynamically extended when importing MicroCore AI modules.
 
 So, you can override templates of 3rd-party modules by placing templates with same names into your tpl folder.
 
+### *store(collection: str | None, **kwargs)
+Stores data in embeddings database of your choice
+@TODO
+
+### *search(collection: str | None, **kwargs)
+Performs semantic / similarity search over embeddings database
+@TODO
 
 ## MicroCore AI Modules
 By importing microcore.ai_modules, you enable auto-registering additional Jinja2 template roots
