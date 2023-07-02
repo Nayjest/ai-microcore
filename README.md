@@ -19,9 +19,9 @@ that address the specific needs of the rapidly evolving field of AI application 
 * Python packages as AI Modules
 * Templating with inheritance and blocks for prompt composition 
 * Business-logic layers with shared interfaces and smoothly interchangeable implementations:
-* * LLM (OpenAI, BLOOM, Koala, etc)
-* * Embedding databases (Chroma, Pinecone, Milvus, etc)
-* * Communication (HTTP, WebSockets, Console, etc)
+  * LLM (OpenAI, BLOOM, Koala, etc)
+  * Embedding databases (Chroma, Pinecone, Milvus, etc)
+  * Communication (HTTP, WebSockets, Console, etc)
 
 ## Core Functions
 
