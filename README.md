@@ -61,12 +61,24 @@ So, you can override templates of 3rd-party modules by placing templates with sa
 
 ### *store(collection: str | None, **kwargs)
 Stores data in embeddings database of your choice
+
 @TODO
 
 ### *search(collection: str | None, **kwargs)
 Performs semantic / similarity search over embeddings database
+
 @TODO
 
 ## MicroCore AI Modules
 By importing microcore.ai_modules, you enable auto-registering additional Jinja2 template roots
 for modules containing 'ai_module' string in module doc.string
+
+## Python functions as AI tools
+
+@TODO
+
+## License
+
+© 2023&mdash;∞ Vitalii Stepanenko
+
+Licensed under the MIT License. 
