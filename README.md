@@ -3,17 +3,25 @@
 This package is rooted in a design philosophy that promotes following guiding principles:
 * Maximum simplicity: Keeping It Simple (KIS) is elevated to its peak.
 * Separation of business logic: This encourages the decoupling of business logic from implementation specifics.
-* Python functions as tools for AI agents.
 * Emphasis on working conveniently with complex prompt templates.
 * Laconic code.
 
-By adhering to this approach, MicroCore aims to deliver a range of benefits 
+By adhering to this principles, MicroCore aims to deliver a range of benefits 
 that address the specific needs of the rapidly evolving field of AI application development:
 
 * Rapid prototyping / RnD / experimentation.
 * Smooth sub-systems interchangeability without need of massive codebase changes.
 * Code designed be well accepted by AI agents with introspective code generation.
 * Clean and easy-to-follow examples to aid learning and development.
+
+## Architectural approaches
+* Python functions as tools for AI agents
+* Python packages as AI Modules
+* Templating with inheritance and blocks for prompt composition 
+* Business-logic layers with shared interfaces and smoothly interchangeable implementations:
+* * LLM (OpenAI, BLOOM, Koala, etc)
+* * Embedding databases (Chroma, Pinecone, Milvus, etc)
+* * Communication (HTTP, WebSockets, Console, etc)
 
 ## Core Functions
 
