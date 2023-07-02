@@ -3,6 +3,7 @@
 This package is rooted in a design philosophy that promotes following guiding principles:
 * Maximum simplicity: Keeping It Simple (KIS) is elevated to its peak.
 * Separation of business logic: This encourages the decoupling of business logic from implementation specifics.
+* Python functions as tools for AI agents.
 * Emphasis on working conveniently with complex prompt templates.
 * Laconic code.
 
