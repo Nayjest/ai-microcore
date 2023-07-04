@@ -12,21 +12,23 @@ default_encoding = os.getenv('MC_DEFAULT_ENCODING', 'utf-8')
 
 
 def read(name: str, encoding: str = None):
-    if '.' in name:
-        parts = name.split('.')
-        name = '.'.join(parts[:-1])
-        ext = parts[-1]
-    else:
-        ext = 'txt'
-    full_path = f'{storage_path}/{name}.{ext}'
+    if not os.path.isabs(name) and not name.startswith('./'):
+        if '.' in name:
+            parts = name.split('.')
+            name = '.'.join(parts[:-1])
+            ext = parts[-1]
+        else:
+            ext = 'txt'
+        name = f'{storage_path}/{name}.{ext}'
+
     if encoding is None:
-        with open(full_path, 'rb') as f:
+        with open(name, 'rb') as f:
             rawdata = f.read()
         result = chardet.detect(rawdata)
         encoding = result['encoding']
         return rawdata.decode(encoding)
     else:
-        with open(full_path, 'r', encoding=encoding) as f:
+        with open(name, 'r', encoding=encoding) as f:
             return f.read()
 
 
