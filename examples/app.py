@@ -17,9 +17,9 @@ from microcore import *
 microcore.llm_default_args['model'] = 'gpt-4'
 file_name = sys.argv[1] if sys.argv[1:] else 'feature.patch'
 full_diff = fs.read(file_name)
-parts = ['diff -git' + i for i in full_diff.split('diff --git')]
+parts = ['diff --git' + i for i in full_diff.split('diff --git')]
 i = 0
-rng = [1, 100]
+rng = [1, 100]  # Limit number of files to process
 skip = []
 for part in parts:
     i += 1
@@ -27,7 +27,7 @@ for part in parts:
         continue
     if i > rng[1]:
         break
-    first_line = part.split('\n')[0].replace('diff -git', '').strip()
+    first_line = part.split('\n')[0].replace('diff --git', '').strip()
     if len(first_line) == 0:
         continue
     bskip = False
@@ -40,7 +40,7 @@ for part in parts:
     a, b = first_line.split(' ')
     fn = b.replace('b/', '') + '.txt'
     print(fn)
-    out = llm(tpl('code-review.j2', input=part))
+    out = llm(tpl('code-review.j2', input=part), model='gpt-4')
     if len(out.strip()) < 10:
         continue
     try:
