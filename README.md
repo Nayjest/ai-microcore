@@ -86,6 +86,17 @@ for modules containing 'ai_module' string in module doc.string
 
 @TODO
 
+
+## Examples
+
+See examples folder.
+
+#### code-review-tool
+Performs code review by LLM for changes in git .patch files on any programming languages.
+* Splits patch into chunks corresponding to individual files.
+* Returns output in file structure reflecting original repository and containing text files with lists of detected issues.
+* Only 50 lines of code!
+
 ## License
 
 © 2023&mdash;∞ Vitalii Stepanenko
