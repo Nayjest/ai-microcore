@@ -7,7 +7,7 @@ Usage:
 git diff master..feature-branch > feature.patch
 
 2. Run this app:
-python.app.py <full-path-to-patch-file>
+python app.py <full-path-to-patch-file>
 
 """
 import json
