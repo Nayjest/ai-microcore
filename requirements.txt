@@ -3,3 +3,4 @@ python-dotenv~=1.0.0
 Jinja2~=3.1.2
 colorama~=0.4.6
 PyYAML~=6.0
+chardet

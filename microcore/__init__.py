@@ -2,6 +2,7 @@
 import dotenv
 import jinja2
 import os
+import microcore.fs
 
 
 def llm(prompt, **kwargs):
@@ -15,9 +16,4 @@ def tpl(file: os.PathLike[str] | str, **kwargs): return j2env.get_template(file)
 
 dotenv.load_dotenv()
 llm_default_args = {}
-j2env = jinja2.Environment(loader=jinja2.ChoiceLoader([jinja2.FileSystemLoader(os.getenv('APP_TPL_PATH', 'tpl'))]))
-
-
-
-
-
+j2env = jinja2.Environment(loader=jinja2.ChoiceLoader([jinja2.FileSystemLoader(os.getenv('MC_TPL_PATH', 'tpl'))]))
