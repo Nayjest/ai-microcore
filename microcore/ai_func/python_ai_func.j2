@@ -4,7 +4,7 @@
 {{ "\n\t" }}{{ name }}
     {%- if v.type %}: {{ v.type }}{% endif -%}
     {%- if v.default != 'NOT_SET' %} = {{ v.default }}{%endif-%}
-    {%- if v.comment %} # {{ v.comment }}{% endif -%}
     {%- if not loop.last -%},{%- endif -%}
+    {%- if v.comment %} # {{ v.comment }}{% endif -%}
 {%- endfor %}
 )
