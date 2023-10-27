@@ -2,3 +2,5 @@ __pycache__
 .idea/
 venv
 .env
+*.env.test.*
+.pytest_cache

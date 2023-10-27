@@ -1,0 +1,8 @@
+services:
+  mc:
+    container_name: mc
+    build:
+        context: .
+    volumes:
+      - .:/app
+    env_file: .env
