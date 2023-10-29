@@ -1,6 +1,6 @@
 CONTAINER = mc
 DEXEC = docker exec -it $(CONTAINER)
-TEST = $(DEXEC) pytest  --log-cli-level=INFO
+TEST = $(DEXEC) python -m pytest  --log-cli-level=INFO
 ifeq ($(I_AM_INSIDE_DOCKER_CONTAINER),true)
 	DEXEC =
 endif
@@ -8,7 +8,7 @@ endif
 # ============== [ Container control ] ==============
 
 init:
-	docker-compose up -d --build
+	docker-compose up -d --build && docker-compose exec -it $(CONTAINER) bash
 sh:
 	docker-compose exec -it $(CONTAINER) bash
 stop:
@@ -20,5 +20,8 @@ test:
 	$(TEST)
 tests: test
 
-testllm:
-	$(TEST) tests/llm_envs
+testapi:
+	$(TEST) tests/apis
+testapis: testapi
+apitest: testapi
+apitests: testapi

@@ -4,3 +4,4 @@ venv
 .env
 *.env.test.*
 .pytest_cache
+storage

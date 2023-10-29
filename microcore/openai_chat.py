@@ -35,4 +35,3 @@ class UserMsg(_BaseMsg):
 
 class AssistantMag(_BaseMsg):
     role: str = 'assistant'
-

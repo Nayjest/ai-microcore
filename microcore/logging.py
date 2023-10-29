@@ -1,40 +1,59 @@
 import dataclasses
 import microcore
 import microcore.ui
-import microcore.openai
 from colorama import Fore, Style
 import microcore.prepare_llm_args
-
-_orig_llm = microcore.llm
-
-
-class cfg:
-    prompt_color = Fore.LIGHTGREEN_EX
-    response_color = Fore.CYAN
-    indent = '\t'
-    dense: bool = False
+from .utils import is_chat_model
 
 
-def _model(**kwargs): return kwargs.get('model') or microcore.llm_default_args.get('model') or 'gpt-3.5-turbo'
+class LoggingConfig:
+    PROMPT_COLOR = Fore.LIGHTGREEN_EX
+    RESPONSE_COLOR = Fore.CYAN
+    INDENT: str = '\t'
+    DENSE: bool = False
 
 
-def _logged_llm(prompt, **kwargs):
-    nl = '\n' if cfg.dense else '\n' + cfg.indent
-    model = _model(**kwargs)
-    print(f'Requesting LLM {Fore.MAGENTA}{model}{Style.RESET_ALL}:', end=' ' if cfg.dense else '\n')
-    if 'gpt' in model:
+def _log_request(prompt, **kwargs):
+    nl = '\n' if LoggingConfig.DENSE else '\n' + LoggingConfig.INDENT
+    model = _resolve_model(**kwargs)
+    print(
+        f'Requesting LLM {Fore.MAGENTA}{model}{Style.RESET_ALL}:',
+        end=' ' if LoggingConfig.DENSE else '\n'
+    )
+    if is_chat_model(model):
         for msg in microcore.prepare_llm_args.prepare_chat_messages(prompt):
-            role, content = (msg['role'], msg['content']) if isinstance(msg, dict) else dataclasses.astuple(msg)
-            nl2 = '\n' if cfg.dense else nl + cfg.indent
-            content = (' ' if cfg.dense else nl2)+nl2.join(content.split('\n'))
-            print(f'{"" if cfg.dense else cfg.indent}{cfg.prompt_color}[{role.capitalize()}]:{content}')
+            role, content = (
+                msg['role'],
+                msg['content']
+            ) if isinstance(msg, dict) else dataclasses.astuple(msg)
+            nl2 = '\n' if LoggingConfig.DENSE else nl + LoggingConfig.INDENT
+            content = (' ' if LoggingConfig.DENSE else nl2) + nl2.join(content.split('\n'))
+            print(
+                f'{"" if LoggingConfig.DENSE else LoggingConfig.INDENT}'
+                f'{LoggingConfig.PROMPT_COLOR}[{role.capitalize()}]:{content}'
+            )
     else:
         lines = microcore.prepare_llm_args.prepare_prompt(prompt).split('\n')
-        print(cfg.prompt_color + (' ' if cfg.dense else cfg.indent) + nl.join(lines))
-    out = _orig_llm(prompt, **kwargs)
-    out_indented = (' ' if cfg.dense else nl) + nl.join(out.split('\n'))
-    print(f'LLM Response:{cfg.response_color}{out_indented}')
-    return out
+        print(
+            LoggingConfig.PROMPT_COLOR
+            + (' ' if LoggingConfig.DENSE else LoggingConfig.INDENT) + nl.join(lines)
+        )
 
 
-microcore.llm = _logged_llm
+def _resolve_model(**kwargs):
+    return (kwargs.get('model')
+            or microcore.env().config.LLM_DEFAULT_ARGS.get('model')
+            or microcore.env().config.MODEL)
+
+
+def _log_response(out):
+    nl = '\n' if LoggingConfig.DENSE else '\n' + LoggingConfig.INDENT
+    out_indented = (' ' if LoggingConfig.DENSE else nl) + nl.join(out.split('\n'))
+    print(f'LLM Response:{LoggingConfig.RESPONSE_COLOR}{out_indented}')
+
+
+def use_logging():
+    if _log_request not in microcore.env().llm_before_handlers:
+        microcore.env().llm_before_handlers.append(_log_request)
+    if _log_response not in microcore.env().llm_after_handlers:
+        microcore.env().llm_after_handlers.append(_log_response)

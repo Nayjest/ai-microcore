@@ -2,12 +2,12 @@
 ai_module: ai_func
 descr: Allows to describe python functions for LLM
 """
-from typing import Optional, List
 import docstring_parser
 import inspect
-from typing import Optional, List, Dict, Any
+from typing import Dict, Any
 import ast
-from microcore import *
+
+from microcore import tpl
 
 
 def func_arg_comments(func):
@@ -44,13 +44,18 @@ def func_metadata(func) -> Dict[str, Any]:
         }
         if param.default != param.empty:
             if isinstance(param.default, str):
-                metadata["args"][name]["default"] = '"'+param.default+'"'
+                metadata["args"][name]["default"] = '"' + param.default + '"'
             else:
                 metadata["args"][name]["default"] = param.default
         else:
             metadata["args"][name]["default"] = "NOT_SET"
         if param.annotation != param.empty:
-            param_type = str(param.annotation).replace('typing.', '').replace("<class '", '').replace("'>", '')
+            param_type = (
+                str(param.annotation)
+                .replace('typing.', '')
+                .replace("<class '", '')
+                .replace("'>", '')
+            )
             metadata["args"][name]["type"] = param_type
 
     arg_comments = func_arg_comments(func)

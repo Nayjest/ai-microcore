@@ -1,6 +1,7 @@
 """
 Extended string used for API responses,
-String by itself usually contains default(first) query result, but full response data may be accessed via attributes.
+String by itself usually contains default(first) query result,
+but full response data may be accessed via attributes.
 """
 import inspect
 import builtins
@@ -21,7 +22,10 @@ class ExtendedString(str):
         """
         Provides chaining of global functions
         """
-        global_func = inspect.currentframe().f_back.f_globals.get(item) or vars(builtins).get(item, None)
+        global_func = (
+                inspect.currentframe().f_back.f_globals.get(item)
+                or vars(builtins).get(item, None)
+        )
         if callable(global_func):
             def method_handler(*args, **kwargs):
                 res = global_func(self, *args, **kwargs)
@@ -32,4 +36,3 @@ class ExtendedString(str):
         else:
             # If there's not a global function with that name, raise an AttributeError as usual
             raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{item}'")
-

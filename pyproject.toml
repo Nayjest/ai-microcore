@@ -6,17 +6,17 @@ build-backend = "flit_core.buildapi"
 name = "microcore"
 readme = "README.md"
 dependencies = [
-    "openai~=0.27.8",
+    "openai~=0.28.1",
     "python-dotenv~=1.0.0",
     "Jinja2~=3.1.2",
     "colorama~=0.4.6",
     "PyYAML~=6.0",
-    "chardet"
+    "chardet~=5.2.0",
 ]
 authors = [
     { name = "Vitalii Stepanenko", email = "mail@vitalii.in" },
 ]
-version = "0.0.1"
+version = "0.3.0"
 
 dynamic = ["description"]
 
