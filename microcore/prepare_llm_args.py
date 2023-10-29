@@ -2,7 +2,7 @@ def prepare_prompt(prompt) -> str:
     """Converts prompt to string for LLM completion API"""
     return '\n'.join([
         str(p['content']) if isinstance(p, dict) and 'content' in p else str(p)
-        for p in (prompt if isinstance(prompt, list) else prompt)
+        for p in (prompt if isinstance(prompt, list) else [prompt])
     ])
 
 
