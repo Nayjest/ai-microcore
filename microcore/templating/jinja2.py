@@ -5,9 +5,9 @@ from microcore.types import TplFunctionType
 
 def make_jinja2_env(env) -> jinja2.Environment:
     return jinja2.Environment(
-        loader=jinja2.ChoiceLoader([
-            jinja2.FileSystemLoader(env.config.PROMPT_TEMPLATES_PATH)
-        ])
+        loader=jinja2.ChoiceLoader(
+            [jinja2.FileSystemLoader(env.config.PROMPT_TEMPLATES_PATH)]
+        )
     )
 
 

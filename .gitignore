@@ -5,3 +5,4 @@ venv
 *.env.test.*
 .pytest_cache
 storage
+dist

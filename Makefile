@@ -8,9 +8,9 @@ endif
 # ============== [ Container control ] ==============
 
 init:
-	docker-compose up -d --build && docker-compose exec -it $(CONTAINER) bash
+	docker-compose up -d --build && $(DEXEC) bash
 sh:
-	docker-compose exec -it $(CONTAINER) bash
+	$(DEXEC) bash
 stop:
 	docker-compose stop
 
@@ -25,3 +25,10 @@ testapi:
 testapis: testapi
 apitest: testapi
 apitests: testapi
+
+pkg:
+	$(DEXEC) python -m build --wheel --sdist .
+
+publish:
+	$(DEXEC) twine upload dist/* -u __token__ -p $(PYPI_TOKEN) --verbose
+upload: publish

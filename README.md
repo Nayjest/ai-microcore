@@ -1,27 +1,31 @@
-# MicroCore: A Minimalistic Foundation for Large Language Model Applications
+# AI MicroCore: A Minimalistic Foundation for AI Applications
 
-This package is rooted in a design philosophy that promotes following guiding principles:
-* Keeping it simple
-* Keep implementation details away from business logic
-* Emphasis on working conveniently with complex prompt templates
-* Laconic code
+This package is a collection of wrappers around Large Language Models
+and Semantic Search APIs allowing to 
+communicate with these services convenient way, make it easily switchable 
+and separate business logic from implementation details.
 
-By adhering to these principles, MicroCore aims to deliver a range of benefits 
-that address the specific needs of the rapidly evolving field of AI application development:
+It defines interfaces for features typically used in AI applications,
+that allows you to keep your application as simple as possible and try various models & services
+without need to change your application code.
 
-* Rapid prototyping / RnD / experimentation
-* Smooth sub-systems interchangeability without need of massive codebase changes
-* Code designed to be well accepted by AI agents with introspective code analysis and generation
-* Clean and easy-to-follow examples to aid learning and development
+You even can switch between text completion and chat completion models only using configuration.
 
-## Architectural approaches
-* Python functions as tools for AI agents
-* Python packages as AI Modules
-* Templating with inheritance and blocks for prompt composition 
-* Business-logic layers with shared interfaces and smoothly interchangeable implementations:
-  * LLM (OpenAI, BLOOM, Koala, etc)
-  * Embedding databases (Chroma, Pinecone, Milvus, etc)
-  * Communication (HTTP, WebSockets, Console, etc)
+The basic example of usage is as follows:
+
+```python
+from microcore import llm
+while user_msg := input('Enter message: '):
+    print('AI: ' + llm(user_msg))
+```
+
+
+## Installation
+
+```
+pip install ai-microcore
+```
+
 
 ## Core Functions
 

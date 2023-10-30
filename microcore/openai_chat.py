@@ -17,21 +17,24 @@ json.JSONEncoder.default = DataclassEncoder().default
 @dataclasses.dataclass
 class Msg:
     role: str = microcore.prepare_llm_args.default_chat_message_role
-    content: str = ''
-    def __str__(self): return str(self.content)
+    content: str = ""
+
+    def __str__(self):
+        return str(self.content)
 
 
 class _BaseMsg(Msg):
-    def __init__(self, content: str): self.content = content
+    def __init__(self, content: str):
+        self.content = content
 
 
 class SysMsg(_BaseMsg):
-    role: str = 'system'
+    role: str = "system"
 
 
 class UserMsg(_BaseMsg):
-    role: str = 'user'
+    role: str = "user"
 
 
 class AssistantMag(_BaseMsg):
-    role: str = 'assistant'
+    role: str = "assistant"

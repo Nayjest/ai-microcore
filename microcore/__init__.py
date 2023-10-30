@@ -5,7 +5,7 @@ from .embedding_db.base import EmbeddingDB, SearchResult
 from .storage import storage
 from .env import env, configure
 from .logging import use_logging
-from .storage import storage # noqa
+from .storage import storage  # noqa
 
 
 def llm(prompt, **kwargs) -> str:
@@ -15,38 +15,43 @@ def llm(prompt, **kwargs) -> str:
     return response
 
 
-def tpl(file: os.PathLike[str] | str, **kwargs) -> str: return env().tpl_function(file, **kwargs)
-
-
-def ssearch(collection: str, query: str | list, n: int = 5) -> list[str]:
-    return env().embeddings.search(collection, query, n)
+def tpl(file: os.PathLike[str] | str, **kwargs) -> str:
+    return env().tpl_function(file, **kwargs)
 
 
 def use_model(name: str):
     env().config.MODEL = name
-    env().config.LLM_DEFAULT_ARGS['model'] = name
+    env().config.LLM_DEFAULT_ARGS["model"] = name
 
 
-class _EmbeddingProxy(EmbeddingDB):
-
+class _EmbeddingDBProxy(EmbeddingDB):
     def search(
-            self,
-            collection: str,
-            query: str | list,
-            n_results: int = 5,
-            where: dict = None,
-            **kwargs
+        self,
+        collection: str,
+        query: str | list,
+        n_results: int = 5,
+        where: dict = None,
+        **kwargs
     ) -> list[str | SearchResult]:
-        return env().embeddings.search(collection, query, n_results, where, **kwargs)
+        return env().texts.search(collection, query, n_results, where, **kwargs)
 
     def save_many(self, collection: str, items: list[tuple[str, dict] | str]):
-        return env().embeddings.save_many(collection, items)
+        return env().texts.save_many(collection, items)
 
     def clean(self, collection: str):
-        return env().embeddings.clean(collection)
+        return env().texts.clean(collection)
 
 
-embeddings = _EmbeddingProxy()
+texts = _EmbeddingDBProxy()
 
 
-__all__ = ['configure', 'llm', 'tpl', 'storage', 'use_model', 'use_logging', 'env', 'embeddings']
+__all__ = [
+    "configure",
+    "llm",
+    "tpl",
+    "storage",
+    "use_model",
+    "use_logging",
+    "env",
+    "texts",
+]

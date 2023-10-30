@@ -14,25 +14,26 @@ class SearchResult(ExtendedString):
 class EmbeddingDB(ABC):
     @abstractmethod
     def search(
-            self,
-            collection: str,
-            query: str | list,
-            n_results: int = 5,
-            where: dict = None,
-            **kwargs
-    ) -> list[str | SearchResult]: pass
+        self,
+        collection: str,
+        query: str | list,
+        n_results: int = 5,
+        where: dict = None,
+        **kwargs
+    ) -> list[str | SearchResult]:
+        pass
 
-    # @abstractmethod
-    # def save(self, collection: str, text: str, metadata: dict = None): pass
 
     def save(self, collection: str, text: str, metadata: dict = None):
         self.save_many(collection, [(text, metadata)])
 
     @abstractmethod
-    def save_many(self, collection: str, items: list[tuple[str, dict] | str]): pass
+    def save_many(self, collection: str, items: list[tuple[str, dict] | str]):
+        pass
 
     @abstractmethod
-    def clean(self, collection: str): pass
+    def clean(self, collection: str):
+        pass
 
     def find_one(self, collection: str, query: str | list) -> str | None:
         return next(iter(self.search(collection, query, 1)), None)

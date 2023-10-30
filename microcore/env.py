@@ -18,7 +18,7 @@ class Env:
     llm_function: TplFunctionType = None
     llm_before_handlers: list[callable] = field(default_factory=list)
     llm_after_handlers: list[callable] = field(default_factory=list)
-    embeddings: EmbeddingDB = None
+    texts: EmbeddingDB = None
 
     def __post_init__(self):
         global _env
@@ -37,9 +37,10 @@ class Env:
         self.llm_function = make_llm_function(self.config)
 
     def init_similarity_search(self):
-        if find_spec('chromadb') is not None:
+        if find_spec("chromadb") is not None:
             from .embedding_db.chromadb import ChromaEmbeddingDB
-            self.embeddings = ChromaEmbeddingDB(self.config)
+
+            self.texts = ChromaEmbeddingDB(self.config)
 
 
 _env: Env | None = None

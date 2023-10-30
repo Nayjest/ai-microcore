@@ -1,3 +1,3 @@
-import microcore
+from microcore import llm
 while user_msg := input('Enter message: '):
-    print('AI: ' + microcore.llm(user_msg))
+    print('AI: ' + llm(user_msg))

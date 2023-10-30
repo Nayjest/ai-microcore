@@ -10,5 +10,5 @@ RUN apt-get update \
 WORKDIR /app
 COPY requirements /app/requirements
 RUN pip install --upgrade pip
-RUN pip install --upgrade --no-cache-dir -r requirements/tests.txt
+RUN pip install --upgrade --no-cache-dir -r requirements/dev.txt
 CMD sleep infinity

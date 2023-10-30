@@ -3,8 +3,20 @@ requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
-name = "microcore"
+name = "ai-microcore"
+version = "0.3.3"
+dynamic = ["description"]
+keywords = ["llm", "large language models", "ai", "similarity search", "ai search", "gpt", "openai"]
 readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
+
 dependencies = [
     "openai~=0.28.1",
     "python-dotenv~=1.0.0",
@@ -13,12 +25,18 @@ dependencies = [
     "PyYAML~=6.0",
     "chardet~=5.2.0",
 ]
+requires-python = ">=3.11"
+
 authors = [
     { name = "Vitalii Stepanenko", email = "mail@vitalii.in" },
 ]
-version = "0.3.0"
+maintainers = [
+    { name = "Vitalii Stepanenko", email = "mail@vitalii.in" },
+]
+license = { file = "LICENSE" }
 
-dynamic = ["description"]
+[project.urls]
+"Source Code" = "https://github.com/ai-microcore/microcore"
 
 [tool.flit.module]
-py_modules = ["__init__"]
+name = "microcore"
