@@ -1,2 +1,2 @@
--r min.txt
+-r extended.txt
 pytest==7.4.3

@@ -24,6 +24,33 @@ _default_dotenv_loaded = False
 
 
 @dataclass
+class BaseConfig:
+    USE_DOT_ENV: bool = None
+    DOT_ENV_FILE: str | Path = None
+
+    def __post_init__(self):
+        self._dot_env_setup()
+        self._update_from_env()
+
+    def _dot_env_setup(self):
+        global _default_dotenv_loaded
+
+        if self.USE_DOT_ENV is None:
+            self.USE_DOT_ENV = get_bool_from_env("USE_DOT_ENV", True)
+
+        if self.USE_DOT_ENV:
+            if self.DOT_ENV_FILE or not _default_dotenv_loaded:
+                dotenv.load_dotenv(override=True, dotenv_path=self.DOT_ENV_FILE)
+            if not self.DOT_ENV_FILE:
+                _default_dotenv_loaded = True
+
+    def _update_from_env(self):
+        for f in fields(self):
+            if f.metadata.get("_from_env") and getattr(self, f.name) is _MISSING:
+                setattr(self, f.name, os.getenv(f.name.upper(), f.metadata["_default"]))
+
+
+@dataclass
 class OpenAIEnvVars:
     # OS Environment variables expected by OpenAI library
     # Will be used as defaults for LLM
@@ -35,7 +62,7 @@ class OpenAIEnvVars:
 
 
 @dataclass
-class LLMConfigOptions(OpenAIEnvVars):
+class LLMConfig(BaseConfig, OpenAIEnvVars):
     LLM_API_TYPE: str = from_env()
     LLM_API_KEY: str = from_env()
     LLM_API_BASE: str = from_env()
@@ -44,6 +71,10 @@ class LLMConfigOptions(OpenAIEnvVars):
     MODEL: str = from_env()
     LLM_DEFAULT_ARGS: dict = field(default_factory=dict)
     AZURE_DEPLOYMENT_ID: str = from_env()
+
+    def __post_init__(self):
+        super().__post_init__()
+        self._init_llm_options()
 
     def _init_llm_options(self):
         # Use defaults from ENV variables expected by OpenAI API
@@ -65,9 +96,7 @@ class LLMConfigOptions(OpenAIEnvVars):
 
 
 @dataclass
-class Config(LLMConfigOptions):
-    USE_DOT_ENV: bool = None
-    DOT_ENV_FILE: str | Path = None
+class Config(LLMConfig):
     USE_LOGGING: bool = False
 
     PROMPT_TEMPLATES_PATH: str | Path = from_env("tpl")
@@ -75,25 +104,3 @@ class Config(LLMConfigOptions):
     STORAGE_PATH: str | Path = from_env("storage")
     EMBEDDING_DB_FOLDER: str = "embedding_db"
     DEFAULT_ENCODING: str = from_env("utf-8")
-
-    def __post_init__(self):
-        self._dot_env_setup()
-        self._update_from_env()
-        self._init_llm_options()
-
-    def _dot_env_setup(self):
-        global _default_dotenv_loaded
-
-        if self.USE_DOT_ENV is None:
-            self.USE_DOT_ENV = get_bool_from_env("USE_DOT_ENV", True)
-
-        if self.USE_DOT_ENV:
-            if self.DOT_ENV_FILE or not _default_dotenv_loaded:
-                dotenv.load_dotenv(override=True, dotenv_path=self.DOT_ENV_FILE)
-            if not self.DOT_ENV_FILE:
-                _default_dotenv_loaded = True
-
-    def _update_from_env(self):
-        for f in fields(self):
-            if f.metadata.get("_from_env") and getattr(self, f.name) is _MISSING:
-                setattr(self, f.name, os.getenv(f.name.upper(), f.metadata["_default"]))

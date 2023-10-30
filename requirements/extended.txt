@@ -1,1 +1,2 @@
+-r min.txt
 chromadb~=0.4.15

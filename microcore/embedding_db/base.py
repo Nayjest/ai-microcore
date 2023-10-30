@@ -23,7 +23,6 @@ class EmbeddingDB(ABC):
     ) -> list[str | SearchResult]:
         pass
 
-
     def save(self, collection: str, text: str, metadata: dict = None):
         self.save_many(collection, [(text, metadata)])
 
