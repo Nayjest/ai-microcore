@@ -54,6 +54,7 @@ texts = _EmbeddingDBProxy()
 
 __all__ = [
     "configure",
+    "allm",
     "llm",
     "tpl",
     "storage",
