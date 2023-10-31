@@ -1,4 +1,5 @@
 """Minimalistic core for large language model applications"""
+import asyncio
 import os
 
 from .embedding_db.base import EmbeddingDB, SearchResult
@@ -9,11 +10,16 @@ from .storage import storage  # noqa
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg
 
 
-def llm(prompt, **kwargs) -> str:
+async def allm(prompt, **kwargs) -> str:
     [h(prompt, **kwargs) for h in env().llm_before_handlers]
-    response = env().llm_function(prompt, **kwargs)
+    response = await env().llm_function(prompt, **kwargs)
     [h(response) for h in env().llm_after_handlers]
     return response
+
+
+def llm(prompt, **kwargs) -> str:
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(env().llm_function(prompt, **kwargs))
 
 
 def tpl(file: os.PathLike[str] | str, **kwargs) -> str:

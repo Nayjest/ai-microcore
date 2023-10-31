@@ -3,7 +3,7 @@ from importlib.util import find_spec
 
 from .config import Config
 from .embedding_db.base import EmbeddingDB
-from .types import TplFunctionType
+from .types import TplFunctionType, LLMAsyncFunctionType
 from .templating.jinja2 import make_jinja2_env, make_tpl_function
 from .llm.openai_llm import make_llm_function
 import jinja2
@@ -15,7 +15,7 @@ class Env:
     config: Config
     jinjaEnvironment: jinja2.Environment = None
     tpl_function: TplFunctionType = None
-    llm_function: TplFunctionType = None
+    llm_function: LLMAsyncFunctionType = None
     llm_before_handlers: list[callable] = field(default_factory=list)
     llm_after_handlers: list[callable] = field(default_factory=list)
     texts: EmbeddingDB = None
