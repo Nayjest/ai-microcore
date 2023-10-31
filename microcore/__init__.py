@@ -38,7 +38,7 @@ class _EmbeddingDBProxy(EmbeddingDB):
         query: str | list,
         n_results: int = 5,
         where: dict = None,
-        **kwargs
+        **kwargs,
     ) -> list[str | SearchResult]:
         return env().texts.search(collection, query, n_results, where, **kwargs)
 
@@ -61,8 +61,8 @@ __all__ = [
     "use_logging",
     "env",
     "texts",
-    'Msg',
-    'UserMsg',
-    'SysMsg',
-    'AssistantMsg'
+    "Msg",
+    "UserMsg",
+    "SysMsg",
+    "AssistantMsg",
 ]

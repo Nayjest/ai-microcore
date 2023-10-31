@@ -67,7 +67,9 @@ def make_llm_function(config: Config) -> LLMAsyncFunctionType:
                     cb(response.choices[0].message.content)
                 return ExtendedString(response.choices[0].message.content, response)
         else:
-            response = await openai.Completion.acreate(prompt=prepare_prompt(prompt), **args)
+            response = await openai.Completion.acreate(
+                prompt=prepare_prompt(prompt), **args
+            )
             if args["stream"]:
                 return await _process_streamed_response(
                     response, callbacks, mode_chat_model=False

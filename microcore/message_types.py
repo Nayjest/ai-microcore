@@ -40,4 +40,4 @@ class AssistantMsg(_BaseMsg):
     role: str = "assistant"
 
 
-__all__ = ['Msg', 'UserMsg', 'SysMsg', 'AssistantMsg']
+__all__ = ["Msg", "UserMsg", "SysMsg", "AssistantMsg"]

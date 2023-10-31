@@ -19,7 +19,7 @@ class EmbeddingDB(ABC):
         query: str | list,
         n_results: int = 5,
         where: dict = None,
-        **kwargs
+        **kwargs,
     ) -> list[str | SearchResult]:
         pass
 
