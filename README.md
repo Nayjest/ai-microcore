@@ -1,3 +1,9 @@
+<p align="right">
+    <a href="https://github.com/ai-microcore/microcore/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/static/v1?label=license&message=MIT&color=orange" alt="License"></a>
+    <a href="https://github.com/ai-microcore/microcore/releases" target="_blank"><img src="https://img.shields.io/github/release/ai-microcore/microcore" alt="Release Notes"></a>
+</p>
+
+
 # AI MicroCore: A Minimalistic Foundation for AI Applications
 
 This package is a collection of wrappers around Large Language Models
