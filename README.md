@@ -33,8 +33,6 @@ pip install ai-microcore
 
 Performs a request to a large language model (LLM)
 
-
-
 ```python
 from microcore import *
 
@@ -50,16 +48,18 @@ ai_response = llm('What is your model name?')
 llm(['1+2', '='])
 llm('1+2=', model='gpt-4')
 
-# To specify a message role, you can use dictionary
-llm(dict(role='user', content='1+2='))
-
-# Or use specific classes
-from microcore.openai_chat import UserMsg, SysMsg
-
+# To specify a message role, you can use dictionary or classes
+llm(dict(role='system', content='1+2='))
+# equivalent
 llm(SysMsg('1+2='))
 
 # The returned value is a string
-out = llm([SysMsg('1+2=3'), UserMsg('3+4=')]).upper()
+assert '7' == llm([
+ SysMsg('You are a calculator'),
+ UserMsg('1+2='),
+ AssistantMsg('3'),
+ UserMsg('3+4=')]
+).strip()
 
 # But it contains all fields of the LLM response in additional attributes
 for i in llm('1+2=?', n=3, temperature=2).choices:

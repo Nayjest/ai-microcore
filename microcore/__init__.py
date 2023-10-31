@@ -6,6 +6,7 @@ from .storage import storage
 from .env import env, configure
 from .logging import use_logging
 from .storage import storage  # noqa
+from .message_types import UserMsg, AssistantMsg, SysMsg, Msg
 
 
 def llm(prompt, **kwargs) -> str:
@@ -54,4 +55,8 @@ __all__ = [
     "use_logging",
     "env",
     "texts",
+    'Msg',
+    'UserMsg',
+    'SysMsg',
+    'AssistantMsg'
 ]

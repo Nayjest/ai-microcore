@@ -1,4 +1,4 @@
-""" Message classes for OpenAI chat API if you prefer an  object-oriented approach """
+""" Message classes for OpenAI Chat API """
 import dataclasses
 import json
 import microcore.prepare_llm_args
@@ -36,5 +36,8 @@ class UserMsg(_BaseMsg):
     role: str = "user"
 
 
-class AssistantMag(_BaseMsg):
+class AssistantMsg(_BaseMsg):
     role: str = "assistant"
+
+
+__all__ = ['Msg', 'UserMsg', 'SysMsg', 'AssistantMsg']
