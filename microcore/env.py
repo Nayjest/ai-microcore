@@ -3,9 +3,9 @@ from importlib.util import find_spec
 
 from .config import Config
 from .embedding_db.base import EmbeddingDB
-from .types import TplFunctionType, LLMAsyncFunctionType
+from .types import TplFunctionType, LLMAsyncFunctionType, LLMFunctionType
 from .templating.jinja2 import make_jinja2_env, make_tpl_function
-from .llm.openai_llm import make_llm_function
+from .llm.openai_llm import make_llm_functions
 import jinja2
 from .logging import use_logging
 
@@ -15,7 +15,8 @@ class Env:
     config: Config
     jinjaEnvironment: jinja2.Environment = None
     tpl_function: TplFunctionType = None
-    llm_function: LLMAsyncFunctionType = None
+    llm_async_function: LLMAsyncFunctionType = None
+    llm_function: LLMFunctionType = None
     llm_before_handlers: list[callable] = field(default_factory=list)
     llm_after_handlers: list[callable] = field(default_factory=list)
     texts: EmbeddingDB = None
@@ -34,7 +35,7 @@ class Env:
         self.tpl_function = make_tpl_function(self)
 
     def init_llm(self):
-        self.llm_function = make_llm_function(self.config)
+        self.llm_function, self.llm_async_function = make_llm_functions(self.config)
 
     def init_similarity_search(self):
         if find_spec("chromadb") is not None:

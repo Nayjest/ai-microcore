@@ -8,18 +8,21 @@ from .env import env, configure
 from .logging import use_logging
 from .storage import storage  # noqa
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg
+from .config import ApiType
 
 
 async def allm(prompt, **kwargs) -> str:
     [h(prompt, **kwargs) for h in env().llm_before_handlers]
-    response = await env().llm_function(prompt, **kwargs)
+    response = await env().llm_async_function(prompt, **kwargs)
     [h(response) for h in env().llm_after_handlers]
     return response
 
 
 def llm(prompt, **kwargs) -> str:
-    loop = asyncio.get_event_loop()
-    return loop.run_until_complete(env().llm_function(prompt, **kwargs))
+    [h(prompt, **kwargs) for h in env().llm_before_handlers]
+    response = env().llm_function(prompt, **kwargs)
+    [h(response) for h in env().llm_after_handlers]
+    return response
 
 
 def tpl(file: os.PathLike[str] | str, **kwargs) -> str:
@@ -66,4 +69,5 @@ __all__ = [
     "UserMsg",
     "SysMsg",
     "AssistantMsg",
+    "ApiType"
 ]
