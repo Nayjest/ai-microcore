@@ -1,3 +1,4 @@
 -r extended.txt
 pytest~=7.4.3
-pytest-asyncio~=0.22.0
+pytest-asyncio>=0.21.0
+pytest-mock~=3.12.0

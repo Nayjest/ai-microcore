@@ -1,3 +1,6 @@
+from .message_types import default_chat_message_role
+
+
 def prepare_prompt(prompt) -> str:
     """Converts prompt to string for LLM completion API"""
     return "\n".join(
@@ -16,6 +19,3 @@ def prepare_chat_messages(prompt):
         else msg
         for msg in (prompt if isinstance(prompt, list) else [prompt])
     ]
-
-
-default_chat_message_role = "user"

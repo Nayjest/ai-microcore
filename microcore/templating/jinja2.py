@@ -1,6 +1,6 @@
 import os
 import jinja2
-from microcore.types import TplFunctionType
+from ..types import TplFunctionType
 
 
 def make_jinja2_env(env) -> jinja2.Environment:

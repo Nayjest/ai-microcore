@@ -1,7 +1,7 @@
-from microcore import llm, env
+from microcore import env, llm
 from .setup_env import setup_env # noqa
 import logging
-from colorama import Fore as c
+from colorama import Fore as C
 
 
 def test_return_word(setup_env): # noqa
@@ -16,9 +16,9 @@ def test_return_word(setup_env): # noqa
     out = llm(prompt)
 
     logging.info(
-        f"\n{c.BLUE}Model: {c.LIGHTGREEN_EX}{env().config.MODEL}{c.RESET}"
-        f"\n{c.BLUE}Prompt: {c.LIGHTGREEN_EX}{prompt}{c.RESET}"
-        f"\n{c.BLUE}Response: {c.LIGHTGREEN_EX}{out}{c.RESET}"
+        f"\n{C.BLUE}Model: {C.LIGHTGREEN_EX}{env().config.MODEL}{C.RESET}"
+        f"\n{C.BLUE}Prompt: {C.LIGHTGREEN_EX}{prompt}{C.RESET}"
+        f"\n{C.BLUE}Response: {C.LIGHTGREEN_EX}{out}{C.RESET}"
     )
     for i in ['.', '"', '\'', '\n']:
         out = out.replace(i, '')

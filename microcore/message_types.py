@@ -1,7 +1,6 @@
 """ Message classes for OpenAI Chat API """
 import dataclasses
 import json
-import microcore.prepare_llm_args
 
 
 class DataclassEncoder(json.JSONEncoder):
@@ -14,9 +13,18 @@ class DataclassEncoder(json.JSONEncoder):
 json.JSONEncoder.default = DataclassEncoder().default
 
 
+class Role:
+    SYSTEM = "system"
+    USER = "user"
+    ASSISTANT = "assistant"
+
+
+default_chat_message_role = Role.USER
+
+
 @dataclasses.dataclass
 class Msg:
-    role: str = microcore.prepare_llm_args.default_chat_message_role
+    role: str = default_chat_message_role
     content: str = ""
 
     def __str__(self):
@@ -29,15 +37,22 @@ class _BaseMsg(Msg):
 
 
 class SysMsg(_BaseMsg):
-    role: str = "system"
+    role: str = Role.SYSTEM
 
 
 class UserMsg(_BaseMsg):
-    role: str = "user"
+    role: str = Role.USER
 
 
 class AssistantMsg(_BaseMsg):
-    role: str = "assistant"
+    role: str = Role.ASSISTANT
 
 
-__all__ = ["Msg", "UserMsg", "SysMsg", "AssistantMsg"]
+__all__ = [
+    "Msg",
+    "UserMsg",
+    "SysMsg",
+    "AssistantMsg",
+    "Role",
+    "default_chat_message_role",
+]

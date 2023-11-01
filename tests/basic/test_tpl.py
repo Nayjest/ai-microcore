@@ -1,6 +1,7 @@
-from microcore import tpl, configure
+from microcore import tpl
+from . import * # noqa
 
 
-def test_tpl(monkeypatch):
-    configure(PROMPT_TEMPLATES_PATH='tests/basic/tpl')
-    assert tpl('test.j2', var='val') == 'Test template val'
+def test_tpl(setup): # noqa
+    assert tpl('test.j2', var='val1') == 'Test template val1'
+    assert tpl('test.j2', var='val2') == 'Test template val2'

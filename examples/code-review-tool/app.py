@@ -15,7 +15,8 @@ python app.py <full-path-to-patch-file>
 import json
 import sys
 from pathlib import Path
-from microcore import llm, tpl, storage, configure
+from microcore import tpl, storage, configure
+from microcore.llm import llm
 from colorama import Fore as c
 
 configure(

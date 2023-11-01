@@ -1,9 +1,9 @@
 import asyncio
 
 from ..config import Config, ApiType
-from ..extended_string import ExtendedString
 from ..prepare_llm_args import prepare_chat_messages, prepare_prompt
 from ..types import LLMAsyncFunctionType, LLMFunctionType
+from ..wrappers.llm_response_wrapper import LLMResponse
 from ..utils import is_chat_model
 import openai
 import openai.util
@@ -20,7 +20,7 @@ def _get_chunk_text(chunk, mode_chat_model: bool):
 
 
 async def _a_process_streamed_response(
-        response, callbacks: list[callable], chat_model_used: bool
+    response, callbacks: list[callable], chat_model_used: bool
 ):
     response_text: str = ""
     async for chunk in response:
@@ -31,18 +31,18 @@ async def _a_process_streamed_response(
                     await cb(text_chunk)
                 else:
                     cb(text_chunk)
-    return ExtendedString(response_text, {})
+    return LLMResponse(response_text, {})
 
 
 def _process_streamed_response(
-        response, callbacks: list[callable], chat_model_used: bool
+    response, callbacks: list[callable], chat_model_used: bool
 ):
     response_text: str = ""
     for chunk in response:
         if text_chunk := _get_chunk_text(chunk, chat_model_used):
             response_text += text_chunk
             [cb(text_chunk) for cb in callbacks]
-    return ExtendedString(response_text, {})
+    return LLMResponse(response_text, {})
 
 
 def _configure_open_ai_package(config: Config):
@@ -84,22 +84,22 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             )
             if args["stream"]:
                 return await _a_process_streamed_response(
-                    response, options['callbacks'], chat_model_used=True
+                    response, options["callbacks"], chat_model_used=True
                 )
             else:
-                for cb in options['callbacks']:
+                for cb in options["callbacks"]:
                     cb(response.choices[0].message.content)
-                return ExtendedString(response.choices[0].message.content, response)
+                return LLMResponse(response.choices[0].message.content, response)
         else:
             response = await openai.Completion.acreate(
                 prompt=prepare_prompt(prompt), **args
             )
             if args["stream"]:
                 return await _a_process_streamed_response(
-                    response, options['callbacks'], chat_model_used=False
+                    response, options["callbacks"], chat_model_used=False
                 )
             else:
-                return ExtendedString(response.choices[0].text, response)
+                return LLMResponse(response.choices[0].text, response)
 
     def llm(prompt, **kwargs):
         args, options = _prepare_llm_arguments(config, kwargs)
@@ -109,21 +109,19 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             )
             if args["stream"]:
                 return _process_streamed_response(
-                    response, options['callbacks'], chat_model_used=True
+                    response, options["callbacks"], chat_model_used=True
                 )
             else:
-                for cb in options['callbacks']:
+                for cb in options["callbacks"]:
                     cb(response.choices[0].message.content)
-                return ExtendedString(response.choices[0].message.content, response)
+                return LLMResponse(response.choices[0].message.content, response)
         else:
-            response = openai.Completion.create(
-                prompt=prepare_prompt(prompt), **args
-            )
+            response = openai.Completion.create(prompt=prepare_prompt(prompt), **args)
             if args["stream"]:
                 return _process_streamed_response(
-                    response, options['callbacks'], chat_model_used=False
+                    response, options["callbacks"], chat_model_used=False
                 )
             else:
-                return ExtendedString(response.choices[0].text, response)
+                return LLMResponse(response.choices[0].text, response)
 
     return llm, allm

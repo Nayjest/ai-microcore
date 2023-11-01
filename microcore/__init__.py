@@ -1,5 +1,4 @@
 """Minimalistic core for large language model applications"""
-import asyncio
 import os
 
 from .embedding_db.base import EmbeddingDB, SearchResult
@@ -9,24 +8,13 @@ from .logging import use_logging
 from .storage import storage  # noqa
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg
 from .config import ApiType
+from .types import BadAIJsonAnswer, BadAIAnswer
+from .wrappers.prompt_wrapper import PromptWrapper
+from .llm_functions import llm, allm
 
 
-async def allm(prompt, **kwargs) -> str:
-    [h(prompt, **kwargs) for h in env().llm_before_handlers]
-    response = await env().llm_async_function(prompt, **kwargs)
-    [h(response) for h in env().llm_after_handlers]
-    return response
-
-
-def llm(prompt, **kwargs) -> str:
-    [h(prompt, **kwargs) for h in env().llm_before_handlers]
-    response = env().llm_function(prompt, **kwargs)
-    [h(response) for h in env().llm_after_handlers]
-    return response
-
-
-def tpl(file: os.PathLike[str] | str, **kwargs) -> str:
-    return env().tpl_function(file, **kwargs)
+def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
+    return PromptWrapper(env().tpl_function(file, **kwargs))
 
 
 def use_model(name: str):
@@ -56,9 +44,9 @@ texts = _EmbeddingDBProxy()
 
 
 __all__ = [
-    "configure",
-    "allm",
     "llm",
+    "allm",
+    "configure",
     "tpl",
     "storage",
     "use_model",
@@ -69,5 +57,7 @@ __all__ = [
     "UserMsg",
     "SysMsg",
     "AssistantMsg",
-    "ApiType"
+    "ApiType",
+    "BadAIJsonAnswer",
+    "BadAIAnswer",
 ]

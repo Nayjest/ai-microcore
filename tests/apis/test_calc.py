@@ -1,4 +1,5 @@
-from microcore import llm, SysMsg, UserMsg, AssistantMsg
+from microcore import SysMsg, UserMsg, AssistantMsg, llm
+
 from .setup_env import setup_env # noqa
 
 
