@@ -18,6 +18,7 @@ class ApiType:
     AZURE = "azure"
     LLM = "llm"
     ANYSCALE = "anyscale"
+    DEEP_INFRA = "deep_infra"
 
 
 _default_dotenv_loaded = False
@@ -92,7 +93,37 @@ class LLMConfig(BaseConfig, OpenAIEnvVars):
             )
             self.MODEL = self.MODEL or "meta-llama/Llama-2-70b-chat-hf"
 
+        if self.LLM_API_TYPE == ApiType.DEEP_INFRA:
+            self.LLM_API_BASE = (
+                self.LLM_API_BASE or "https://api.deepinfra.com/v1/openai"
+            )
+            self.MODEL = self.MODEL or "meta-llama/Llama-2-70b-chat-hf"
+
         self.MODEL = self.MODEL or "gpt-3.5-turbo"
+
+    def validate(self):
+        if not self.LLM_API_KEY:
+            raise LLMConfigError("LLM configuration error: LLM_API_KEY is absent")
+        if self.LLM_API_TYPE == ApiType.AZURE:
+            if not self.LLM_API_BASE:
+                raise LLMConfigError(
+                    "LLM configuration error: "
+                    "LLM_API_BASE is required for using Azure models"
+                )
+            if not self.LLM_DEPLOYMENT_ID:
+                raise LLMConfigError(
+                    "LLM configuration error: "
+                    "LLM_DEPLOYMENT_ID is required for using Azure models"
+                )
+            if not self.LLM_API_VERSION:
+                raise LLMConfigError(
+                    "LLM configuration error: "
+                    "LLM_API_VERSION is required for using Azure models"
+                )
+
+
+class LLMConfigError(ValueError):
+    pass
 
 
 @dataclass

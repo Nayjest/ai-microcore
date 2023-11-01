@@ -7,7 +7,7 @@ from .env import env, configure
 from .logging import use_logging
 from .storage import storage  # noqa
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg
-from .config import ApiType
+from .config import ApiType, LLMConfigError
 from .types import BadAIJsonAnswer, BadAIAnswer
 from .wrappers.prompt_wrapper import PromptWrapper
 from .llm_functions import llm, allm
@@ -20,6 +20,10 @@ def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
 def use_model(name: str):
     env().config.MODEL = name
     env().config.LLM_DEFAULT_ARGS["model"] = name
+
+
+def validate_config():
+    env().config.validate()
 
 
 class _EmbeddingDBProxy(EmbeddingDB):
@@ -47,6 +51,7 @@ __all__ = [
     "llm",
     "allm",
     "configure",
+    "validate_config",
     "tpl",
     "storage",
     "use_model",
@@ -60,4 +65,5 @@ __all__ = [
     "ApiType",
     "BadAIJsonAnswer",
     "BadAIAnswer",
+    "LLMConfigError",
 ]

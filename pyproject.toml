@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "ai-microcore"
-version = "0.5.0"
+version = "0.5.1"
 dynamic = ["description"]
 keywords = ["llm", "large language models", "ai", "similarity search", "ai search", "gpt", "openai"]
 readme = "README.md"

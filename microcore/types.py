@@ -16,9 +16,6 @@ class BadAIAnswer(ValueError):
     def __str__(self):
         return self.message + f": {self.details}" if self.details else ""
 
-    def safe_error_message(self):
-        return str(self)
-
 
 class BadAIJsonAnswer(BadAIAnswer):
     def __init__(
