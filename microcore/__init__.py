@@ -5,7 +5,6 @@ from .embedding_db.base import EmbeddingDB, SearchResult
 from .storage import storage
 from .env import env, configure
 from .logging import use_logging
-from .storage import storage  # noqa
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg
 from .config import ApiType, LLMConfigError
 from .types import BadAIJsonAnswer, BadAIAnswer
@@ -14,15 +13,18 @@ from .llm_functions import llm, allm
 
 
 def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
+    """Renders a prompt template using the provided parameters."""
     return PromptWrapper(env().tpl_function(file, **kwargs))
 
 
 def use_model(name: str):
+    """Switches language model"""
     env().config.MODEL = name
     env().config.LLM_DEFAULT_ARGS["model"] = name
 
 
 def validate_config():
+    """Validates current MicroCore configuration"""
     env().config.validate()
 
 
