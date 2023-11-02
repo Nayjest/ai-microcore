@@ -133,5 +133,6 @@ class Config(LLMConfig):
     PROMPT_TEMPLATES_PATH: str | Path = from_env("tpl")
 
     STORAGE_PATH: str | Path = from_env("storage")
+    # Folder within STORAGE_PATH for storing embeddings
     EMBEDDING_DB_FOLDER: str = "embedding_db"
     DEFAULT_ENCODING: str = from_env("utf-8")

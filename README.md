@@ -6,7 +6,7 @@
 
 # AI MicroCore: A Minimalistic Foundation for AI Applications
 
-This package is a collection of wrappers around Large Language Models
+This package is a collection of adapters for Large Language Models
 and Semantic Search APIs allowing to 
 communicate with these services convenient way, make it easily switchable 
 and separate business logic from implementation details.
@@ -32,6 +32,32 @@ while user_msg := input('Enter message: '):
 ```
 pip install ai-microcore
 ```
+
+## Configuring
+
+### Minimal Configuration
+
+Having `OPENAI_API_KEY` in OS environment variables is enough for basic usage.
+
+Similarity search features will work out of the box if you have the `chromadb` pip package installed.
+
+### Configuration Methods
+
+There are a few options available for configuring microcore:
+- Use `microcore.configure()`
+  <br>💡 <small>All configuration options should be available in IDE autocompletion tooltips</small>
+- Create a `.env` file in your project root ([example](https://github.com/ai-microcore/microcore/blob/main/.env.example))
+- Use a custom configuration file: `mc.configure(DOT_ENV_FILE='dev-config.ini')`
+- Define OS environment variables
+
+For the full list of available configuration options, you may also check [`microcore/config.py`](https://github.com/ai-microcore/microcore/blob/main/microcore/config.py).
+
+### Priority of Configuration Sources
+
+1. Configuration options passed as arguments to `microcore.configure()` have the highest priority.
+2. The priority of configuration file options (`.env` by default or the value of `DOT_ENV_FILE`) is higher than OS environment variables.
+   <br>💡 <small>Setting `USE_DOT_ENV` to `false` disables reading configuration files.</small>
+3. OS environment variables has the lowest priority.
 
 
 ## Core Functions
