@@ -23,6 +23,10 @@ class EmbeddingDB(ABC):
     ) -> list[str | SearchResult]:
         pass
 
+    @abstractmethod
+    def get_all(self, collection: str) -> list[str | SearchResult]:
+        pass
+
     def save(self, collection: str, text: str, metadata: dict = None):
         self.save_many(collection, [(text, metadata)])
 
@@ -31,7 +35,7 @@ class EmbeddingDB(ABC):
         pass
 
     @abstractmethod
-    def clean(self, collection: str):
+    def clear(self, collection: str):
         pass
 
     def find_one(self, collection: str, query: str | list) -> str | None:

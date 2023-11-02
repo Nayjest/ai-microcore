@@ -68,7 +68,9 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
 
     callbacks: list[callable] = args.pop("callbacks", [])
     if "callback" in args:
-        callbacks.append(args.pop("callback"))
+        cb = args.pop("callback")
+        if cb:
+            callbacks.append(cb)
     args["stream"] = bool(callbacks)
     return args, dict(callbacks=callbacks)
 

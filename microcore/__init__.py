@@ -27,6 +27,9 @@ def validate_config():
 
 
 class _EmbeddingDBProxy(EmbeddingDB):
+    def get_all(self, collection: str) -> list[str | SearchResult]:
+        return env().texts.get_all(collection)
+
     def search(
         self,
         collection: str,
@@ -40,8 +43,11 @@ class _EmbeddingDBProxy(EmbeddingDB):
     def save_many(self, collection: str, items: list[tuple[str, dict] | str]):
         return env().texts.save_many(collection, items)
 
-    def clean(self, collection: str):
-        return env().texts.clean(collection)
+    def save(self, collection: str, text: str, metadata: dict = None):
+        return env().texts.save(collection, text, metadata)
+
+    def clear(self, collection: str):
+        return env().texts.clear(collection)
 
 
 texts = _EmbeddingDBProxy()

@@ -2,13 +2,13 @@ from microcore import texts
 
 
 def test_save_load():
-    texts.clean('test_collection')
+    texts.clear('test_collection')
     texts.save('test_collection', 'test text', {'test': 'test'})
     assert texts.search('test_collection', 'test text') == ['test text']
 
 
 def test_similarity():
-    texts.clean('test_collection')
+    texts.clear('test_collection')
     texts.save_many('test_collection', [
         'cat',
         'dog',
@@ -19,7 +19,7 @@ def test_similarity():
 
 
 def test_metadata():
-    texts.clean('test_collection')
+    texts.clear('test_collection')
     texts.save_many('test_collection', [
         '1',
         '2',

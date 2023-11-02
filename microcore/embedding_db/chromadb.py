@@ -18,6 +18,20 @@ class ChromaEmbeddingDB(EmbeddingDB):
         )
         self.embedding_function = embedding_functions.DefaultEmbeddingFunction()
 
+    @classmethod
+    def _wrap_results(cls, results) -> list[str | SearchResult]:
+        return [
+            SearchResult(
+                results["documents"][0][i],
+                dict(
+                    metadata=results["metadatas"][0][i] or {},
+                    id=results["ids"][0][i],
+                    distance=results["distances"][0][i],
+                ),
+            )
+            for i in range(len(results["documents"][0]))
+        ]
+
     def search(
         self,
         collection: str,
@@ -44,17 +58,7 @@ class ChromaEmbeddingDB(EmbeddingDB):
             or not len(d["documents"][0])
         ):
             return []
-        return [
-            SearchResult(
-                d["documents"][0][i],
-                dict(
-                    metadata=d["metadatas"][0][i] or {},
-                    id=d["ids"][0][i],
-                    distance=d["distances"][0][i],
-                ),
-            )
-            for i in range(len(d["documents"][0]))
-        ]
+        return self._wrap_results(d)
 
     def save_many(self, collection: str, items: list[tuple[str, dict] | str]):
         chroma_collection = self.client.get_or_create_collection(
@@ -65,15 +69,22 @@ class ChromaEmbeddingDB(EmbeddingDB):
         metadatas = [None if isinstance(i, str) else i[1] or None for i in items]
         chroma_collection.upsert(documents=texts, ids=ids, metadatas=metadatas)
 
-    def clean(self, collection: str):
+    def clear(self, collection: str):
         try:
             self.client.delete_collection(collection)
         except ValueError:
             pass
 
-    def get_all(self, collection: str) -> list[str]:
+    def get_all(self, collection: str) -> list[str | SearchResult]:
         try:
             chroma_collection = self.client.get_collection(collection)
         except ValueError:
             return []
-        return chroma_collection.get()["documents"]
+        results = chroma_collection.get()
+        return [
+            SearchResult(
+                results["documents"][i],
+                dict(metadata=results["metadatas"][i] or {}, id=results["ids"][i]),
+            )
+            for i in range(len(results["documents"][0]))
+        ]
