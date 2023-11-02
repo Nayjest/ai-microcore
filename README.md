@@ -1,6 +1,6 @@
 <p align="right">
-    <a href="https://github.com/ai-microcore/microcore/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/static/v1?label=license&message=MIT&color=orange" alt="License"></a>
-    <a href="https://github.com/ai-microcore/microcore/releases" target="_blank"><img src="https://img.shields.io/github/release/ai-microcore/microcore" alt="Release Notes"></a>
+    <a href="https://github.com/Nayjest/ai-microcore/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/static/v1?label=license&message=MIT&color=d08aff" alt="License"></a>
+    <a href="https://github.com/Nayjest/ai-microcore/releases" target="_blank"><img src="https://img.shields.io/github/release/ai-microcore/microcore" alt="Release Notes"></a>
 </p>
 
 
@@ -46,11 +46,11 @@ Similarity search features will work out of the box if you have the `chromadb` p
 There are a few options available for configuring microcore:
 - Use `microcore.configure()`
   <br>💡 <small>All configuration options should be available in IDE autocompletion tooltips</small>
-- Create a `.env` file in your project root ([example](https://github.com/ai-microcore/microcore/blob/main/.env.example))
+- Create a `.env` file in your project root ([example](https://github.com/Nayjest/ai-microcore/blob/main/.env.example))
 - Use a custom configuration file: `mc.configure(DOT_ENV_FILE='dev-config.ini')`
 - Define OS environment variables
 
-For the full list of available configuration options, you may also check [`microcore/config.py`](https://github.com/ai-microcore/microcore/blob/main/microcore/config.py).
+For the full list of available configuration options, you may also check [`microcore/config.py`](https://github.com/Nayjest/ai-microcore/blob/main/microcore/config.py).
 
 ### Priority of Configuration Sources
 
