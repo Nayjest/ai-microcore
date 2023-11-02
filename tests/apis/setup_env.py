@@ -5,7 +5,7 @@ from colorama import Fore as c
 import logging
 import microcore
 
-envs = glob.glob('.env.test.*')
+envs = glob.glob(".env.test.*")
 # envs = ['.env.test.open_ai']
 # envs = ['.env.test.azure']
 # envs = ['.env.test.anyscale']
@@ -18,8 +18,7 @@ def setup_env(request):
     original_env = dict(os.environ)
     os.environ.clear()
     microcore.configure(
-        DOT_ENV_FILE=request.param,
-        LLM_DEFAULT_ARGS=dict(temperature=0.01)
+        DOT_ENV_FILE=request.param, LLM_DEFAULT_ARGS=dict(temperature=0.01)
     )
     yield
     os.environ.clear()

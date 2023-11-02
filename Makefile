@@ -13,7 +13,10 @@ sh:
 	$(DEXEC) bash
 stop:
 	docker-compose stop
-
+cs:
+	$(DEXEC) flake8 microcore tests examples
+black:
+	$(DEXEC) black microcore tests examples
 # ============== [ Tests ] ==============
 
 test:

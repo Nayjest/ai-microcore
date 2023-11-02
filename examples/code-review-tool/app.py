@@ -16,43 +16,43 @@ import json
 import sys
 from pathlib import Path
 from microcore import tpl, storage, configure
-from microcore.llm import llm
+from microcore import llm
 from colorama import Fore as c
 
 configure(
-    PROMPT_TEMPLATES_PATH=Path(__file__).resolve().parent / 'tpl',
+    PROMPT_TEMPLATES_PATH=Path(__file__).resolve().parent / "tpl",
     USE_LOGGING=True,
-    LLM_DEFAULT_ARGS={'temperature': 0.05}
+    LLM_DEFAULT_ARGS={"temperature": 0.05},
 )
 
-diff_file_name = sys.argv[1] if sys.argv[1:] else 'feature.patch'
+diff_file_name = sys.argv[1] if sys.argv[1:] else "feature.patch"
 max_files_to_review = 10
 skip_first_n = 0
 skip_files = []
 
 
 def split_diff_by_files(file_name: str) -> list[str]:
-    parts = ('\n' + storage.read(file_name)).split('\ndiff --git')[1:]
-    return ['diff --git' + i for i in parts]
+    parts = ("\n" + storage.read(file_name)).split("\ndiff --git")[1:]
+    return ["diff --git" + i for i in parts]
 
 
 diff_by_files = split_diff_by_files(diff_file_name)
-for diff_part in diff_by_files[skip_first_n:skip_first_n + max_files_to_review]:
-    first_line = diff_part.split('\n')[0].replace('diff --git', '').strip()
+for diff_part in diff_by_files[skip_first_n : skip_first_n + max_files_to_review]:
+    first_line = diff_part.split("\n")[0].replace("diff --git", "").strip()
 
     if len(first_line) == 0 or any(s in first_line for s in skip_files):
         continue
 
-    a, b = first_line.split(' ')
-    fn = b.replace('b/', '') + '.txt'
+    a, b = first_line.split(" ")
+    fn = b.replace("b/", "") + ".txt"
     print(c.LIGHTYELLOW_EX + fn)
-    out = llm(tpl('code-review.j2', input=diff_part))
+    out = llm(tpl("code-review.j2", input=diff_part))
     if len(out.strip()) < 10:
         continue
     try:
         lines = json.loads(out)
-        out = '\nISS: ' + '\nISS:'.join(lines)
+        out = "\nISS: " + "\nISS:".join(lines)
     except json.decoder.JSONDecodeError:
         pass
-    storage.write('out/' + fn, out)
-print('Done')
+    storage.write("out/" + fn, out)
+print("Done")
