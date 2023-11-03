@@ -9,7 +9,7 @@
 
 # AI MicroCore: A Minimalistic Foundation for AI Applications
 
-This package is a collection of adapters for Large Language Models
+**microcore** is a collection of python adapters for Large Language Models
 and Semantic Search APIs allowing to 
 communicate with these services convenient way, make it easily switchable 
 and separate business logic from implementation details.
@@ -69,7 +69,7 @@ For the full list of available configuration options, you may also check [`micro
 
 ## Core Functions
 
-### *llm(prompt: str, \*\*kwargs) →* str
+### llm(prompt: str, \*\*kwargs) → str
 
 Performs a request to a large language model (LLM)
 
@@ -116,7 +116,7 @@ llm('Hi there', callbacks=[
 ])
 ```
 
-### *tpl(file_path, \*\*params) →* str
+### tpl(file_path, \*\*params) → str
 Renders prompt template with params.
 
 Full-featured Jinja2 templates are used by default.
@@ -131,16 +131,23 @@ configure(
 )
 ```
 
-### *store(collection: str | None, **kwargs)
-Stores data in embeddings database of your choice
+### texts.search(collection: str, query: str | list, n_results: int = 5, where: dict = None, **kwargs) → list[str]
+Similarity search
 
-@TODO
+### texts.find_one(self, collection: str, query: str | list) → str | None
+Find most similar text
 
-### *search(collection: str | None, **kwargs)
-Performs semantic / similarity search over embeddings database
+### texts.get_all(self, collection: str) -> list[str]
+Return collection of texts
 
-@TODO
+### texts.save(collection: str, text: str, metadata: dict = None))
+Store text and related metadata in embeddings database
 
+### texts.save_many(collection: str, items: list[tuple[str, dict] | str])
+Store mutiple texts and related metadata in embeddings database
+
+### texts.clear(collection: str):
+Clear collection
 
 ## API providers and models support
 
