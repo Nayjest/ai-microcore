@@ -1,7 +1,7 @@
-from microcore import env, llm
-from .setup_env import setup_env  # noqa
 import logging
 from colorama import Fore as C
+from microcore import env, llm
+from .setup_env import setup_env  # noqa
 
 
 def test_return_word(setup_env):  # noqa

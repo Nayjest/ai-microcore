@@ -2,12 +2,12 @@ from microcore import env, configure
 from microcore.config import Config
 
 
-def test_env_default_init(monkeypatch):
+def test_env_default_init():
     assert env().jinja_env is not None
     assert env().config.PROMPT_TEMPLATES_PATH == "tpl"
 
 
-def test_reinit(monkeypatch):
+def test_reinit():
     configure(PROMPT_TEMPLATES_PATH="test1")
     assert env().config.PROMPT_TEMPLATES_PATH == "test1"
     c = Config(PROMPT_TEMPLATES_PATH="test2")
@@ -17,5 +17,5 @@ def test_reinit(monkeypatch):
     configure()
 
 
-def test_after_reinit(monkeypatch):
+def test_after_reinit():
     assert env().config.PROMPT_TEMPLATES_PATH == "tpl"

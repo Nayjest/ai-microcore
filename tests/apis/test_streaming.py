@@ -1,5 +1,6 @@
-from .setup_env import setup_env  # noqa
 import microcore
+from .setup_env import setup_env  # noqa
+
 
 
 def test_streaming_count(setup_env):  # noqa

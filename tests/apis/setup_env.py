@@ -1,8 +1,8 @@
 import glob
 import os
-import pytest
-from colorama import Fore as c
 import logging
+from colorama import Fore as c
+import pytest
 import microcore
 
 envs = glob.glob(".env.test.*")

@@ -1,5 +1,5 @@
-from microcore import llm
 from colorama import Fore
+from microcore import llm
 
 llm(
     "Tell me a joke",

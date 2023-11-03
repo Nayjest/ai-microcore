@@ -15,9 +15,9 @@ python app.py <full-path-to-patch-file>
 import json
 import sys
 from pathlib import Path
+from colorama import Fore as C
 from microcore import tpl, storage, configure
 from microcore import llm
-from colorama import Fore as c
 
 configure(
     PROMPT_TEMPLATES_PATH=Path(__file__).resolve().parent / "tpl",
@@ -37,7 +37,7 @@ def split_diff_by_files(file_name: str) -> list[str]:
 
 
 diff_by_files = split_diff_by_files(diff_file_name)
-for diff_part in diff_by_files[skip_first_n : skip_first_n + max_files_to_review]:
+for diff_part in diff_by_files[skip_first_n: skip_first_n + max_files_to_review]:
     first_line = diff_part.split("\n")[0].replace("diff --git", "").strip()
 
     if len(first_line) == 0 or any(s in first_line for s in skip_files):
@@ -45,7 +45,7 @@ for diff_part in diff_by_files[skip_first_n : skip_first_n + max_files_to_review
 
     a, b = first_line.split(" ")
     fn = b.replace("b/", "") + ".txt"
-    print(c.LIGHTYELLOW_EX + fn)
+    print(C.LIGHTYELLOW_EX + fn)
     out = llm(tpl("code-review.j2", input=diff_part))
     if len(out.strip()) < 10:
         continue

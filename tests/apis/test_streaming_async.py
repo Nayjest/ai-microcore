@@ -1,7 +1,7 @@
 import pytest
-
-from .setup_env import setup_env  # noqa
 import microcore
+from .setup_env import setup_env  # noqa
+
 
 
 @pytest.mark.asyncio

@@ -422,22 +422,29 @@ confidence=HIGH,
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
 disable=raw-checker-failed,
-        bad-inline-option,
-        locally-disabled,
-        file-ignored,
-        suppressed-message,
-        useless-suppression,
-        deprecated-pragma,
-        use-implicit-booleaness-not-comparison-to-string,
-        use-implicit-booleaness-not-comparison-to-zero,
-        use-symbolic-message-instead,
-        missing-module-docstring, # added
+#        bad-inline-option,
+#        locally-disabled,
+#        file-ignored,
+#        suppressed-message,
+#        useless-suppression,
+#        deprecated-pragma,
+#        use-implicit-booleaness-not-comparison-to-string,
+#        use-implicit-booleaness-not-comparison-to-zero,
+#        use-symbolic-message-instead,
+        # added
+        missing-module-docstring,
         missing-function-docstring,
         missing-class-docstring,
         expression-not-assigned,
         invalid-name,
         too-few-public-methods,
-        use-dict-literal
+        use-dict-literal,
+        invalid-field-call,
+        global-statement,
+        too-many-instance-attributes,
+        import-outside-toplevel,
+        consider-using-f-string,
+        cyclic-import
 #       C0103,
 
 
