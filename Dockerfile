@@ -1,7 +1,7 @@
 FROM python:3.11.6-slim as mc
 ENV I_AM_INSIDE_DOCKER_CONTAINER=true
 RUN apt-get update \
-    && apt-get install -y \
+    && apt-get install -y --no-install-recommends \
     curl \
     make \
     git \
