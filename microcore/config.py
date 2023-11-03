@@ -9,8 +9,7 @@ _MISSING = object()
 
 
 def from_env(default=None):
-    f = field(default=_MISSING, metadata=dict(_from_env=True, _default=default))
-    return f
+    return field(default=_MISSING, metadata=dict(_from_env=True, _default=default))
 
 
 class ApiType:

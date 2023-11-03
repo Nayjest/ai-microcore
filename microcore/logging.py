@@ -1,8 +1,8 @@
 import dataclasses
-import microcore
-import microcore.ui
 from colorama import Fore, Style
-import microcore.prepare_llm_args
+
+from .env import env
+from .prepare_llm_args import prepare_chat_messages, prepare_prompt
 from .utils import is_chat_model
 
 
@@ -21,7 +21,7 @@ def _log_request(prompt, **kwargs):
         end=" " if LoggingConfig.DENSE else "\n",
     )
     if is_chat_model(model):
-        for msg in microcore.prepare_llm_args.prepare_chat_messages(prompt):
+        for msg in prepare_chat_messages(prompt):
             role, content = (
                 (msg["role"], msg["content"])
                 if isinstance(msg, dict)
@@ -36,7 +36,7 @@ def _log_request(prompt, **kwargs):
                 f"{LoggingConfig.PROMPT_COLOR}[{role.capitalize()}]:{content}"
             )
     else:
-        lines = microcore.prepare_llm_args.prepare_prompt(prompt).split("\n")
+        lines = prepare_prompt(prompt).split("\n")
         print(
             LoggingConfig.PROMPT_COLOR
             + (" " if LoggingConfig.DENSE else LoggingConfig.INDENT)
@@ -47,8 +47,8 @@ def _log_request(prompt, **kwargs):
 def _resolve_model(**kwargs):
     return (
         kwargs.get("model")
-        or microcore.env().config.LLM_DEFAULT_ARGS.get("model")
-        or microcore.env().config.MODEL
+        or env().config.LLM_DEFAULT_ARGS.get("model")
+        or env().config.MODEL
     )
 
 
@@ -59,7 +59,7 @@ def _log_response(out):
 
 
 def use_logging():
-    if _log_request not in microcore.env().llm_before_handlers:
-        microcore.env().llm_before_handlers.append(_log_request)
-    if _log_response not in microcore.env().llm_after_handlers:
-        microcore.env().llm_after_handlers.append(_log_response)
+    if _log_request not in env().llm_before_handlers:
+        env().llm_before_handlers.append(_log_request)
+    if _log_response not in env().llm_after_handlers:
+        env().llm_after_handlers.append(_log_response)

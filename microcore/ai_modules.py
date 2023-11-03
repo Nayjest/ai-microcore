@@ -11,9 +11,7 @@ def custom_import(name, global_vars=None, local_vars=None, fromlist=(), level=0)
     if module.__doc__ and "ai_module" in module.__doc__:
         data = yaml.safe_load(module.__doc__)
         tpl_path = data.get("tpl_path", "")
-        env().jinjaEnvironment.loader.loaders.append(
-            PackageLoader(module.__name__, tpl_path)
-        )
+        env().jinja_env.loader.loaders.append(PackageLoader(module.__name__, tpl_path))
     return module
 
 

@@ -4,10 +4,10 @@ import json
 
 
 class DataclassEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if dataclasses.is_dataclass(obj):
-            return dataclasses.asdict(obj)
-        return super().default(obj)
+    def default(self, o):
+        if dataclasses.is_dataclass(o):
+            return dataclasses.asdict(o)
+        return super().default(o)
 
 
 json.JSONEncoder.default = DataclassEncoder().default
@@ -33,6 +33,7 @@ class Msg:
 
 class _BaseMsg(Msg):
     def __init__(self, content: str):
+        super().__init__()
         self.content = content
 
 

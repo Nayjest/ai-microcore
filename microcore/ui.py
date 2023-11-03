@@ -16,9 +16,5 @@ def error(*args, **kwargs):
     print(*[Fore.RED + i for i in args], **kwargs)
 
 
-def input(*args, **kwargs):
-    return _input(*args, **kwargs).strip()
-
-
 def ask_yn(msg):
-    return "y" in input(msg + " (y/n)").lower()
+    return "y" in input(msg + " (y/n)").lower().strip()

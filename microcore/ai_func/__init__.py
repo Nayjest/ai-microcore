@@ -2,12 +2,11 @@
 ai_module: ai_func
 descr: Allows to describe python functions for LLM
 """
-import docstring_parser
+import ast
 import inspect
 from typing import Dict, Any
-import ast
-
-from microcore import tpl
+import docstring_parser
+from .. import tpl
 
 
 def func_arg_comments(func):

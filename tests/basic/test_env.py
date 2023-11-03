@@ -3,7 +3,7 @@ from microcore.config import Config
 
 
 def test_env_default_init(monkeypatch):
-    assert env().jinjaEnvironment is not None
+    assert env().jinja_env is not None
     assert env().config.PROMPT_TEMPLATES_PATH == "tpl"
 
 

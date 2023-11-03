@@ -26,7 +26,7 @@ class LLMResponse(ExtendedString):
                     if field not in res:
                         raise BadAIJsonAnswer(f'Missing field "{field}"')
             return res
-        except json.decoder.JSONDecodeError:
+        except json.decoder.JSONDecodeError as e:
             if raise_errors:
-                raise BadAIJsonAnswer()
+                raise BadAIJsonAnswer() from e
             return False

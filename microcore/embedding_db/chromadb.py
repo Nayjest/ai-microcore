@@ -3,11 +3,11 @@ from dataclasses import dataclass
 import chromadb
 from chromadb.utils import embedding_functions
 from ..config import Config
-from .base import EmbeddingDB, SearchResult
+from .base import AbstractEmbeddingDB, SearchResult
 
 
 @dataclass
-class ChromaEmbeddingDB(EmbeddingDB):
+class ChromaEmbeddingDB(AbstractEmbeddingDB):
     config: Config
     embedding_function: embedding_functions.EmbeddingFunction = None
     client: chromadb.Client = None
@@ -51,14 +51,11 @@ class ChromaEmbeddingDB(EmbeddingDB):
         d = chroma_collection.query(
             query_texts=query, n_results=n_results, where=where, **kwargs
         )
-        if (
-            not d
-            or "documents" not in d
-            or not len(d["documents"])
-            or not len(d["documents"][0])
-        ):
-            return []
-        return self._wrap_results(d)
+        return (
+            self._wrap_results(d)
+            if d and d.get("documents") and d["documents"][0]
+            else []
+        )
 
     def save_many(self, collection: str, items: list[tuple[str, dict] | str]):
         chroma_collection = self.client.get_or_create_collection(
@@ -84,7 +81,7 @@ class ChromaEmbeddingDB(EmbeddingDB):
         return [
             SearchResult(
                 results["documents"][i],
-                dict(metadata=results["metadatas"][i] or {}, id=results["ids"][i]),
+                {"metadata": results["metadatas"][i] or {}, "id": results["ids"][i]},
             )
             for i in range(len(results["documents"][0]))
         ]

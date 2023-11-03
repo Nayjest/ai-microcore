@@ -1,17 +1,19 @@
 """
 File storage functions
 """
-import shutil
-import chardet
 import os
+import shutil
+from pathlib import Path
 
-from .env import env
+import chardet
+
+from . import env
 
 
 class _Storage:
     @property
     def storage_path(self):
-        return env().config.STORAGE_PATH
+        return Path(env().config.STORAGE_PATH)
 
     @property
     def default_encoding(self):
@@ -34,9 +36,9 @@ class _Storage:
             result = chardet.detect(rawdata)
             encoding = result["encoding"]
             return rawdata.decode(encoding)
-        else:
-            with open(name, "r", encoding=encoding) as f:
-                return f.read()
+
+        with open(name, "r", encoding=encoding) as f:
+            return f.read()
 
     def write(
         self,
@@ -44,38 +46,43 @@ class _Storage:
         content: str = None,
         rewrite_existing: bool = False,
         encoding: str = None,
-    ):
-        encoding = encoding or self.default_encoding
+    ) -> str | os.PathLike:
         """
         :return: str File name for further usage
         """
+        encoding = encoding or self.default_encoding
         if content is None:
             content = name
             name = "out.txt"
 
-        if "." in name:
-            parts = name.split(".")
-            name = ".".join(parts[:-1])
-            ext = parts[-1]
-        else:
-            ext = "txt"
+        base_name = Path(name).stem
+        ext = Path(name).suffix or ".txt"
 
         counter = 0
         while True:
-            file_name = f'{name}{"_%d" % counter if counter else ""}.{ext}'
-            full_path = f"{self.storage_path}/{file_name}"
-            if not os.path.isfile(full_path) or rewrite_existing:
+            file_name = f"{base_name}{'_%d' % counter if counter else ''}.{ext}"  # noqa
+            full_path = Path(self.storage_path) / file_name
+            if not full_path.is_file() or rewrite_existing:
                 break
             counter += 1
 
-        os.makedirs(os.path.dirname(full_path), exist_ok=True)
-        with open(full_path, "w", encoding=encoding) as f:
-            f.write(content)
-        return file_name
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+        full_path.write_text(content, encoding=encoding)
+        return str(full_path.name)
 
     def clean(self, path: str):
-        full_path = f"{self.storage_path}/{path}"
-        os.path.exists(full_path) and shutil.rmtree(full_path)
+        """
+        Removes the directory specified by `path` within the `storage_path`.
+        :raises ValueError: If the path is outside the storage area.
+        """
+        full_path = (self.storage_path / path).resolve()
+
+        # Verify that the path is inside the storage_path
+        if self.storage_path not in full_path.parents:
+            raise ValueError("Cannot delete directories outside the storage path.")
+
+        if full_path.exists() and full_path.is_dir():
+            shutil.rmtree(full_path)
 
 
 storage = _Storage()

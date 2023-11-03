@@ -1,12 +1,12 @@
 import asyncio
+import openai
+import openai.util
 
 from ..config import Config, ApiType
 from ..prepare_llm_args import prepare_chat_messages, prepare_prompt
 from ..types import LLMAsyncFunctionType, LLMFunctionType
 from ..wrappers.llm_response_wrapper import LLMResponse
 from ..utils import is_chat_model
-import openai
-import openai.util
 
 
 def _get_chunk_text(chunk, mode_chat_model: bool):
@@ -15,8 +15,8 @@ def _get_chunk_text(chunk, mode_chat_model: bool):
 
     if mode_chat_model:
         return choice.get("delta", {}).get("content", "")
-    else:
-        return choice.get("text", "")
+
+    return choice.get("text", "")
 
 
 async def _a_process_streamed_response(
@@ -72,7 +72,7 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
         if cb:
             callbacks.append(cb)
     args["stream"] = bool(callbacks)
-    return args, dict(callbacks=callbacks)
+    return args, {"callbacks": callbacks}
 
 
 def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctionType]:
@@ -88,20 +88,20 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
                 return await _a_process_streamed_response(
                     response, options["callbacks"], chat_model_used=True
                 )
-            else:
-                for cb in options["callbacks"]:
-                    cb(response.choices[0].message.content)
-                return LLMResponse(response.choices[0].message.content, response)
-        else:
-            response = await openai.Completion.acreate(
-                prompt=prepare_prompt(prompt), **args
+
+            for cb in options["callbacks"]:
+                cb(response.choices[0].message.content)
+            return LLMResponse(response.choices[0].message.content, response)
+
+        response = await openai.Completion.acreate(
+            prompt=prepare_prompt(prompt), **args
+        )
+        if args["stream"]:
+            return await _a_process_streamed_response(
+                response, options["callbacks"], chat_model_used=False
             )
-            if args["stream"]:
-                return await _a_process_streamed_response(
-                    response, options["callbacks"], chat_model_used=False
-                )
-            else:
-                return LLMResponse(response.choices[0].text, response)
+
+        return LLMResponse(response.choices[0].text, response)
 
     def llm(prompt, **kwargs):
         args, options = _prepare_llm_arguments(config, kwargs)
@@ -113,17 +113,18 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
                 return _process_streamed_response(
                     response, options["callbacks"], chat_model_used=True
                 )
-            else:
-                for cb in options["callbacks"]:
-                    cb(response.choices[0].message.content)
-                return LLMResponse(response.choices[0].message.content, response)
-        else:
-            response = openai.Completion.create(prompt=prepare_prompt(prompt), **args)
-            if args["stream"]:
-                return _process_streamed_response(
-                    response, options["callbacks"], chat_model_used=False
-                )
-            else:
-                return LLMResponse(response.choices[0].text, response)
+
+            for cb in options["callbacks"]:
+                cb(response.choices[0].message.content)
+            return LLMResponse(response.choices[0].message.content, response)
+
+        # Else (if it is text completion model)
+        response = openai.Completion.create(prompt=prepare_prompt(prompt), **args)
+        if args["stream"]:
+            return _process_streamed_response(
+                response, options["callbacks"], chat_model_used=False
+            )
+
+        return LLMResponse(response.choices[0].text, response)
 
     return llm, allm

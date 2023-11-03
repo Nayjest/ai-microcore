@@ -1,9 +1,9 @@
 """Minimalistic core for large language model applications"""
 import os
 
-from .embedding_db.base import EmbeddingDB, SearchResult
+from .embedding_db.base import AbstractEmbeddingDB, SearchResult
 from .storage import storage
-from .env import env, configure
+from .env import configure, env
 from .logging import use_logging
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg
 from .config import ApiType, LLMConfigError
@@ -28,7 +28,7 @@ def validate_config():
     env().config.validate()
 
 
-class _EmbeddingDBProxy(EmbeddingDB):
+class _EmbeddingDBProxy(AbstractEmbeddingDB):
     def get_all(self, collection: str) -> list[str | SearchResult]:
         return env().texts.get_all(collection)
 

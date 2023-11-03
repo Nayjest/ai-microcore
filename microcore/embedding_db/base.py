@@ -11,7 +11,7 @@ class SearchResult(ExtendedString):
 
 
 @dataclass
-class EmbeddingDB(ABC):
+class AbstractEmbeddingDB(ABC):
     @abstractmethod
     def search(
         self,

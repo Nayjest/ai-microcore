@@ -1,7 +1,7 @@
 from typing import Callable, Any, Awaitable, Union
 from os import PathLike
 
-"""Definition of tpl function used to render templates"""
+# Definition of tpl function used to render prompt templates
 TplFunctionType = Callable[[Union[PathLike[str], str], Any], str]
 LLMFunctionType = Callable[[str, Any], str]
 LLMAsyncFunctionType = Callable[[str, Any], Awaitable[str]]

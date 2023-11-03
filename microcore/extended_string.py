@@ -34,8 +34,8 @@ class ExtendedString(str):
                 return res
 
             return method_handler
-        else:
-            # If there's not a global function with that name, raise an AttributeError as usual
-            raise AttributeError(
-                f"'{self.__class__.__name__}' object has no attribute '{item}'"
-            )
+
+        # If there's not a global function with that name, raise an AttributeError as usual
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object has no attribute '{item}'"
+        )
