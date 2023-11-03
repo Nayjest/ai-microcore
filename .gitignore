@@ -9,3 +9,8 @@ dist
 #pytest-cov
 .coverage
 coverage.xml
+# NodeJS
+package.json
+package-lock.json
+node_modules
+test.py
