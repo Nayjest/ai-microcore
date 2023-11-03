@@ -40,3 +40,10 @@ license = { file = "LICENSE" }
 
 [tool.flit.module]
 name = "microcore"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--cov=microcore --cov-report=xml:coverage.xml --cov-report=term"
+testpaths = [
+    "tests/basic",
+]

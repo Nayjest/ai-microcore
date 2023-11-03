@@ -2,8 +2,8 @@
 import os
 
 from .embedding_db.base import AbstractEmbeddingDB, SearchResult
-from .storage import storage
-from .env import configure, env
+from .file_storage import storage
+from .internal_env import configure, env
 from .logging import use_logging
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg
 from .config import ApiType, LLMConfigError

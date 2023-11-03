@@ -6,3 +6,6 @@ venv
 .pytest_cache
 storage
 dist
+#pytest-cov
+.coverage
+coverage.xml

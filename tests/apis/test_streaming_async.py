@@ -3,7 +3,6 @@ import microcore
 from .setup_env import setup_env  # noqa
 
 
-
 @pytest.mark.asyncio
 async def test_streaming_count_async(setup_env):  # noqa
     microcore.use_logging()

@@ -4,10 +4,9 @@ File storage functions
 import os
 import shutil
 from pathlib import Path
-
 import chardet
 
-from . import env
+from .internal_env import env
 
 
 class _Storage:
@@ -55,20 +54,20 @@ class _Storage:
             content = name
             name = "out.txt"
 
-        base_name = Path(name).stem
+        base_name = Path(name).with_suffix('')
         ext = Path(name).suffix or ".txt"
 
         counter = 0
         while True:
             file_name = f"{base_name}{'_%d' % counter if counter else ''}.{ext}"  # noqa
-            full_path = Path(self.storage_path) / file_name
+            full_path = self.storage_path / file_name
             if not full_path.is_file() or rewrite_existing:
                 break
             counter += 1
 
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.write_text(content, encoding=encoding)
-        return str(full_path.name)
+        return file_name
 
     def clean(self, path: str):
         """
@@ -78,7 +77,7 @@ class _Storage:
         full_path = (self.storage_path / path).resolve()
 
         # Verify that the path is inside the storage_path
-        if self.storage_path not in full_path.parents:
+        if self.storage_path.resolve() not in full_path.parents:
             raise ValueError("Cannot delete directories outside the storage path.")
 
         if full_path.exists() and full_path.is_dir():

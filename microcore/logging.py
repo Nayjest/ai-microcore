@@ -1,7 +1,7 @@
 import dataclasses
 from colorama import Fore, Style
 
-from .env import env
+from .internal_env import env
 from .prepare_llm_args import prepare_chat_messages, prepare_prompt
 from .utils import is_chat_model
 

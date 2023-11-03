@@ -1,5 +1,5 @@
 from .wrappers.llm_response_wrapper import LLMResponse
-from .env import env
+from .internal_env import env
 
 
 async def allm(prompt, **kwargs) -> str | LLMResponse:
