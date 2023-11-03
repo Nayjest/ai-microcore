@@ -49,20 +49,21 @@ Similarity search features will work out of the box if you have the `chromadb` p
 ### Configuration Methods
 
 There are a few options available for configuring microcore:
-- Use `microcore.configure()`
+
+-   Use `microcore.configure()`
     <br>💡 <small>All configuration options should be available in IDE autocompletion tooltips</small>
-- Create a `.env` file in your project root ([example](https://github.com/Nayjest/ai-microcore/blob/main/.env.example))
-- Use a custom configuration file: `mc.configure(DOT_ENV_FILE='dev-config.ini')`
-- Define OS environment variables
+-   Create a `.env` file in your project root ([example](https://github.com/Nayjest/ai-microcore/blob/main/.env.example))
+-   Use a custom configuration file: `mc.configure(DOT_ENV_FILE='dev-config.ini')`
+-   Define OS environment variables
 
 For the full list of available configuration options, you may also check [`microcore/config.py`](https://github.com/Nayjest/ai-microcore/blob/main/microcore/config.py).
 
 ### Priority of Configuration Sources
 
-1. Configuration options passed as arguments to `microcore.configure()` have the highest priority.
-2. The priority of configuration file options (`.env` by default or the value of `DOT_ENV_FILE`) is higher than OS environment variables.
-   <br>💡 <small>Setting `USE_DOT_ENV` to `false` disables reading configuration files.</small>
-3. OS environment variables has the lowest priority.
+1.  Configuration options passed as arguments to `microcore.configure()` have the highest priority.
+2.  The priority of configuration file options (`.env` by default or the value of `DOT_ENV_FILE`) is higher than OS environment variables.
+    <br>💡 <small>Setting `USE_DOT_ENV` to `false` disables reading configuration files.</small>
+3.  OS environment variables has the lowest priority.
 
 
 ## Core Functions
@@ -178,7 +179,7 @@ import microcore.ai_modules
 ```
 ### Features:
 
-* Automatically registers template folders of AI modules in Jinja2 environment
+*   Automatically registers template folders of AI modules in Jinja2 environment
  
 
 ## License
