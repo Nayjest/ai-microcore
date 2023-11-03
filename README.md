@@ -49,11 +49,11 @@ Similarity search features will work out of the box if you have the `chromadb` p
 ### Configuration Methods
 
 There are a few options available for configuring microcore:
-  - Use `microcore.configure()`
+-   Use `microcore.configure()`
     <br>💡 <small>All configuration options should be available in IDE autocompletion tooltips</small>
-  - Create a `.env` file in your project root ([example](https://github.com/Nayjest/ai-microcore/blob/main/.env.example))
-  - Use a custom configuration file: `mc.configure(DOT_ENV_FILE='dev-config.ini')`
-  - Define OS environment variables
+-   Create a `.env` file in your project root ([example](https://github.com/Nayjest/ai-microcore/blob/main/.env.example))
+-   Use a custom configuration file: `mc.configure(DOT_ENV_FILE='dev-config.ini')`
+-   Define OS environment variables
 
 For the full list of available configuration options, you may also check [`microcore/config.py`](https://github.com/Nayjest/ai-microcore/blob/main/microcore/config.py).
 
@@ -177,7 +177,7 @@ based on metadata in module docstrings.
 import microcore.ai_modules
 ```
 ### Features:
-* Automatically registers template folders of AI modules in Jinja2 environment
+*   Automatically registers template folders of AI modules in Jinja2 environment
  
 
 ## License
