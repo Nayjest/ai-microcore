@@ -54,7 +54,7 @@ class _Storage:
             content = name
             name = "out.txt"
 
-        base_name = Path(name).with_suffix('')
+        base_name = Path(name).with_suffix("")
         ext = Path(name).suffix or ".txt"
 
         counter = 0
