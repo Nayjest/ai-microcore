@@ -185,6 +185,4 @@ import microcore.ai_modules
 
 ## License
 
-© 2023&mdash;∞ Vitalii Stepanenko
-
-Licensed under the MIT License. 
+Licensed under the [MIT License](https://github.com/Nayjest/ai-microcore) © 2023 [Vitalii Stepanenko](mailto:mail@vitalii.in)
