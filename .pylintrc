@@ -444,7 +444,8 @@ disable=raw-checker-failed,
         too-many-instance-attributes,
         import-outside-toplevel,
         consider-using-f-string,
-        cyclic-import
+        cyclic-import,
+        import-error,
 #       C0103,
 
 
