@@ -3,16 +3,26 @@ from dataclasses import dataclass, field, fields
 from pathlib import Path
 import dotenv
 
-from microcore.utils import get_bool_from_env
-
 _MISSING = object()
+
+TRUE_VALUES = ["1", "TRUE", "YES", "ON", "ENABLED"]
 
 
 def from_env(default=None):
+    """
+    Provides default value for the configuration dataclass
+    from the environment variable with the name equal to field name in upper case"""
     return field(default=_MISSING, metadata=dict(_from_env=True, _default=default))
 
 
+def get_bool_from_env(env_var: str, default: bool = False):
+    """Convert value of environment variable to boolean"""
+    return os.getenv(env_var, str(default)).upper() in TRUE_VALUES
+
+
 class ApiType:
+    """LLM API types"""
+
     OPEN_AI = "open_ai"
     AZURE = "azure"
     LLM = "llm"
@@ -25,6 +35,8 @@ _default_dotenv_loaded = False
 
 @dataclass
 class BaseConfig:
+    """Base class for configuration dataclasses"""
+
     USE_DOT_ENV: bool = None
     DOT_ENV_FILE: str | Path = None
 
@@ -51,7 +63,7 @@ class BaseConfig:
 
 
 @dataclass
-class OpenAIEnvVars:
+class _OpenAIEnvVars:
     # OS Environment variables expected by OpenAI library
     # Will be used as defaults for LLM
     # @todo: implement lib_defaults to take default values from openai lib if available
@@ -62,7 +74,9 @@ class OpenAIEnvVars:
 
 
 @dataclass
-class LLMConfig(BaseConfig, OpenAIEnvVars):
+class LLMConfig(BaseConfig, _OpenAIEnvVars):
+    """LLM configuration"""
+
     LLM_API_TYPE: str = from_env()
     LLM_API_KEY: str = from_env()
     LLM_API_BASE: str = from_env()
@@ -101,6 +115,12 @@ class LLMConfig(BaseConfig, OpenAIEnvVars):
         self.MODEL = self.MODEL or "gpt-3.5-turbo"
 
     def validate(self):
+        """
+        Validate LLM configuration
+
+        Raises:
+            LLMConfigError
+        """
         if not self.LLM_API_KEY:
             raise LLMConfigError("LLM configuration error: LLM_API_KEY is absent")
         if self.LLM_API_TYPE == ApiType.AZURE:
@@ -122,11 +142,13 @@ class LLMConfig(BaseConfig, OpenAIEnvVars):
 
 
 class LLMConfigError(ValueError):
-    pass
+    """LLM configuration error"""
 
 
 @dataclass
 class Config(LLMConfig):
+    """MicroCore configuration"""
+
     USE_LOGGING: bool = False
 
     PROMPT_TEMPLATES_PATH: str | Path = from_env("tpl")

@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 import chardet
 
-from .internal_env import env
+from ._env import env
 
 
 class _Storage:

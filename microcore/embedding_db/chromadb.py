@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import chromadb
 from chromadb.utils import embedding_functions
 from ..config import Config
-from .base import AbstractEmbeddingDB, SearchResult
+from .. import SearchResult, AbstractEmbeddingDB
 
 
 @dataclass

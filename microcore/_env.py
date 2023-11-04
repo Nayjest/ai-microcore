@@ -3,7 +3,7 @@ from importlib.util import find_spec
 import jinja2
 
 from .config import Config
-from .embedding_db.base import AbstractEmbeddingDB
+from . import AbstractEmbeddingDB
 from .types import TplFunctionType, LLMAsyncFunctionType, LLMFunctionType
 from .templating.jinja2 import make_jinja2_env, make_tpl_function
 from .llm.openai_llm import make_llm_functions
@@ -58,4 +58,5 @@ _env: Env | None = None
 
 
 def env() -> Env:
+    """Returns the current MicroCore environment"""
     return _env or Env()

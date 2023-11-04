@@ -1,15 +1,16 @@
 """Minimalistic core for large language model applications"""
 import os
 
-from .embedding_db.base import AbstractEmbeddingDB, SearchResult
+from .embedding_db import SearchResult, AbstractEmbeddingDB
 from .file_storage import storage
-from .internal_env import configure, env
+from ._env import configure, env
 from .logging import use_logging
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg
 from .config import ApiType, LLMConfigError
 from .types import BadAIJsonAnswer, BadAIAnswer
 from .wrappers.prompt_wrapper import PromptWrapper
-from .llm_functions import llm, allm
+from .wrappers.llm_response_wrapper import LLMResponse
+from ._llm_functions import llm, allm
 
 
 def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
@@ -74,4 +75,11 @@ __all__ = [
     "BadAIJsonAnswer",
     "BadAIAnswer",
     "LLMConfigError",
+    "LLMResponse",
 ]
+__pdoc__ = {
+    "ai_modules": False,
+    "ai_func": False,
+    "logging": False,
+    "file_storage": False,
+}

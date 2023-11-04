@@ -1,10 +1,12 @@
 from typing import Callable, Any, Awaitable, Union
 from os import PathLike
 
-# Definition of tpl function used to render prompt templates
 TplFunctionType = Callable[[Union[PathLike[str], str], Any], str]
+"""Function type for rendering prompt templates"""
 LLMFunctionType = Callable[[str, Any], str]
+"""Function type for requesting LLM synchronously"""
 LLMAsyncFunctionType = Callable[[str, Any], Awaitable[str]]
+"""Function type for requesting LLM asynchronously"""
 
 
 class BadAIAnswer(ValueError):

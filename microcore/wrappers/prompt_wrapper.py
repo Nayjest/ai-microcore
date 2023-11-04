@@ -1,5 +1,5 @@
-from ..llm_functions import allm, llm
-from ..extended_string import ExtendedString
+from .._llm_functions import allm, llm
+from ..utils import ExtendedString
 
 
 class PromptWrapper(ExtendedString):

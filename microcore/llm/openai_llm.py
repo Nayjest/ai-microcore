@@ -3,7 +3,7 @@ import openai
 import openai.util
 
 from ..config import Config, ApiType
-from ..prepare_llm_args import prepare_chat_messages, prepare_prompt
+from .._prepare_llm_args import prepare_chat_messages, prepare_prompt
 from ..types import LLMAsyncFunctionType, LLMFunctionType
 from ..wrappers.llm_response_wrapper import LLMResponse
 from ..utils import is_chat_model

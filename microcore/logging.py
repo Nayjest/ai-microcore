@@ -1,8 +1,8 @@
 import dataclasses
 from colorama import Fore, Style
 
-from .internal_env import env
-from .prepare_llm_args import prepare_chat_messages, prepare_prompt
+from ._env import env
+from ._prepare_llm_args import prepare_chat_messages, prepare_prompt
 from .utils import is_chat_model
 
 
@@ -59,6 +59,7 @@ def _log_response(out):
 
 
 def use_logging():
+    """Turns on logging of LLM requests and responses to console."""
     if _log_request not in env().llm_before_handlers:
         env().llm_before_handlers.append(_log_request)
     if _log_response not in env().llm_after_handlers:

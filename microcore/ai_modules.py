@@ -1,7 +1,7 @@
 import builtins
 import yaml
 from jinja2 import PackageLoader
-from .internal_env import env
+from ._env import env
 
 _original_import = builtins.__import__
 
