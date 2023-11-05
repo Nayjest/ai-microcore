@@ -98,3 +98,5 @@ __all__ = [
     "types",
     # "wrappers",
 ]
+
+__version__ = "0.6.1"
