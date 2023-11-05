@@ -4,3 +4,5 @@ black
 build
 twine
 pylint
+pdoc
+watchdog

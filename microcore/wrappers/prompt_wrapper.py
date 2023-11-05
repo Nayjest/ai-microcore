@@ -5,12 +5,12 @@ from ..utils import ExtendedString
 class PromptWrapper(ExtendedString):
     def to_llm(self, **kwargs):
         """
-        Send prompt to Large Language Model
+        Send prompt to Large Language Model, see `llm`
         """
         return llm(self, **kwargs)
 
     async def to_allm(self, **kwargs):
         """
-        Send prompt to Large Language Model asynchronously
+        Send prompt to Large Language Model asynchronously, see `allm`
         """
         return await allm(self, **kwargs)

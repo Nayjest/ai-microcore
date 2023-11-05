@@ -53,6 +53,7 @@ class _Configure(Config):
 
 
 configure: callable = _Configure
+"""Applies configuration to MicroCore environment"""
 
 _env: Env | None = None
 

@@ -29,6 +29,7 @@ while user_msg := input('Enter message: '):
     print('AI: ' + llm(user_msg))
 ```
 
+## [API Reference](https://ai-microcore.github.io/api-reference/)
 
 ## Installation
 

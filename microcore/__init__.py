@@ -1,4 +1,11 @@
-"""Minimalistic core for large language model applications"""
+"""
+# Minimalistic Foundation for AI Applications
+
+**microcore** is a collection of python adapters for Large Language Models
+and Semantic Search APIs allowing to
+communicate with these services convenient way, make it easily switchable
+and separate business logic from implementation details.
+"""
 import os
 
 from .embedding_db import SearchResult, AbstractEmbeddingDB
@@ -25,7 +32,12 @@ def use_model(name: str):
 
 
 def validate_config():
-    """Validates current MicroCore configuration"""
+    """
+    Validates current MicroCore configuration
+
+    Raises:
+        `LLMConfigError` if configuration is invalid
+    """
     env().config.validate()
 
 
@@ -54,19 +66,19 @@ class _EmbeddingDBProxy(AbstractEmbeddingDB):
 
 
 texts = _EmbeddingDBProxy()
-
+"""Embedding database, see `microcore.embedding_db.AbstractEmbeddingDB`"""
 
 __all__ = [
     "llm",
     "allm",
+    "tpl",
+    "texts",
     "configure",
     "validate_config",
-    "tpl",
     "storage",
     "use_model",
     "use_logging",
     "env",
-    "texts",
     "Msg",
     "UserMsg",
     "SysMsg",
@@ -76,10 +88,13 @@ __all__ = [
     "BadAIAnswer",
     "LLMConfigError",
     "LLMResponse",
+    "PromptWrapper",
+    # submodules
+    "embedding_db",
+    "file_storage",
+    "message_types",
+    "utils",
+    "config",
+    "types",
+    # "wrappers",
 ]
-__pdoc__ = {
-    "ai_modules": False,
-    "ai_func": False,
-    "logging": False,
-    "file_storage": False,
-}

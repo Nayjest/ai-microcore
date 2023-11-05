@@ -5,6 +5,7 @@ import json
 
 
 def is_chat_model(model: str) -> bool:
+    """Detects if model is chat model or text completion model"""
     completion_keywords = ["instruct", "davinci", "babbage", "curie", "ada"]
     return not any(keyword in model for keyword in completion_keywords)
 
@@ -48,6 +49,8 @@ class ExtendedString(str):
 
 
 class DataclassEncoder(json.JSONEncoder):
+    """@private"""
+
     def default(self, o):
         if dataclasses.is_dataclass(o):
             return dataclasses.asdict(o)

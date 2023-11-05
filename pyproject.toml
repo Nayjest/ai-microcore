@@ -4,8 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "ai-microcore"
-version = "0.6.0"
-dynamic = ["description"]
+dynamic = ["description", "version"]
 keywords = ["llm", "large language models", "ai", "similarity search", "ai search", "gpt", "openai"]
 readme = "README.md"
 classifiers = [
@@ -25,7 +24,7 @@ dependencies = [
     "PyYAML~=6.0",
     "chardet~=5.2.0",
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 
 authors = [
     { name = "Vitalii Stepanenko", email = "mail@vitalii.in" },

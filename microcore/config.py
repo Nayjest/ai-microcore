@@ -6,6 +6,7 @@ import dotenv
 _MISSING = object()
 
 TRUE_VALUES = ["1", "TRUE", "YES", "ON", "ENABLED"]
+"""@private"""
 
 
 def from_env(default=None):
@@ -15,7 +16,7 @@ def from_env(default=None):
     return field(default=_MISSING, metadata=dict(_from_env=True, _default=default))
 
 
-def get_bool_from_env(env_var: str, default: bool = False):
+def get_bool_from_env(env_var: str, default: bool = False) -> bool:
     """Convert value of environment variable to boolean"""
     return os.getenv(env_var, str(default)).upper() in TRUE_VALUES
 
@@ -25,9 +26,12 @@ class ApiType:
 
     OPEN_AI = "open_ai"
     AZURE = "azure"
+    """See https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models"""
     LLM = "llm"
     ANYSCALE = "anyscale"
+    """See https://www.anyscale.com/endpoints"""
     DEEP_INFRA = "deep_infra"
+    """List of text generation models: https://deepinfra.com/models?type=text-generation"""
 
 
 _default_dotenv_loaded = False
@@ -78,12 +82,28 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars):
     """LLM configuration"""
 
     LLM_API_TYPE: str = from_env()
+    """
+    See `ApiType`.
+    To use services that is not listed in `ApiType`,
+    but provides OpenAPI interface, use `ApiType.OPEN_AI`"""
+
     LLM_API_KEY: str = from_env()
     LLM_API_BASE: str = from_env()
+    """Base URL for the LLM API, e.g. https://api.openai.com/v1"""
+
     LLM_API_VERSION: str = from_env()
     LLM_DEPLOYMENT_ID: str = from_env()
+    """Required by `ApiType.AZURE`"""
+
     MODEL: str = from_env()
+    """Language model name"""
+
     LLM_DEFAULT_ARGS: dict = field(default_factory=dict)
+    """
+    You may specify here default arguments for the LLM API calls,
+     i. e. temperature, max_tokens, etc.
+     """
+
     AZURE_DEPLOYMENT_ID: str = from_env()
 
     def __post_init__(self):
@@ -150,10 +170,16 @@ class Config(LLMConfig):
     """MicroCore configuration"""
 
     USE_LOGGING: bool = False
+    """Whether to use logging or not, see `microcore.use_logging`"""
 
     PROMPT_TEMPLATES_PATH: str | Path = from_env("tpl")
+    """Path to the folder with prompt templates, ./tpl by default"""
 
     STORAGE_PATH: str | Path = from_env("storage")
-    # Folder within STORAGE_PATH for storing embeddings
+    """Path to the folder with file storage, ./storage by default"""
+
     EMBEDDING_DB_FOLDER: str = "embedding_db"
+    """Folder within microcore.config.Config.STORAGE_PATH for storing embeddings"""
+
     DEFAULT_ENCODING: str = from_env("utf-8")
+    """Used in file system operations, utf-8 by default"""

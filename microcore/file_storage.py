@@ -9,7 +9,7 @@ import chardet
 from ._env import env
 
 
-class _Storage:
+class Storage:
     @property
     def storage_path(self):
         return Path(env().config.STORAGE_PATH)
@@ -84,4 +84,14 @@ class _Storage:
             shutil.rmtree(full_path)
 
 
-storage = _Storage()
+storage = Storage()
+"""
+File system operations within the storage folder.
+
+See `Storage` for details.
+
+Related configuration options:
+    
+    - `microcore.config.Config.STORAGE_PATH`
+    - `microcore.config.Config.DEFAULT_ENCODING`
+"""
