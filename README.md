@@ -29,12 +29,21 @@ while user_msg := input('Enter message: '):
     print('AI: ' + llm(user_msg))
 ```
 
-## [API Reference](https://ai-microcore.github.io/api-reference/)
+## Links
 
+ -   [API Reference](https://ai-microcore.github.io/api-reference/)
+ -   [PyPi Package](https://pypi.org/project/ai-microcore/)
+ -   [GitHub Repository](https://github.com/Nayjest/ai-microcore)
 ## Installation
 
+Install as PyPi package:
 ```
 pip install ai-microcore
+```
+
+Alternatively may just copy `microcore` folder to your project sources root.
+```bash
+git clone git@github.com:Nayjest/ai-microcore.git && mv ai-microcore/microcore ./ && rm -rf ai-microcore
 ```
 ## Requirements
 
