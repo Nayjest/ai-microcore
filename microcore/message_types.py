@@ -1,5 +1,5 @@
 """ Message classes for OpenAI Chat API """
-import dataclasses
+from dataclasses import dataclass, field
 
 
 class Role:
@@ -8,41 +8,29 @@ class Role:
     ASSISTANT = "assistant"
 
 
-default_chat_message_role = Role.USER
+DEFAULT_MESSAGE_ROLE = Role.USER
 
 
-@dataclasses.dataclass
+@dataclass
 class Msg:
-    role: str = default_chat_message_role
-    content: str = ""
+    role: str = field(default=DEFAULT_MESSAGE_ROLE)
+    content: str = field(default="")
 
     def __str__(self):
         return str(self.content)
 
 
-class _BaseMsg(Msg):
-    def __init__(self, content: str):
-        super().__init__()
-        self.content = content
+@dataclass
+class SysMsg(Msg):
+    role: str = field(default=Role.SYSTEM, init=False)
 
 
-class SysMsg(_BaseMsg):
-    role: str = Role.SYSTEM
+@dataclass
+class UserMsg(Msg):
+    role: str = field(default=Role.USER, init=False)
 
 
-class UserMsg(_BaseMsg):
-    role: str = Role.USER
+@dataclass
+class AssistantMsg(Msg):
+    role: str = field(default=Role.ASSISTANT, init=False)
 
-
-class AssistantMsg(_BaseMsg):
-    role: str = Role.ASSISTANT
-
-
-__all__ = [
-    "Msg",
-    "UserMsg",
-    "SysMsg",
-    "AssistantMsg",
-    "Role",
-    "default_chat_message_role",
-]

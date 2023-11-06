@@ -1,4 +1,4 @@
-from .message_types import default_chat_message_role
+from .message_types import DEFAULT_MESSAGE_ROLE
 
 
 def prepare_prompt(prompt) -> str:
@@ -14,7 +14,7 @@ def prepare_prompt(prompt) -> str:
 def prepare_chat_messages(prompt):
     """Converts prompt to messages for LLM chat API (OpenAI)"""
     return [
-        dict(role=default_chat_message_role, content=msg)
+        dict(role=DEFAULT_MESSAGE_ROLE, content=msg)
         if isinstance(msg, str)
         else msg
         for msg in (prompt if isinstance(prompt, list) else [prompt])
