@@ -1,8 +1,11 @@
+import os
+
 from microcore import env, configure
 from microcore.config import Config
 
 
 def test_env_default_init():
+    os.environ['LLM_API_KEY'] = "123"
     assert env().jinja_env is not None
     assert env().config.PROMPT_TEMPLATES_PATH == "tpl"
 
