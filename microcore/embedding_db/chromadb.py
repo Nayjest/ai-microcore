@@ -77,7 +77,7 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
 
     def get_all(self, collection: str) -> list[str | SearchResult]:
         try:
-            chroma_collection = self.client.get_collection(collection)
+            chroma_collection = self.client.get_collection(collection, self.embedding_function)
         except ValueError:
             return []
         results = chroma_collection.get()
