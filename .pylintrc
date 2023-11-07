@@ -46,7 +46,10 @@ fail-under=10
 #from-stdin=
 
 # Files or directories to be skipped. They should be base names, not paths.
-ignore=CVS
+ignore=
+    CVS,
+    _openai_llm_v0.py,
+    _openai_llm_v1.py,
 
 # Add files or directories matching the regular expressions patterns to the
 # ignore-list. The regex matches against paths and can be in Posix or Windows

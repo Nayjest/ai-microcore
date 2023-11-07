@@ -33,4 +33,3 @@ class UserMsg(Msg):
 @dataclass
 class AssistantMsg(Msg):
     role: str = field(default=Role.ASSISTANT, init=False)
-

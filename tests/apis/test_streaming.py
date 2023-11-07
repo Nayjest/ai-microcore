@@ -13,4 +13,4 @@ def test_streaming_count(setup_env):  # noqa
         "Count from one to twenty with english words (like one, two, ...)",
         callback=handler,
     )
-    assert "three" "".join(out).lower()
+    assert "three" in "".join(out).lower()

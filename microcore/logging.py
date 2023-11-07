@@ -47,11 +47,7 @@ def _log_request(prompt, **kwargs):
 
 def _resolve_model(**kwargs):
     cfg = env().config
-    model = (
-        kwargs.get("model")
-        or cfg.LLM_DEFAULT_ARGS.get("model")
-        or cfg.MODEL
-    )
+    model = kwargs.get("model") or cfg.LLM_DEFAULT_ARGS.get("model") or cfg.MODEL
     if cfg.LLM_API_TYPE == ApiType.AZURE:
         model = f"azure:{model}"
     return model

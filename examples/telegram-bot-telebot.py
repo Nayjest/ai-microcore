@@ -10,7 +10,7 @@ import microcore as mc
 
 
 mc.configure()
-bot = telebot.TeleBot(os.getenv('TELEGRAM_BOT_TOKEN'))
+bot = telebot.TeleBot(os.getenv("TELEGRAM_BOT_TOKEN"))
 
 
 @bot.message_handler(func=lambda message: True)

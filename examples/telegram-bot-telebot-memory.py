@@ -11,7 +11,7 @@ import microcore as mc
 
 mc.configure()
 mc.use_logging()
-bot = telebot.TeleBot(os.getenv('TELEGRAM_BOT_TOKEN'))
+bot = telebot.TeleBot(os.getenv("TELEGRAM_BOT_TOKEN"))
 
 memory = deque(maxlen=5)
 sys_msg = mc.SysMsg("You are the pirate. Yarrr! Be rude, use obscene internet language")

@@ -1,9 +1,10 @@
-from microcore import SysMsg, UserMsg, AssistantMsg, llm
+from microcore import SysMsg, UserMsg, AssistantMsg, llm, use_logging
 
 from .setup_env import setup_env  # noqa
 
 
 def test_calc(setup_env):  # noqa
+    use_logging()
     assert (
         "7"
         == llm(

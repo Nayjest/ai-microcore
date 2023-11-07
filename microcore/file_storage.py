@@ -91,7 +91,7 @@ File system operations within the storage folder.
 See `Storage` for details.
 
 Related configuration options:
-    
+
     - `microcore.config.Config.STORAGE_PATH`
     - `microcore.config.Config.DEFAULT_ENCODING`
 """

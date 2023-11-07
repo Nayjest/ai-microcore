@@ -14,8 +14,6 @@ def prepare_prompt(prompt) -> str:
 def prepare_chat_messages(prompt):
     """Converts prompt to messages for LLM chat API (OpenAI)"""
     return [
-        dict(role=DEFAULT_MESSAGE_ROLE, content=msg)
-        if isinstance(msg, str)
-        else msg
+        dict(role=DEFAULT_MESSAGE_ROLE, content=msg) if isinstance(msg, str) else msg
         for msg in (prompt if isinstance(prompt, list) else [prompt])
     ]

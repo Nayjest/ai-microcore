@@ -1,13 +1,14 @@
+from .message_types import Msg
 from .wrappers.llm_response_wrapper import LLMResponse
 from ._env import env
 
 
-def llm(prompt, **kwargs) -> str | LLMResponse:
+def llm(prompt: str | Msg | list[str] | list[Msg], **kwargs) -> str | LLMResponse:
     """
     Request Large Language Model synchronously
 
     Args:
-        prompt (str): Text to send to LLM
+        prompt (str | list[str]): Text to send to LLM
         **kwargs (dict): Parameters supported by the LLM API
 
             See parameters supported by the OpenAI:
@@ -40,12 +41,14 @@ def llm(prompt, **kwargs) -> str | LLMResponse:
     return response
 
 
-async def allm(prompt, **kwargs) -> str | LLMResponse:
+async def allm(
+    prompt: str | Msg | list[str] | list[Msg], **kwargs
+) -> str | LLMResponse:
     """
     Request Large Language Model asynchronously
 
     Args:
-        prompt (str): Text to send to LLM
+        prompt (str | list[str]): Text to send to LLM
         **kwargs (dict): Parameters supported by the LLM API
 
             See parameters supported by the OpenAI:
