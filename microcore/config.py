@@ -1,6 +1,8 @@
 import os
 from dataclasses import dataclass, field, fields
 from pathlib import Path
+from typing import Any
+
 import dotenv
 
 _MISSING = object()
@@ -109,6 +111,7 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars):
     def __post_init__(self):
         super().__post_init__()
         self._init_llm_options()
+        self.validate()
 
     def _init_llm_options(self):
         # Use defaults from ENV variables expected by OpenAI API
@@ -180,6 +183,8 @@ class Config(LLMConfig):
 
     EMBEDDING_DB_FOLDER: str = "embedding_db"
     """Folder within microcore.config.Config.STORAGE_PATH for storing embeddings"""
+
+    EMBEDDING_DB_FUNCTION: Any = from_env()
 
     DEFAULT_ENCODING: str = from_env("utf-8")
     """Used in file system operations, utf-8 by default"""

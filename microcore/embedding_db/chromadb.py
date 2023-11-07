@@ -16,7 +16,10 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
         self.client = chromadb.PersistentClient(
             path=f"{self.config.STORAGE_PATH}/{self.config.EMBEDDING_DB_FOLDER}"
         )
-        self.embedding_function = embedding_functions.DefaultEmbeddingFunction()
+        self.embedding_function = (
+            self.config.EMBEDDING_DB_FUNCTION
+            or embedding_functions.DefaultEmbeddingFunction()
+        )
 
     @classmethod
     def _wrap_results(cls, results) -> list[str | SearchResult]:
