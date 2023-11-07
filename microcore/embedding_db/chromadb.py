@@ -44,7 +44,7 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
         **kwargs,
     ) -> list[str | SearchResult]:
         try:
-            chroma_collection = self.client.get_collection(collection)
+            chroma_collection = self.client.get_collection(collection, self.embedding_function)
         except ValueError:
             return []
 
