@@ -1,6 +1,7 @@
 import dataclasses
-from colorama import Fore, Style
+from colorama import Fore, Style, init
 
+from .config import ApiType
 from ._env import env
 from ._prepare_llm_args import prepare_chat_messages, prepare_prompt
 from .utils import is_chat_model
@@ -45,11 +46,15 @@ def _log_request(prompt, **kwargs):
 
 
 def _resolve_model(**kwargs):
-    return (
+    cfg = env().config
+    model = (
         kwargs.get("model")
-        or env().config.LLM_DEFAULT_ARGS.get("model")
-        or env().config.MODEL
+        or cfg.LLM_DEFAULT_ARGS.get("model")
+        or cfg.MODEL
     )
+    if cfg.LLM_API_TYPE == ApiType.AZURE:
+        model = f"azure:{model}"
+    return model
 
 
 def _log_response(out):
@@ -60,6 +65,7 @@ def _log_response(out):
 
 def use_logging():
     """Turns on logging of LLM requests and responses to console."""
+    init(autoreset=True)
     if _log_request not in env().llm_before_handlers:
         env().llm_before_handlers.append(_log_request)
     if _log_response not in env().llm_after_handlers:
