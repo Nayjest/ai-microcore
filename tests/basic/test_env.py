@@ -8,9 +8,9 @@ def test_env_default_init():
 
 
 def test_reinit():
-    configure(PROMPT_TEMPLATES_PATH="test1")
+    configure(PROMPT_TEMPLATES_PATH="test1", LLM_API_KEY="123")
     assert env().config.PROMPT_TEMPLATES_PATH == "test1"
-    c = Config(PROMPT_TEMPLATES_PATH="test2")
+    c = Config(PROMPT_TEMPLATES_PATH="test2", LLM_API_KEY="123")
     assert c.PROMPT_TEMPLATES_PATH == "test2"
     configure(**c.__dict__)
     assert env().config.PROMPT_TEMPLATES_PATH == "test2"
