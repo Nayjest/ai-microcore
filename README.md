@@ -49,7 +49,7 @@ git clone git@github.com:Nayjest/ai-microcore.git && mv ai-microcore/microcore .
 
 Python 3.10+ / 3.11+
 
-Both v0.28.X and v1.x.x OpenAI package vesrions are supported.
+Both v0.28.X and v1.x.x OpenAI package versions are supported.
 
 ## Configuring
 
