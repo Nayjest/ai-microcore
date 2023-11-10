@@ -11,11 +11,11 @@ from ._env import env
 
 class Storage:
     @property
-    def storage_path(self):
+    def storage_path(self) -> Path:
         return Path(env().config.STORAGE_PATH)
 
     @property
-    def default_encoding(self):
+    def default_encoding(self) -> str:
         return env().config.DEFAULT_ENCODING
 
     def read(self, name: str, encoding: str = None):
