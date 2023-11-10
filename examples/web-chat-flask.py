@@ -18,7 +18,7 @@ def index():
         <h4 class="mb-3">Chat with AI</h4>
         <div id="h" class="flex-grow-1 overflow-auto mb-3 p-2" style="border:1px solid #dee2e6;"></div>
         <div class="input-group">
-            <input id="m" type="text" class="form-control" placeholder="Enter message" aria-label="Enter message" aria-describedby="button-addon2" onkeypress="if(event.keyCode==13)send()">
+            <input id="m" class="form-control" placeholder="Enter message" onkeypress="if(event.keyCode==13)send()">
             <button class="btn btn-primary" type="button" id="button-addon2" onclick=send()>Send</button>
         </div>
     </div>
@@ -27,6 +27,7 @@ def index():
             let i=document.getElementById('m'),h=document.getElementById('h'),v=i.value,m=document.createElement('div');
             m.innerHTML='<b>You:</b> '+v;
             h.append(m);
+            i.value='';
             let r=await fetch('/ask',{
                 method:'POST',
                 headers:{'Content-Type':'application/json'},
@@ -35,7 +36,7 @@ def index():
             m=document.createElement('div');
             m.innerHTML='<b>AI:</b> '+r.response;
             h.append(m);
-            i.value='';h.scrollTop=h.scrollHeight;
+            h.scrollTop=h.scrollHeight;
         }
     </script>
 """
