@@ -1,11 +1,11 @@
-FROM python:3.11.6-slim as mc
+FROM python:3.11-slim as mc
 ENV I_AM_INSIDE_DOCKER_CONTAINER=true
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-    curl \
-    make \
-    git \
-    && apt-get clean \
+RUN apt update \
+    && apt install -y --no-install-recommends \
+       curl \
+       make \
+       git \
+    && apt clean \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY requirements /app/requirements
