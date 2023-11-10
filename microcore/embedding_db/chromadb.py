@@ -86,5 +86,5 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
                 results["documents"][i],
                 {"metadata": results["metadatas"][i] or {}, "id": results["ids"][i]},
             )
-            for i in range(len(results["documents"][0]))
+            for i in range(len(results["documents"]))
         ]

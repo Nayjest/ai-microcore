@@ -33,3 +33,11 @@ def test_metadata():
         ],
     )
     assert texts.find_one("test_collection", "3").metadata["id"] == 33
+
+
+def test_get_all():
+    cid = "test_collection3"
+    texts.clear(cid)
+    for i in range(20):
+        texts.save(cid, f"test text {i}", {"test": "test"})
+    assert len(texts.get_all(cid)) == 20
