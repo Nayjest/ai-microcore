@@ -15,6 +15,13 @@ class Storage:
         return Path(env().config.STORAGE_PATH)
 
     @property
+    def default_ext(self) -> str | None:
+        ext = env().config.STORAGE_DEFAULT_FILE_EXT
+        if ext and not ext.startswith("."):
+            ext = "." + ext
+        return ext
+
+    @property
     def default_encoding(self) -> str:
         return env().config.DEFAULT_ENCODING
 
@@ -24,11 +31,12 @@ class Storage:
             if "." in name:
                 parts = name.split(".")
                 name = ".".join(parts[:-1])
-                ext = parts[-1]
+                ext = "." + parts[-1]
             else:
-                ext = "txt"
-            name = f"{self.storage_path}/{name}.{ext}"
-
+                ext = self.default_ext
+                if not os.path.exists(f"{self.storage_path}/{name}{ext}"):
+                    ext = ""
+            name = f"{self.storage_path}/{name}{ext}"
         if encoding is None:
             with open(name, "rb") as f:
                 rawdata = f.read()
@@ -52,10 +60,10 @@ class Storage:
         encoding = encoding or self.default_encoding
         if content is None:
             content = name
-            name = "out.txt"
+            name = f"out{self.default_ext}"
 
         base_name = Path(name).with_suffix("")
-        ext = Path(name).suffix or ".txt"
+        ext = Path(name).suffix or self.default_ext
 
         counter = 0
         while True:
