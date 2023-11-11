@@ -212,4 +212,5 @@ Please see [CONTRIBUTING](https://github.com/Nayjest/ai-microcore/blob/main/CONT
 
 ## 📝 License
 
-Licensed under the [MIT License](https://github.com/Nayjest/ai-microcore) © 2023 [Vitalii Stepanenko](mailto:mail@vitalii.in)
+Licensed under the [MIT License](https://github.com/Nayjest/ai-microcore/blob/main/LICENSE)
+© 2023 [Vitalii Stepanenko](mailto:mail@vitaliy.in)
