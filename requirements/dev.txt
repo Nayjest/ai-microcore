@@ -6,3 +6,4 @@ twine
 pylint
 pdoc
 watchdog
+pyflakes
