@@ -25,3 +25,12 @@ def test_storage_clean():
     assert (mc.storage.storage_path / filename).exists()
     mc.storage.clean("tests_tmp")
     assert not (mc.storage.storage_path / filename).exists()
+
+
+def test_storage_file_exists():
+    mc.storage.clean("tests_tmp")
+    mc.storage.write("tests_tmp/file.json", "")
+    assert (mc.storage.storage_path / "tests_tmp/file.json").exists()
+    mc.storage.write("tests_tmp/file", "")
+    assert (mc.storage.storage_path / "tests_tmp/file.txt").exists()
+    mc.storage.clean("tests_tmp")

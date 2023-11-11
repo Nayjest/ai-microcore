@@ -63,8 +63,7 @@ class Storage:
             name = f"out{self.default_ext}"
 
         base_name = Path(name).with_suffix("")
-        ext = Path(name).suffix
-        ext = f".{ext}" if ext else self.default_ext
+        ext = Path(name).suffix or self.default_ext
 
         counter = 0
         while True:
