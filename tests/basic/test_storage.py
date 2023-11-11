@@ -34,3 +34,10 @@ def test_storage_file_exists():
     mc.storage.write("tests_tmp/file", "")
     assert (mc.storage.storage_path / "tests_tmp/file.txt").exists()
     mc.storage.clean("tests_tmp")
+
+
+def test_json():
+    mc.storage.clean("tests_tmp")
+    mc.storage.write_json('test', [123])
+    assert mc.storage.read_json('test')[0] == 123
+    mc.storage.clean("tests_tmp")

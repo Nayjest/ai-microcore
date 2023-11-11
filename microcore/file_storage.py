@@ -1,6 +1,7 @@
 """
 File storage functions
 """
+import json
 import os
 import shutil
 from pathlib import Path
@@ -46,6 +47,12 @@ class Storage:
 
         with open(name, "r", encoding=encoding) as f:
             return f.read()
+
+    def write_json(self, name, data, rewrite_existing: bool = False):
+        return self.write(name, json.dumps(data, indent=4), rewrite_existing)
+
+    def read_json(self, name):
+        return json.loads(self.read(name))
 
     def write(
         self,
