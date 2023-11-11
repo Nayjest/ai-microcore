@@ -190,3 +190,10 @@ class Config(LLMConfig):
 
     DEFAULT_ENCODING: str = from_env("utf-8")
     """Used in file system operations, utf-8 by default"""
+
+    JINJA2_AUTO_ESCAPE: bool = None
+
+    def __post_init__(self):
+        if self.JINJA2_AUTO_ESCAPE is None:
+            self.JINJA2_AUTO_ESCAPE = get_bool_from_env("JINJA2_AUTO_ESCAPE", False)
+        super().__post_init__()

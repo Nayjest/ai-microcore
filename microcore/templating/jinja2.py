@@ -5,7 +5,7 @@ from ..types import TplFunctionType
 
 def make_jinja2_env(env) -> jinja2.Environment:
     return jinja2.Environment(
-        autoescape=True,
+        autoescape=env.config.JINJA2_AUTO_ESCAPE,
         loader=jinja2.ChoiceLoader(
             [jinja2.FileSystemLoader(env.config.PROMPT_TEMPLATES_PATH)]
         ),
