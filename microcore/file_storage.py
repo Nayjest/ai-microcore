@@ -63,11 +63,12 @@ class Storage:
             name = f"out{self.default_ext}"
 
         base_name = Path(name).with_suffix("")
-        ext = Path(name).suffix or self.default_ext
+        ext = Path(name).suffix
+        ext = f".{ext}" if ext else self.default_ext
 
         counter = 0
         while True:
-            file_name = f"{base_name}{'_%d' % counter if counter else ''}.{ext}"  # noqa
+            file_name = f"{base_name}{'_%d' % counter if counter else ''}{ext}"  # noqa
             full_path = self.storage_path / file_name
             if not full_path.is_file() or rewrite_existing:
                 break
