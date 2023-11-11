@@ -29,12 +29,14 @@ while user_msg := input('Enter message: '):
     print('AI: ' + llm(user_msg))
 ```
 
-## Links
+## 🔗 Links
 
  -   [API Reference](https://ai-microcore.github.io/api-reference/)
  -   [PyPi Package](https://pypi.org/project/ai-microcore/)
  -   [GitHub Repository](https://github.com/Nayjest/ai-microcore)
-## Installation
+
+
+## 💻 Installation
 
 Install as PyPi package:
 ```
@@ -45,13 +47,16 @@ Alternatively may just copy `microcore` folder to your project sources root.
 ```bash
 git clone git@github.com:Nayjest/ai-microcore.git && mv ai-microcore/microcore ./ && rm -rf ai-microcore
 ```
-## Requirements
+
+
+## 📋 Requirements
 
 Python 3.10+ / 3.11+
 
 Both v0.28.X and v1.x.x OpenAI package versions are supported.
 
-## Configuring
+
+## ⚙️ Configuring
 
 ### Minimal Configuration
 
@@ -79,7 +84,7 @@ For the full list of available configuration options, you may also check [`micro
 3.  OS environment variables has the lowest priority.
 
 
-## Core Functions
+## 🌟 Core Functions
 
 ### llm(prompt: str, \*\*kwargs) → str
 
@@ -175,9 +180,7 @@ LLM Microcore supports all models & API providers having OpenAI API.
  | [Anyscale](anyscale.com)                                                                 |                                           meta-llama/Llama-2-70b-chat-hf<br/>meta-llama/Llama-2-13b-chat-hf<br/>meta-llama/Llama-7b-chat-hf |                                    meta-llama/Llama-2-70b-chat-hf | |
 
 
-## Examples
-
-
+## 🖼️ Examples
 
 #### [code-review-tool example](https://github.com/llm-microcore/microcore/blob/main/examples/code-review-tool)
 Performs code review by LLM for changes in git .patch files in any programming languages.
@@ -188,7 +191,7 @@ Performs code review by LLM for changes in git .patch files in any programming l
 
 @TODO
 
-## AI Modules
+## 🤖 AI Modules
 **This is experimental feature.**
 
 Tweaks the Python import system to provide automatic setup of MicroCore environment
@@ -200,8 +203,13 @@ import microcore.ai_modules
 ### Features:
 
 *   Automatically registers template folders of AI modules in Jinja2 environment
- 
 
-## License
+
+## 🛠️ Contributing
+
+Please see [CONTRIBUTING](https://github.com/Nayjest/ai-microcore/blob/main/CONTRIBUTING.md) for details.
+
+
+## 📝 License
 
 Licensed under the [MIT License](https://github.com/Nayjest/ai-microcore) © 2023 [Vitalii Stepanenko](mailto:mail@vitalii.in)
