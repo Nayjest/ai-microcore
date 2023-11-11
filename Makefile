@@ -36,8 +36,6 @@ publish:
 	$(DEXEC) twine upload dist/* -u __token__ -p $(PYPI_TOKEN) --verbose
 upload: publish
 
-#doc:
-#	rm -rf docs/microcore && pdoc microcore --html --output-dir ./docs -f
 doc:
 	rm -rf docs && pdoc microcore --docformat google -o ./docs
 
