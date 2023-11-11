@@ -18,6 +18,7 @@ from .types import BadAIJsonAnswer, BadAIAnswer
 from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
 from ._llm_functions import llm, allm
+import microcore.ui
 
 
 def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
@@ -96,6 +97,7 @@ __all__ = [
     "utils",
     "config",
     "types",
+    "ui",
     # "wrappers",
 ]
 
