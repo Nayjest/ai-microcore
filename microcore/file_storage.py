@@ -12,7 +12,7 @@ from ._env import config
 
 class Storage:
     @property
-    def storage_path(self) -> Path:
+    def path(self) -> Path:
         return Path(config().STORAGE_PATH)
 
     @property
@@ -26,6 +26,9 @@ class Storage:
     def default_encoding(self) -> str:
         return config().DEFAULT_ENCODING
 
+    def exists(self, name: str) -> bool:
+        return (self.path / name).exists()
+
     def read(self, name: str, encoding: str = None):
         encoding = encoding or self.default_encoding
         if not os.path.isabs(name) and not name.startswith("./"):
@@ -35,9 +38,9 @@ class Storage:
                 ext = "." + parts[-1]
             else:
                 ext = self.default_ext
-                if not os.path.exists(f"{self.storage_path}/{name}{ext}"):
+                if not self.exists(f"{name}{ext}"):
                     ext = ""
-            name = f"{self.storage_path}/{name}{ext}"
+            name = f"{self.path}/{name}{ext}"
         if encoding is None:
             with open(name, "rb") as f:
                 rawdata = f.read()
@@ -55,11 +58,11 @@ class Storage:
         return json.loads(self.read(name))
 
     def write(
-        self,
-        name: str,
-        content: str = None,
-        rewrite_existing: bool = False,
-        encoding: str = None,
+            self,
+            name: str,
+            content: str = None,
+            rewrite_existing: bool = False,
+            encoding: str = None,
     ) -> str | os.PathLike:
         """
         :return: str File name for further usage
@@ -75,7 +78,7 @@ class Storage:
         counter = 0
         while True:
             file_name = f"{base_name}{'_%d' % counter if counter else ''}{ext}"  # noqa
-            full_path = self.storage_path / file_name
+            full_path = self.path / file_name
             if not full_path.is_file() or rewrite_existing:
                 break
             counter += 1
@@ -89,10 +92,10 @@ class Storage:
         Removes the directory specified by `path` within the `storage_path`.
         :raises ValueError: If the path is outside the storage area.
         """
-        full_path = (self.storage_path / path).resolve()
+        full_path = (self.path / path).resolve()
 
         # Verify that the path is inside the storage_path
-        if self.storage_path.resolve() not in full_path.parents:
+        if self.path.resolve() not in full_path.parents:
             raise ValueError("Cannot delete directories outside the storage path.")
 
         if full_path.exists() and full_path.is_dir():

@@ -22,17 +22,17 @@ def test_storage_write_existing():
 def test_storage_clean():
     mc.storage.clean("tests_tmp")
     filename = mc.storage.write("tests_tmp/file", "")
-    assert (mc.storage.storage_path / filename).exists()
+    assert (mc.storage.path / filename).exists()
     mc.storage.clean("tests_tmp")
-    assert not (mc.storage.storage_path / filename).exists()
+    assert not (mc.storage.path / filename).exists()
 
 
 def test_storage_file_exists():
     mc.storage.clean("tests_tmp")
     mc.storage.write("tests_tmp/file.json", "")
-    assert (mc.storage.storage_path / "tests_tmp/file.json").exists()
+    assert (mc.storage.path / "tests_tmp/file.json").exists()
     mc.storage.write("tests_tmp/file", "")
-    assert (mc.storage.storage_path / "tests_tmp/file.txt").exists()
+    assert (mc.storage.path / "tests_tmp/file.txt").exists()
     mc.storage.clean("tests_tmp")
 
 
