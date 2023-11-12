@@ -25,7 +25,8 @@ def get_short_memory(chat_id) -> deque[Msg]:
 
 SYS_MSG = mc.SysMsg(
     os.getenv(
-        "BOT_SYS_MSG", "You are the pirate. Yarrr! Be rude, use obscene internet language."
+        "BOT_SYS_MSG",
+        "You are the pirate. Yarrr! Be rude, use obscene internet language.",
     )
 )
 NOTHING_TO_SAY = os.getenv("BOT_NOTHING_TO_SAY", "Nothing to say.")

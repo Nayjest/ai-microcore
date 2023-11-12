@@ -58,11 +58,11 @@ class Storage:
         return json.loads(self.read(name))
 
     def write(
-            self,
-            name: str,
-            content: str = None,
-            rewrite_existing: bool = False,
-            encoding: str = None,
+        self,
+        name: str,
+        content: str = None,
+        rewrite_existing: bool = False,
+        encoding: str = None,
     ) -> str | os.PathLike:
         """
         :return: str File name for further usage
