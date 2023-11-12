@@ -7,7 +7,7 @@ import shutil
 from pathlib import Path
 import chardet
 
-from ._env import env, config
+from ._env import config
 
 
 class Storage:
