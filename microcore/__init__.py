@@ -7,7 +7,7 @@ communicate with these services convenient way, make it easily switchable
 and separate business logic from implementation details.
 """
 import os
-import microcore.ui
+import microcore.ui # noqa
 from .embedding_db import SearchResult, AbstractEmbeddingDB
 from .file_storage import storage
 from ._env import configure, env
@@ -18,6 +18,7 @@ from .types import BadAIJsonAnswer, BadAIAnswer
 from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
 from ._llm_functions import llm, allm
+from .utils import parse
 
 
 def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
@@ -89,6 +90,7 @@ __all__ = [
     "LLMConfigError",
     "LLMResponse",
     "PromptWrapper",
+    "parse",
     # submodules
     "embedding_db",
     "file_storage",
@@ -100,4 +102,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "0.7.6"
+__version__ = "0.7.7"

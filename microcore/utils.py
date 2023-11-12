@@ -2,6 +2,7 @@ import builtins
 import dataclasses
 import inspect
 import json
+import re
 
 
 def is_chat_model(model: str) -> bool:
@@ -58,3 +59,12 @@ class DataclassEncoder(json.JSONEncoder):
 
 
 json.JSONEncoder.default = DataclassEncoder().default
+
+
+def parse(text: str, field_format: str = r"\[\[(.*?)\]\]") -> dict:
+    """
+    Parse a document divided into sections and convert it into a dictionary.
+    """
+    pattern = rf"{field_format}\n(.*?)(?=\n{field_format}|$)"
+    matches = re.findall(pattern, text, re.DOTALL)
+    return {key.strip().lower(): value for key, value, _ in matches}
