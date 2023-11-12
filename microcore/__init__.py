@@ -7,7 +7,7 @@ communicate with these services convenient way, make it easily switchable
 and separate business logic from implementation details.
 """
 import os
-
+import microcore.ui
 from .embedding_db import SearchResult, AbstractEmbeddingDB
 from .file_storage import storage
 from ._env import configure, env
@@ -18,7 +18,6 @@ from .types import BadAIJsonAnswer, BadAIAnswer
 from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
 from ._llm_functions import llm, allm
-import microcore.ui
 
 
 def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:

@@ -21,21 +21,21 @@ def ask_yn(msg):
 
 
 def ask_choose(msg, variants: list):
-        i = 0
-        if isinstance(variants, list):
-            for item in variants:
-                i += 1
-                print(f"\t{Fore.MAGENTA}{i}:{Fore.RESET}\t{item}")
-        while True:
-            i = input(f"{msg} {Fore.MAGENTA}[1-{len(variants)}]{Fore.RESET}: ")
-            if not i.isdigit():
-                error("Not a number")
-                continue
-            i = int(i) - 1
-            if i >= len(variants) or i < 0:
-                error("Incorrect number")
-                continue
-            break
+    i = 0
+    if isinstance(variants, list):
+        for item in variants:
+            i += 1
+            print(f"\t{Fore.MAGENTA}{i}:{Fore.RESET}\t{item}")
+    while True:
+        i = input(f"{msg} {Fore.MAGENTA}[1-{len(variants)}]{Fore.RESET}: ")
+        if not i.isdigit():
+            error("Not a number")
+            continue
+        i = int(i) - 1
+        if i >= len(variants) or i < 0:
+            error("Incorrect number")
+            continue
+        break
 
-        item = variants[int(i)]
-        return item
+    item = variants[int(i)]
+    return item
