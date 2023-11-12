@@ -1,8 +1,8 @@
 import dataclasses
 from colorama import Fore, Style, init
 
-from .config import ApiType
-from ._env import env
+from .configuration import ApiType
+from ._env import env, config
 from ._prepare_llm_args import prepare_chat_messages, prepare_prompt
 from .utils import is_chat_model
 
@@ -46,7 +46,7 @@ def _log_request(prompt, **kwargs):
 
 
 def _resolve_model(**kwargs):
-    cfg = env().config
+    cfg = config()
     model = kwargs.get("model") or cfg.LLM_DEFAULT_ARGS.get("model") or cfg.MODEL
     if cfg.LLM_API_TYPE == ApiType.AZURE:
         model = f"azure:{model}"

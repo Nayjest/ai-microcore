@@ -7,24 +7,24 @@ import shutil
 from pathlib import Path
 import chardet
 
-from ._env import env
+from ._env import env, config
 
 
 class Storage:
     @property
     def storage_path(self) -> Path:
-        return Path(env().config.STORAGE_PATH)
+        return Path(config().STORAGE_PATH)
 
     @property
     def default_ext(self) -> str | None:
-        ext = env().config.STORAGE_DEFAULT_FILE_EXT
+        ext = config().STORAGE_DEFAULT_FILE_EXT
         if ext and not ext.startswith("."):
             ext = "." + ext
         return ext
 
     @property
     def default_encoding(self) -> str:
-        return env().config.DEFAULT_ENCODING
+        return config().DEFAULT_ENCODING
 
     def read(self, name: str, encoding: str = None):
         encoding = encoding or self.default_encoding

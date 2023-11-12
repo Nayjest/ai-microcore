@@ -2,7 +2,7 @@ import asyncio
 import openai
 import openai.util
 
-from ..config import Config, ApiType
+from ..configuration import Config, ApiType
 from .._prepare_llm_args import prepare_chat_messages, prepare_prompt
 from ..types import LLMAsyncFunctionType, LLMFunctionType
 from ..wrappers.llm_response_wrapper import LLMResponse

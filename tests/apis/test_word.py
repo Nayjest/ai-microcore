@@ -1,6 +1,6 @@
 import logging
 from colorama import Fore as C
-from microcore import env, llm
+from microcore import config, llm
 from .setup_env import setup_env  # noqa
 
 
@@ -16,7 +16,7 @@ def test_return_word(setup_env):  # noqa
     out = llm(prompt)
 
     logging.info(
-        f"\n{C.BLUE}Model: {C.LIGHTGREEN_EX}{env().config.MODEL}{C.RESET}"
+        f"\n{C.BLUE}Model: {C.LIGHTGREEN_EX}{config().MODEL}{C.RESET}"
         f"\n{C.BLUE}Prompt: {C.LIGHTGREEN_EX}{prompt}{C.RESET}"
         f"\n{C.BLUE}Response: {C.LIGHTGREEN_EX}{out}{C.RESET}"
     )

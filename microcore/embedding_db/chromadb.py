@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import chromadb
 from chromadb.utils import embedding_functions
-from ..config import Config
+from ..configuration import Config
 from .. import SearchResult, AbstractEmbeddingDB
 
 

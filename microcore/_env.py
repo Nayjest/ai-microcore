@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from importlib.util import find_spec
 import jinja2
 
-from .config import Config
+from .configuration import Config
 from . import AbstractEmbeddingDB
 from .types import TplFunctionType, LLMAsyncFunctionType, LLMFunctionType
 from .templating.jinja2 import make_jinja2_env, make_tpl_function
@@ -61,3 +61,8 @@ _env: Env | None = None
 def env() -> Env:
     """Returns the current MicroCore environment"""
     return _env or Env()
+
+
+def config() -> Config:
+    """Resolve current configuration"""
+    return env().config

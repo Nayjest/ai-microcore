@@ -1,7 +1,7 @@
 import os
 
 from microcore import env, configure
-from microcore.config import Config
+from microcore.configuration import Config
 
 
 def test_env_default_init():

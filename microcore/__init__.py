@@ -10,10 +10,10 @@ import os
 import microcore.ui # noqa
 from .embedding_db import SearchResult, AbstractEmbeddingDB
 from .file_storage import storage
-from ._env import configure, env
+from ._env import configure, env, config
 from .logging import use_logging
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg
-from .config import ApiType, LLMConfigError
+from .configuration import ApiType, LLMConfigError
 from .types import BadAIJsonAnswer, BadAIAnswer
 from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
@@ -28,8 +28,8 @@ def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
 
 def use_model(name: str):
     """Switches language model"""
-    env().config.MODEL = name
-    env().config.LLM_DEFAULT_ARGS["model"] = name
+    config().MODEL = name
+    config().LLM_DEFAULT_ARGS["model"] = name
 
 
 def validate_config():
@@ -39,7 +39,7 @@ def validate_config():
     Raises:
         `LLMConfigError` if configuration is invalid
     """
-    env().config.validate()
+    config().validate()
 
 
 class _EmbeddingDBProxy(AbstractEmbeddingDB):
@@ -80,6 +80,7 @@ __all__ = [
     "use_model",
     "use_logging",
     "env",
+    "config",
     "Msg",
     "UserMsg",
     "SysMsg",
@@ -96,7 +97,7 @@ __all__ = [
     "file_storage",
     "message_types",
     "utils",
-    "config",
+    "configuration",
     "types",
     "ui",
     # "wrappers",
