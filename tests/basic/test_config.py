@@ -1,4 +1,4 @@
-from microcore.config import Config
+from microcore.configuration import Config
 
 
 def test_config(monkeypatch):
