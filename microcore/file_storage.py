@@ -29,6 +29,11 @@ class Storage:
     def exists(self, name: str) -> bool:
         return (self.path / name).exists()
 
+    def abs_path(self, name: str) -> Path:
+        if os.path.isabs(name):
+            return Path(name)
+        return self.path / name
+
     def read(self, name: str, encoding: str = None):
         encoding = encoding or self.default_encoding
         if not os.path.isabs(name) and not name.startswith("./"):
