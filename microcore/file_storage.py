@@ -26,10 +26,16 @@ class Storage:
     def default_encoding(self) -> str:
         return config().DEFAULT_ENCODING
 
-    def exists(self, name: str) -> bool:
+    def exists(self, name: str | Path) -> bool:
         return (self.path / name).exists()
 
-    def read(self, name: str, encoding: str = None):
+    def abs_path(self, name: str | Path) -> Path:
+        if os.path.isabs(name):
+            return Path(name)
+        return self.path / name
+
+    def read(self, name: str | Path, encoding: str = None):
+        name = str(name)
         encoding = encoding or self.default_encoding
         if not os.path.isabs(name) and not name.startswith("./"):
             if "." in name:
@@ -51,15 +57,15 @@ class Storage:
         with open(name, "r", encoding=encoding) as f:
             return f.read()
 
-    def write_json(self, name, data, rewrite_existing: bool = False):
+    def write_json(self, name: str | Path, data, rewrite_existing: bool = False):
         return self.write(name, json.dumps(data, indent=4), rewrite_existing)
 
-    def read_json(self, name):
+    def read_json(self, name: str | Path):
         return json.loads(self.read(name))
 
     def write(
         self,
-        name: str,
+        name: str | Path,
         content: str = None,
         rewrite_existing: bool = False,
         encoding: str = None,
@@ -87,7 +93,7 @@ class Storage:
         full_path.write_text(content, encoding=encoding)
         return file_name
 
-    def clean(self, path: str):
+    def clean(self, path: str | Path):
         """
         Removes the directory specified by `path` within the `storage_path`.
         :raises ValueError: If the path is outside the storage area.
