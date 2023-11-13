@@ -9,7 +9,7 @@ mc.use_logging()
 app = Flask(__name__)
 
 
-@app.route('/')
+@app.route("/")
 def index():
     return """
     <title>Chat</title>
@@ -42,11 +42,11 @@ def index():
 """
 
 
-@app.route('/ask', methods=['POST'])
+@app.route("/ask", methods=["POST"])
 def ask_llm():
-    user_msg = request.json.get('message')
+    user_msg = request.json.get("message")
     response = mc.llm(user_msg)
-    return jsonify({'response': response})
+    return jsonify({"response": response})
 
 
 app.run(debug=True)

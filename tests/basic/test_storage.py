@@ -31,13 +31,17 @@ def test_storage_file_exists():
     mc.storage.clean("tests_tmp")
     mc.storage.write("tests_tmp/file.json", "")
     assert (mc.storage.path / "tests_tmp/file.json").exists()
+    assert mc.storage.exists("tests_tmp/file.json")
     mc.storage.write("tests_tmp/file", "")
     assert (mc.storage.path / "tests_tmp/file.txt").exists()
+    assert mc.storage.exists("tests_tmp/file.txt")
+    assert mc.storage.exists("tests_tmp")
+    assert not mc.storage.exists("tests_tmp/not_existing_file.txt")
     mc.storage.clean("tests_tmp")
 
 
 def test_json():
     mc.storage.clean("tests_tmp")
-    mc.storage.write_json('test', [123])
-    assert mc.storage.read_json('test')[0] == 123
+    mc.storage.write_json("test", [123])
+    assert mc.storage.read_json("test")[0] == 123
     mc.storage.clean("tests_tmp")

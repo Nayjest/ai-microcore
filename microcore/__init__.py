@@ -7,7 +7,7 @@ communicate with these services convenient way, make it easily switchable
 and separate business logic from implementation details.
 """
 import os
-import microcore.ui # noqa
+import microcore.ui  # noqa
 from .embedding_db import SearchResult, AbstractEmbeddingDB
 from .file_storage import storage
 from ._env import configure, env, config
