@@ -4,6 +4,8 @@ import inspect
 import json
 import re
 
+from .types import BadAIAnswer
+
 
 def is_chat_model(model: str) -> bool:
     """Detects if model is chat model or text completion model"""
@@ -61,10 +63,17 @@ class DataclassEncoder(json.JSONEncoder):
 json.JSONEncoder.default = DataclassEncoder().default
 
 
-def parse(text: str, field_format: str = r"\[\[(.*?)\]\]") -> dict:
+def parse(
+    text: str, field_format: str = r"\[\[(.*?)\]\]", required_fields: list = None
+) -> dict:
     """
     Parse a document divided into sections and convert it into a dictionary.
     """
     pattern = rf"{field_format}\n(.*?)(?=\n{field_format}|$)"
     matches = re.findall(pattern, text, re.DOTALL)
-    return {key.strip().lower(): value for key, value, _ in matches}
+    result = {key.strip().lower(): value for key, value, _ in matches}
+    if required_fields:
+        for field in required_fields:
+            if field not in result:
+                raise BadAIAnswer(f"Field '{field}' is required but not found")
+    return result
