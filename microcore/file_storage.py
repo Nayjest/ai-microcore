@@ -57,8 +57,16 @@ class Storage:
         with open(name, "r", encoding=encoding) as f:
             return f.read()
 
-    def write_json(self, name: str | Path, data, rewrite_existing: bool = False):
-        return self.write(name, json.dumps(data, indent=4), rewrite_existing)
+    def write_json(
+        self,
+        name: str | Path,
+        data,
+        rewrite_existing: bool = True,
+        backup_existing: bool = True,
+    ):
+        return self.write(
+            name, json.dumps(data, indent=4), rewrite_existing, backup_existing
+        )
 
     def read_json(self, name: str | Path):
         return json.loads(self.read(name))
@@ -67,7 +75,8 @@ class Storage:
         self,
         name: str | Path,
         content: str = None,
-        rewrite_existing: bool = False,
+        rewrite_existing: bool = True,
+        backup_existing: bool = True,
         encoding: str = None,
     ) -> str | os.PathLike:
         """
@@ -81,16 +90,22 @@ class Storage:
         base_name = Path(name).with_suffix("")
         ext = Path(name).suffix or self.default_ext
 
-        counter = 0
-        while True:
-            file_name = f"{base_name}{'_%d' % counter if counter else ''}{ext}"  # noqa
-            full_path = self.path / file_name
-            if not full_path.is_file() or rewrite_existing:
-                break
-            counter += 1
-
-        full_path.parent.mkdir(parents=True, exist_ok=True)
-        full_path.write_text(content, encoding=encoding)
+        file_name = f"{base_name}{ext}"
+        if (self.path / file_name).is_file() and (
+            backup_existing or not rewrite_existing
+        ):
+            counter = 1
+            while True:
+                file_name1 = f"{base_name}_{counter}{ext}"  # noqa
+                if not (self.path / file_name1).is_file():
+                    break
+                counter += 1
+            if not rewrite_existing:
+                file_name = file_name1
+            elif backup_existing:
+                os.rename(self.path / file_name, self.path / file_name1)
+        (self.path / file_name).parent.mkdir(parents=True, exist_ok=True)
+        (self.path / file_name).write_text(content, encoding=encoding)
         return file_name
 
     def clean(self, path: str | Path):
