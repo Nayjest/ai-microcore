@@ -11,9 +11,8 @@ def remove_json_wrapper(input_string: str) -> str:
     if input_string.startswith("```json") and input_string.endswith("```"):
         json_content = input_string[7:-3].strip()
         return json_content
-    else:
-        # Return the original string
-        return input_string
+
+    return input_string
 
 
 class LLMResponse(ExtendedString):
