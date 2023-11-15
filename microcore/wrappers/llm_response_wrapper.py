@@ -6,6 +6,16 @@ from ..utils import ExtendedString
 from ..message_types import Role
 
 
+def remove_json_wrapper(input_string: str) -> str:
+    input_string = str(input_string).strip()
+    if input_string.startswith("```json") and input_string.endswith("```"):
+        json_content = input_string[7:-3].strip()
+        return json_content
+    else:
+        # Return the original string
+        return input_string
+
+
 class LLMResponse(ExtendedString):
     """
     Response from the Large Language Model.
@@ -31,7 +41,7 @@ class LLMResponse(ExtendedString):
         self, raise_errors: bool = True, required_fields: list[str] = None
     ) -> list | dict | Any:
         try:
-            res = json.loads(str(self.content))
+            res = json.loads(remove_json_wrapper(self.content))
             if required_fields:
                 if not isinstance(res, dict):
                     raise BadAIJsonAnswer("Not an object")
