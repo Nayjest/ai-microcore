@@ -11,7 +11,7 @@
 
 **microcore** is a collection of python adapters for Large Language Models
 and Semantic Search APIs allowing to 
-communicate with these services convenient way, make it easily switchable 
+communicate with these services in a convenient way, make it easily switchable 
 and separate business logic from implementation details.
 
 It defines interfaces for features typically used in AI applications,
@@ -43,7 +43,7 @@ Install as PyPi package:
 pip install ai-microcore
 ```
 
-Alternatively may just copy `microcore` folder to your project sources root.
+Alternatively, you may just copy `microcore` folder to your project sources root.
 ```bash
 git clone git@github.com:Nayjest/ai-microcore.git && mv ai-microcore/microcore ./ && rm -rf ai-microcore
 ```
@@ -81,7 +81,7 @@ For the full list of available configuration options, you may also check [`micro
 1.  Configuration options passed as arguments to `microcore.configure()` have the highest priority.
 2.  The priority of configuration file options (`.env` by default or the value of `DOT_ENV_FILE`) is higher than OS environment variables.
     <br>💡 <small>Setting `USE_DOT_ENV` to `false` disables reading configuration files.</small>
-3.  OS environment variables has the lowest priority.
+3.  OS environment variables have the lowest priority.
 
 
 ## 🌟 Core Functions
@@ -161,7 +161,7 @@ Return collection of texts
 Store text and related metadata in embeddings database
 
 ### texts.save_many(collection: str, items: list[tuple[str, dict] | str])
-Store mutiple texts and related metadata in embeddings database
+Store multiple texts and related metadata in the embeddings database
 
 ### texts.clear(collection: str):
 Clear collection
@@ -174,10 +174,10 @@ LLM Microcore supports all models & API providers having OpenAI API.
 
 | API Provider                                                                             |                                                                                                                                      Models |
 |------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------:|
-| [OpenAI](openai.com)                                                                     |                                    All GPT-4 and GTP-3.5-Turbo models<br/>all text completion models (davinci, gpt-3.5-turbo-instruct, etc) |
+| [OpenAI](https://openai.com)                                                             |                                    All GPT-4 and GTP-3.5-Turbo models<br/>all text completion models (davinci, gpt-3.5-turbo-instruct, etc) |
 | [Microsoft Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |                                                                                                                           All OpenAI models |
-| [deepinfra.com](deepinfra.com)                                                           | deepinfra/airoboros-70b<br/>jondurbin/airoboros-l2-70b-gpt4-1.4.1<br/>meta-llama/Llama-2-70b-chat-hf<br/>and other models having OpenAI API |
- | [Anyscale](anyscale.com)                                                                 |                                           meta-llama/Llama-2-70b-chat-hf<br/>meta-llama/Llama-2-13b-chat-hf<br/>meta-llama/Llama-7b-chat-hf |                                    meta-llama/Llama-2-70b-chat-hf | |
+| [deepinfra.com](https://deepinfra.com)                                                   | deepinfra/airoboros-70b<br/>jondurbin/airoboros-l2-70b-gpt4-1.4.1<br/>meta-llama/Llama-2-70b-chat-hf<br/>and other models having OpenAI API |
+| [Anyscale](https://anyscale.com)                                                         |                                           meta-llama/Llama-2-70b-chat-hf<br/>meta-llama/Llama-2-13b-chat-hf<br/>meta-llama/Llama-7b-chat-hf |
 
 
 ## 🖼️ Examples
