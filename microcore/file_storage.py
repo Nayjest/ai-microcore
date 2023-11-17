@@ -8,6 +8,7 @@ from pathlib import Path
 import chardet
 
 from ._env import config
+from .utils import file_link
 
 
 class Storage:
@@ -21,6 +22,10 @@ class Storage:
         if ext and not ext.startswith("."):
             ext = "." + ext
         return ext
+
+    def file_link(self, file_name: str | Path) -> str:
+        """Returns file name in format displayed in PyCharm console as a link."""
+        return file_link(self.path / file_name)
 
     @property
     def default_encoding(self) -> str:
@@ -58,11 +63,11 @@ class Storage:
             return f.read()
 
     def write_json(
-        self,
-        name: str | Path,
-        data,
-        rewrite_existing: bool = True,
-        backup_existing: bool = True,
+            self,
+            name: str | Path,
+            data,
+            rewrite_existing: bool = True,
+            backup_existing: bool = True,
     ):
         return self.write(
             name, json.dumps(data, indent=4), rewrite_existing, backup_existing
@@ -72,12 +77,12 @@ class Storage:
         return json.loads(self.read(name))
 
     def write(
-        self,
-        name: str | Path,
-        content: str = None,
-        rewrite_existing: bool = True,
-        backup_existing: bool = True,
-        encoding: str = None,
+            self,
+            name: str | Path,
+            content: str = None,
+            rewrite_existing: bool = True,
+            backup_existing: bool = True,
+            encoding: str = None,
     ) -> str | os.PathLike:
         """
         :return: str File name for further usage
@@ -92,7 +97,7 @@ class Storage:
 
         file_name = f"{base_name}{ext}"
         if (self.path / file_name).is_file() and (
-            backup_existing or not rewrite_existing
+                backup_existing or not rewrite_existing
         ):
             counter = 1
             while True:

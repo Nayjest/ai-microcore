@@ -3,6 +3,7 @@ import dataclasses
 import inspect
 import json
 import re
+from pathlib import Path
 
 from .types import BadAIAnswer
 
@@ -64,7 +65,7 @@ json.JSONEncoder.default = DataclassEncoder().default
 
 
 def parse(
-    text: str, field_format: str = r"\[\[(.*?)\]\]", required_fields: list = None
+        text: str, field_format: str = r"\[\[(.*?)\]\]", required_fields: list = None
 ) -> dict:
     """
     Parse a document divided into sections and convert it into a dictionary.
@@ -77,3 +78,8 @@ def parse(
             if field not in result:
                 raise BadAIAnswer(f"Field '{field}' is required but not found")
     return result
+
+
+def file_link(file_path: str | Path):
+    """Returns file name in format displayed in PyCharm console as a link."""
+    return 'file:///' + str(Path(file_path).absolute()).replace('\\', '/')
