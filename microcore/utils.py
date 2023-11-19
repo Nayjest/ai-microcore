@@ -65,7 +65,7 @@ json.JSONEncoder.default = DataclassEncoder().default
 
 
 def parse(
-        text: str, field_format: str = r"\[\[(.*?)\]\]", required_fields: list = None
+    text: str, field_format: str = r"\[\[(.*?)\]\]", required_fields: list = None
 ) -> dict:
     """
     Parse a document divided into sections and convert it into a dictionary.
@@ -82,4 +82,4 @@ def parse(
 
 def file_link(file_path: str | Path):
     """Returns file name in format displayed in PyCharm console as a link."""
-    return 'file:///' + str(Path(file_path).absolute()).replace('\\', '/')
+    return "file:///" + str(Path(file_path).absolute()).replace("\\", "/")
