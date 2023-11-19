@@ -26,6 +26,11 @@ def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
     return PromptWrapper(env().tpl_function(file, **kwargs))
 
 
+def prompt(template_str: str, **kwargs) -> str | PromptWrapper:
+    """Renders a prompt template from string using the provided parameters."""
+    return PromptWrapper(env().jinja_env.from_string(template_str).render(**kwargs))
+
+
 def use_model(name: str):
     """Switches language model"""
     config().MODEL = name

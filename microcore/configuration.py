@@ -181,7 +181,7 @@ class Config(LLMConfig):
     STORAGE_PATH: str | Path = from_env("storage")
     """Path to the folder with file storage, ./storage by default"""
 
-    STORAGE_DEFAULT_FILE_EXT: str = field(default="txt")
+    STORAGE_DEFAULT_FILE_EXT: str = field(default="")
 
     EMBEDDING_DB_FOLDER: str = "embedding_db"
     """Folder within microcore.config.Config.STORAGE_PATH for storing embeddings"""
