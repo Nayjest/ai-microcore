@@ -138,7 +138,8 @@ class Storage:
 
     def copy(self, src: str | Path, dest: str | Path, exceptions=None):
         """
-        Copy a file or folder from src to dest, overwriting content, but skipping paths in exceptions.
+        Copy a file or folder from src to dest, overwriting content,
+        but skipping paths in exceptions.
         Supports Unix shell-style wildcards in exceptions. Accepts Path objects.
 
         :param src: Source file or directory Path object
