@@ -1,6 +1,7 @@
 """
 File storage functions
 """
+import fnmatch
 import json
 import os
 import shutil
@@ -73,8 +74,16 @@ class Storage:
             name, json.dumps(data, indent=4), rewrite_existing, backup_existing
         )
 
-    def read_json(self, name: str | Path):
-        return json.loads(self.read(name))
+    def read_json(self, name: str | Path, default=None):
+        try:
+            return json.loads(self.read(name))
+        except FileNotFoundError as e:
+            if default is not None:
+                return default
+            raise e
+
+    def delete(self, name: str | Path):
+        os.remove(self.path / name)
 
     def write(
             self,
@@ -126,6 +135,40 @@ class Storage:
 
         if full_path.exists() and full_path.is_dir():
             shutil.rmtree(full_path)
+
+    def copy(self, src: str | Path, dest: str | Path, exceptions=None):
+        """
+        Copy a file or folder from src to dest, overwriting content, but skipping paths in exceptions.
+        Supports Unix shell-style wildcards in exceptions. Accepts Path objects.
+
+        :param src: Source file or directory Path object
+        :param dest: Destination file or directory Path object
+        :param exceptions: List of Unix shell-style wildcard patterns relative to src
+        """
+        if exceptions is None:
+            exceptions = []
+
+        src = Path(src) if Path(src).is_absolute() else self.path / src
+        dest = Path(dest) if Path(dest).is_absolute() else self.path / dest
+
+        if src.is_dir():
+            dest.mkdir(parents=True, exist_ok=True)
+            for path in src.rglob('*'):
+                if any(fnmatch.fnmatch(path.relative_to(src).as_posix(), pattern) for pattern in exceptions):
+                    continue
+
+                dest_path = dest / path.relative_to(src)
+                if path.is_dir():
+                    dest_path.mkdir(parents=True, exist_ok=True)
+                else:
+                    dest_path.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(path, dest_path)
+        elif src.is_file():
+            if not any(fnmatch.fnmatch(src.name, pattern) for pattern in exceptions):
+                if dest.is_dir():
+                    dest = dest / src.name
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dest)
 
 
 storage = Storage()
