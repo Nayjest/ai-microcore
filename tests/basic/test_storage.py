@@ -31,12 +31,22 @@ def test_storage_clean():
     assert not (mc.storage.path / filename).exists()
 
 
+def test_default_ext():
+    mc.storage.clean("tests_tmp")
+    mc.storage.write("tests_tmp/file", "")
+    assert (mc.storage.path / "tests_tmp/file").exists()
+    mc.config().STORAGE_DEFAULT_FILE_EXT = "txt"
+    mc.storage.write("tests_tmp/file", "")
+    assert (mc.storage.path / "tests_tmp/file").exists()
+    mc.storage.clean("tests_tmp")
+
+
 def test_storage_file_exists():
     mc.storage.clean("tests_tmp")
     mc.storage.write("tests_tmp/file.json", "")
     assert (mc.storage.path / "tests_tmp/file.json").exists()
     assert mc.storage.exists("tests_tmp/file.json")
-    mc.storage.write("tests_tmp/file", "")
+    mc.storage.write("tests_tmp/file.txt", "")
     assert (mc.storage.path / "tests_tmp/file.txt").exists()
     assert mc.storage.exists("tests_tmp/file.txt")
     assert mc.storage.exists("tests_tmp")
@@ -48,4 +58,42 @@ def test_json():
     mc.storage.clean("tests_tmp")
     mc.storage.write_json("test", [123])
     assert mc.storage.read_json("test")[0] == 123
+    mc.storage.clean("tests_tmp")
+
+
+def test_copy():
+    mc.storage.clean("tests_tmp")
+    mc.storage.write_json("tests_tmp/folder/test.a", ['a'])
+    mc.storage.write_json("tests_tmp/folder/test.b", ['b'])
+    mc.storage.write_json("tests_tmp/folder/test.c", ['c'])
+    mc.storage.copy("tests_tmp/folder", "tests_tmp/folder2", ["*.b"])
+
+    assert mc.storage.read_json("tests_tmp/folder2/test.a") == ['a']
+    assert mc.storage.read_json("tests_tmp/folder2/test.c") == ['c']
+    assert mc.storage.read_json("tests_tmp/folder2/test.b", "none") == "none"
+
+    # Test non wildcard
+    mc.storage.copy("tests_tmp/folder", "tests_tmp/folder3", ["test.b"])
+    assert mc.storage.read_json("tests_tmp/folder3/test.c") == ['c']
+    assert mc.storage.read_json("tests_tmp/folder3/test.b", "none") == "none"
+
+    # Test no exceptions
+    mc.storage.copy("tests_tmp/folder", "tests_tmp/folder3")
+    assert mc.storage.read_json("tests_tmp/folder3/test.b", "none") == ['b']
+
+    # Test copy file
+    mc.storage.copy("tests_tmp/folder/test.a", "tests_tmp/folder/test.d")
+    assert mc.storage.read_json("tests_tmp/folder/test.d", "none") == ['a']
+
+    # Test copy file to folder
+    # @todo fails
+    # mc.storage.copy("tests_tmp/folder/test.b", "tests_tmp/folder2")
+    # assert mc.storage.read_json("tests_tmp/folder2/test.d", "none") == ['b']
+
+    # Test overwrite
+    mc.storage.write_json("tests_tmp/o1/test.a", ['a_new'])
+    mc.storage.write_json("tests_tmp/o2/test.a", ['a'])
+    mc.storage.copy("tests_tmp/o1", "tests_tmp/o2")
+    assert mc.storage.read_json("tests_tmp/o2/test.a") == ['a_new']
+
     mc.storage.clean("tests_tmp")
