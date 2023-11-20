@@ -2,15 +2,15 @@ import microcore as mc
 
 
 def test_storage_read_write():
-    mc.storage.clean("tests_tmp")
+    mc.storage.delete("tests_tmp")
     filename = mc.storage.write("tests_tmp/test_file", "test content")
     content = mc.storage.read(filename)
     assert content == "test content"
-    mc.storage.clean("tests_tmp")
+    mc.storage.delete("tests_tmp")
 
 
 def test_storage_write_existing():
-    mc.storage.clean("tests_tmp")
+    mc.storage.delete("tests_tmp")
     filename = mc.storage.write("tests_tmp/test_b", "old content")
     filename2 = mc.storage.write("tests_tmp/test_b", "new content")
     assert mc.storage.read(filename) == "new content"
@@ -20,29 +20,52 @@ def test_storage_write_existing():
     assert mc.storage.read(filename) == "new content"
     assert mc.storage.read(filename3) == "content 3"
     assert filename != filename3
-    mc.storage.clean("tests_tmp")
+    mc.storage.delete("tests_tmp")
 
 
-def test_storage_clean():
-    mc.storage.clean("tests_tmp")
+def test_list_files():
+    mc.storage.delete("tmp")
+    mc.storage.write("tmp/file_1", "content")
+    mc.storage.write("tmp/file_2", "content")
+    lf = mc.storage.list_files
+    assert [str(f) for f in lf('tmp')] == ["file_1", "file_2"]
+    assert [str(f) for f in lf('tmp', relative_to=mc.storage.path, posix=True)] == ["tmp/file_1", "tmp/file_2"]
+    assert [str(f) for f in lf('tmp', exclude=['file_1'])] == ["file_2"]
+    assert [str(f) for f in lf('tmp', exclude=['*_1'])] == ["file_2"]
+    assert [str(f) for f in lf('tmp', exclude=['file_*'])] == []
+    assert [str(f) for f in lf('tmp', exclude=['file_1'], relative_to=mc.storage.path, posix=True)] == ["tmp/file_2"]
+    assert [str(f) for f in lf('tmp', exclude=['*_1'], relative_to=mc.storage.path, posix=True)] == ["tmp/file_2"]
+    assert [str(f) for f in lf('tmp', exclude=['file_*'], relative_to=mc.storage.path)] == []
+    mc.storage.delete("tmp")
+
+
+def test_storage_delete():
+    mc.storage.delete("tests_tmp")
+
+    # Delete folder
     filename = mc.storage.write("tests_tmp/file", "")
     assert (mc.storage.path / filename).exists()
-    mc.storage.clean("tests_tmp")
+    mc.storage.delete("tests_tmp")
+    assert not (mc.storage.path / filename).exists()
+
+    # Delete file
+    filename = mc.storage.write("tests_tmp/file", "")
+    mc.storage.delete(filename)
     assert not (mc.storage.path / filename).exists()
 
 
 def test_default_ext():
-    mc.storage.clean("tests_tmp")
+    mc.storage.delete("tests_tmp")
     mc.storage.write("tests_tmp/file", "")
     assert (mc.storage.path / "tests_tmp/file").exists()
     mc.config().STORAGE_DEFAULT_FILE_EXT = "txt"
     mc.storage.write("tests_tmp/file", "")
     assert (mc.storage.path / "tests_tmp/file").exists()
-    mc.storage.clean("tests_tmp")
+    mc.storage.delete("tests_tmp")
 
 
 def test_storage_file_exists():
-    mc.storage.clean("tests_tmp")
+    mc.storage.delete("tests_tmp")
     mc.storage.write("tests_tmp/file.json", "")
     assert (mc.storage.path / "tests_tmp/file.json").exists()
     assert mc.storage.exists("tests_tmp/file.json")
@@ -51,18 +74,18 @@ def test_storage_file_exists():
     assert mc.storage.exists("tests_tmp/file.txt")
     assert mc.storage.exists("tests_tmp")
     assert not mc.storage.exists("tests_tmp/not_existing_file.txt")
-    mc.storage.clean("tests_tmp")
+    mc.storage.delete("tests_tmp")
 
 
 def test_json():
-    mc.storage.clean("tests_tmp")
+    mc.storage.delete("tests_tmp")
     mc.storage.write_json("test", [123])
     assert mc.storage.read_json("test")[0] == 123
-    mc.storage.clean("tests_tmp")
+    mc.storage.delete("tests_tmp")
 
 
 def test_copy():
-    mc.storage.clean("tests_tmp")
+    mc.storage.delete("tests_tmp")
     mc.storage.write_json("tests_tmp/folder/test.a", ['a'])
     mc.storage.write_json("tests_tmp/folder/test.b", ['b'])
     mc.storage.write_json("tests_tmp/folder/test.c", ['c'])
@@ -86,9 +109,9 @@ def test_copy():
     assert mc.storage.read_json("tests_tmp/folder/test.d", "none") == ['a']
 
     # Test copy file to folder
-    # @todo fails
-    # mc.storage.copy("tests_tmp/folder/test.b", "tests_tmp/folder2")
-    # assert mc.storage.read_json("tests_tmp/folder2/test.d", "none") == ['b']
+    mc.storage.write("tests_tmp/copy_to_folder.txt", "ok")
+    mc.storage.copy("tests_tmp/copy_to_folder.txt", "tests_tmp/folder2")
+    assert mc.storage.read("tests_tmp/folder2/copy_to_folder.txt") == "ok"
 
     # Test overwrite
     mc.storage.write_json("tests_tmp/o1/test.a", ['a_new'])
@@ -96,4 +119,4 @@ def test_copy():
     mc.storage.copy("tests_tmp/o1", "tests_tmp/o2")
     assert mc.storage.read_json("tests_tmp/o2/test.a") == ['a_new']
 
-    mc.storage.clean("tests_tmp")
+    mc.storage.delete("tests_tmp")

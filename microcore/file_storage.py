@@ -9,7 +9,7 @@ from pathlib import Path
 import chardet
 
 from ._env import config
-from .utils import file_link
+from .utils import file_link, list_files
 
 
 class Storage:
@@ -82,8 +82,21 @@ class Storage:
                 return default
             raise e
 
-    def delete(self, name: str | Path):
-        os.remove(self.path / name)
+    def delete(self, target: str | Path | list[str | Path]):
+        """
+        Removes the file or directory specified by `path` within the `storage_path` if exists.
+        """
+        if isinstance(target, list):
+            for t in target:
+                self.delete(t)
+            return
+        path = (self.path / target).resolve()
+        if not path.exists():
+            return
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            os.remove(path)
 
     def write(
         self,
@@ -126,6 +139,7 @@ class Storage:
         """
         Removes the directory specified by `path` within the `storage_path`.
         :raises ValueError: If the path is outside the storage area.
+        @deprecated use storage.delete() instead
         """
         full_path = (self.path / path).resolve()
 
@@ -136,43 +150,68 @@ class Storage:
         if full_path.exists() and full_path.is_dir():
             shutil.rmtree(full_path)
 
-    def copy(self, src: str | Path, dest: str | Path, exceptions=None):
+    def list_files(
+        self,
+        target_dir: str | Path = "",
+        exclude: list[str | Path] = None,
+        relative_to: str | Path = None,
+        absolute: bool = False,
+        posix: bool = False,
+    ) -> list[Path | str]:
+        """
+        Lists files in a specified directory, excluding those that match given patterns.
+
+        Args:
+            target_dir (str | Path): The directory to search in.
+            exclude (list[str | Path], optional): Patterns of files to exclude.
+            relative_to (str | Path, optional): Base directory for relative paths.
+                If None, paths are relative to `target_dir`. Defaults to None.
+            absolute (bool, optional): If True, returns absolute paths. Defaults to False.
+            posix (bool, optional): If True, returns posix paths. Defaults to False.
+        """
+        target_dir = self.path / target_dir
+        return list_files(
+            target_dir=target_dir,
+            exclude=exclude,
+            relative_to=relative_to,
+            absolute=absolute,
+            posix=posix,
+        )
+
+    def copy(self, src: str | Path, dest: str | Path, exclude=None):
         """
         Copy a file or folder from src to dest, overwriting content,
         but skipping paths in exceptions.
         Supports Unix shell-style wildcards in exceptions. Accepts Path objects.
 
-        :param src: Source file or directory Path object
-        :param dest: Destination file or directory Path object
-        :param exceptions: List of Unix shell-style wildcard patterns relative to src
+        Args:
+            src (Path): Source file or directory Path object.
+            dest (Path): Destination file or directory Path object.
+            exclude (list of str, optional): List of Unix shell-style wildcard patterns relative to src.
+                These paths will be excluded from the copy. Defaults to None.
         """
-        if exceptions is None:
-            exceptions = []
-
-        src = Path(src) if Path(src).is_absolute() else self.path / src
-        dest = Path(dest) if Path(dest).is_absolute() else self.path / dest
-
+        src = self.path / Path(src)
+        dest = self.path / Path(dest)
+        exclude = exclude or []
         if src.is_dir():
             dest.mkdir(parents=True, exist_ok=True)
-            for path in src.rglob("*"):
-                if any(
-                    fnmatch.fnmatch(path.relative_to(src).as_posix(), pattern)
-                    for pattern in exceptions
-                ):
-                    continue
-
-                dest_path = dest / path.relative_to(src)
-                if path.is_dir():
-                    dest_path.mkdir(parents=True, exist_ok=True)
+            files = list_files(src, exclude)
+            for f in files:
+                if (src / f).is_dir():
+                    (dest / f).mkdir(parents=True, exist_ok=True)
+                elif (src / f).is_file():
+                    (dest / f).parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src / f, dest / f)
                 else:
-                    dest_path.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(path, dest_path)
+                    raise ValueError(f"{src / f} is not a file or directory")
         elif src.is_file():
-            if not any(fnmatch.fnmatch(src.name, pattern) for pattern in exceptions):
+            if not any(fnmatch.fnmatch(src.name, pattern) for pattern in exclude):
                 if dest.is_dir():
                     dest = dest / src.name
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, dest)
+        else:
+            raise ValueError(f"{src} is not a file or directory")
 
 
 storage = Storage()

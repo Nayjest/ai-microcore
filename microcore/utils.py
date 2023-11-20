@@ -2,7 +2,9 @@ import builtins
 import dataclasses
 import inspect
 import json
+import os
 import re
+from fnmatch import fnmatch
 from pathlib import Path
 
 from .types import BadAIAnswer
@@ -83,3 +85,54 @@ def parse(
 def file_link(file_path: str | Path):
     """Returns file name in format displayed in PyCharm console as a link."""
     return "file:///" + str(Path(file_path).absolute()).replace("\\", "/")
+
+
+def list_files(
+    target_dir: str | Path = "",
+    exclude: list[str | Path] = None,
+    relative_to: str | Path = None,
+    absolute: bool = False,
+    posix: bool = False,
+) -> list[Path]:
+    """
+    Lists files in a specified directory, excluding those that match given patterns.
+
+    This function traverses the specified directory recursively and returns a list of all files
+    that do not match the specified exclusion patterns. It can return absolute paths,
+    paths relative to the target directory, or paths relative to a specified directory.
+
+    Args:
+        target_dir (str | Path): The directory to search in.
+        exclude (list[str | Path]): Patterns of files to exclude.
+        relative_to (str | Path, optional): Base directory for relative paths.
+            If None, paths are relative to `target_dir`. Defaults to None.
+        absolute (bool, optional): If True, returns absolute paths. Defaults to False.
+        posix (bool, optional): If True, returns posix paths. Defaults to False.
+
+    Returns:
+        list[Path]: A list of Path objects representing the files found.
+
+    Example:
+        exclude_patterns = ['*.pyc', '__pycache__/*']
+        target_directory = '/path/to/target'
+        files = list_files(target_directory, exclude_patterns)
+    """
+    exclude = exclude or []
+    target = Path(target_dir or os.getcwd()).resolve()
+    relative_to = Path(relative_to).resolve() if relative_to else None
+    if absolute and relative_to is not None:
+        raise ValueError(
+            "list_files(): Cannot specify both 'absolute' and 'relative_to'. Choose one."
+        )
+    return [
+        p.as_posix() if posix else p
+        for p in (
+            path.resolve() if absolute else path.relative_to(relative_to or target)
+            for path in target.rglob("*")
+            if path.is_file()
+            and not any(
+                fnmatch(str(path.relative_to(target)), str(pattern))
+                for pattern in exclude
+            )
+        )
+    ]
