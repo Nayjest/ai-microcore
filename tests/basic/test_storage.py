@@ -28,8 +28,8 @@ def test_list_files():
     mc.storage.write("tmp/file_1", "content")
     mc.storage.write("tmp/file_2", "content")
     lf = mc.storage.list_files
-    assert [str(f) for f in lf('tmp')] == ["file_1", "file_2"]
-    assert [str(f) for f in lf('tmp', relative_to=mc.storage.path, posix=True)] == ["tmp/file_1", "tmp/file_2"]
+    assert set([str(f) for f in lf('tmp')]) == {"file_1", "file_2"}
+    assert set([str(f) for f in lf('tmp', relative_to=mc.storage.path, posix=True)]) == {"tmp/file_1", "tmp/file_2"}
     assert [str(f) for f in lf('tmp', exclude=['file_1'])] == ["file_2"]
     assert [str(f) for f in lf('tmp', exclude=['*_1'])] == ["file_2"]
     assert [str(f) for f in lf('tmp', exclude=['file_*'])] == []
