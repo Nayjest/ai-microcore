@@ -1,2 +1,2 @@
 -r min.txt
-chromadb~=0.4.15
+chromadb==0.4.18

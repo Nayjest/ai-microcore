@@ -17,7 +17,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "openai~=0.28.1,<2",
+    "openai>=0.28.1,<2",
     "python-dotenv~=1.0.0",
     "Jinja2~=3.1.2",
     "colorama~=0.4.6",
@@ -42,7 +42,8 @@ name = "microcore"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--cov=microcore --cov-report=xml:coverage.xml --cov-report=term"
+#addopts = "--cov=microcore --cov-report=xml:coverage.xml --cov-report=term"
+addopts = "-vv --capture=no --log-cli-level=INFO"
 testpaths = [
     "tests/basic",
 ]

@@ -187,7 +187,8 @@ class Storage:
         Args:
             src (Path): Source file or directory Path object.
             dest (Path): Destination file or directory Path object.
-            exclude (list of str, optional): List of Unix shell-style wildcard patterns relative to src.
+            exclude (list of str, optional):
+                List of Unix shell-style wildcard patterns relative to src.
                 These paths will be excluded from the copy. Defaults to None.
         """
         src = self.path / Path(src)
