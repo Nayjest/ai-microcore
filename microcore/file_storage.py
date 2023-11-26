@@ -69,10 +69,10 @@ class Storage:
         data,
         rewrite_existing: bool = True,
         backup_existing: bool = True,
+        ensure_ascii: bool = False,
     ):
-        return self.write(
-            name, json.dumps(data, indent=4), rewrite_existing, backup_existing
-        )
+        serialized_data = json.dumps(data, indent=4, ensure_ascii=ensure_ascii)
+        return self.write(name, serialized_data, rewrite_existing, backup_existing)
 
     def read_json(self, name: str | Path, default=None):
         try:

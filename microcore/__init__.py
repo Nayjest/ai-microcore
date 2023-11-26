@@ -108,4 +108,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "0.7.10"
+__version__ = "0.7.11"
