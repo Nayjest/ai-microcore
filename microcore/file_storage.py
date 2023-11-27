@@ -138,7 +138,7 @@ class Storage:
                 os.rename(self.path / file_name, self.path / file_name1)
         (self.path / file_name).parent.mkdir(parents=True, exist_ok=True)
         if append:
-            with (self.path / file_name).open(mode='a', encoding=encoding) as file:
+            with (self.path / file_name).open(mode="a", encoding=encoding) as file:
                 file.write(content)
         else:
             (self.path / file_name).write_text(content, encoding=encoding)
