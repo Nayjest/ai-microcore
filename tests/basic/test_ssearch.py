@@ -1,4 +1,4 @@
-from microcore import texts
+from microcore import texts, env
 
 
 def test_save_load():
@@ -41,3 +41,31 @@ def test_get_all():
     for i in range(20):
         texts.save(cid, f"test text {i}", {"test": "test"})
     assert len(texts.get_all(cid)) == 20
+
+
+def test_uuid():
+    cid = "test_uuid"
+    texts.clear(cid)
+    texts.save_many(cid, [
+        ("1", {}),
+    ])
+    texts.save_many(cid, [
+        ("1", {}),
+    ])
+    assert 1 == len(texts.get_all(cid))
+
+    texts.save_many(cid, [
+        ("1", {}),
+        ("1", {}),
+    ])
+
+    assert 1 == len(texts.get_all(cid))
+
+    env().config.EMBEDDING_DB_ALLOW_DUPLICATES = True
+
+    texts.clear(cid)
+    texts.save_many(cid, [
+        ("1", {}),
+        ("1", {}),
+    ])
+    assert 2 == len(texts.get_all(cid))

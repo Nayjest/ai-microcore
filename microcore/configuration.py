@@ -188,6 +188,8 @@ class Config(LLMConfig):
 
     EMBEDDING_DB_FUNCTION: Any = from_env()
 
+    EMBEDDING_DB_ALLOW_DUPLICATES: bool = False
+
     DEFAULT_ENCODING: str = from_env("utf-8")
     """Used in file system operations, utf-8 by default"""
 

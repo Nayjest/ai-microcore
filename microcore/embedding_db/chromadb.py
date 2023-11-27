@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import chromadb
+import uuid
 from chromadb.config import Settings
 from chromadb.utils import embedding_functions
 from ..configuration import Config
@@ -16,7 +17,7 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
     def __post_init__(self):
         self.client = chromadb.PersistentClient(
             path=f"{self.config.STORAGE_PATH}/{self.config.EMBEDDING_DB_FOLDER}",
-            settings=Settings(anonymized_telemetry=False)
+            settings=Settings(anonymized_telemetry=False),
         )
         self.embedding_function = (
             self.config.EMBEDDING_DB_FUNCTION
@@ -68,9 +69,20 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
         chroma_collection = self.client.get_or_create_collection(
             name=collection, embedding_function=self.embedding_function
         )
-        texts = [i if isinstance(i, str) else i[0] for i in items]
-        ids = [str(hash(t)) for t in texts]
-        metadatas = [None if isinstance(i, str) else i[1] or None for i in items]
+        unique = not self.config.EMBEDDING_DB_ALLOW_DUPLICATES
+        texts, ids, metadatas = [], [], []
+        for i in items:
+            if isinstance(i, str):
+                text = i
+                metadata = None
+            else:
+                text = i[0]
+                metadata = i[1] or None
+            if unique and text in texts:
+                continue
+            texts.append(text)
+            metadatas.append(metadata)
+            ids.append(str(hash(text)) if unique else str(uuid.uuid4()))
         chroma_collection.upsert(documents=texts, ids=ids, metadatas=metadatas)
 
     def clear(self, collection: str):
