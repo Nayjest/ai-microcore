@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import chromadb
+from chromadb.config import Settings
 from chromadb.utils import embedding_functions
 from ..configuration import Config
 from .. import SearchResult, AbstractEmbeddingDB
@@ -14,7 +15,8 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
 
     def __post_init__(self):
         self.client = chromadb.PersistentClient(
-            path=f"{self.config.STORAGE_PATH}/{self.config.EMBEDDING_DB_FOLDER}"
+            path=f"{self.config.STORAGE_PATH}/{self.config.EMBEDDING_DB_FOLDER}",
+            settings=Settings(anonymized_telemetry=False)
         )
         self.embedding_function = (
             self.config.EMBEDDING_DB_FUNCTION
