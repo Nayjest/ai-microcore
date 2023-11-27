@@ -102,13 +102,18 @@ class Storage:
         self,
         name: str | Path,
         content: str = None,
-        rewrite_existing: bool = True,
-        backup_existing: bool = True,
+        rewrite_existing: bool = None,
+        backup_existing: bool = None,
         encoding: str = None,
+        append: bool = False,
     ) -> str | os.PathLike:
         """
         :return: str File name for further usage
         """
+        if rewrite_existing is None:
+            rewrite_existing = True
+        if backup_existing is None:
+            backup_existing = not append
         encoding = encoding or self.default_encoding
         if content is None:
             content = name
@@ -132,7 +137,11 @@ class Storage:
             elif backup_existing:
                 os.rename(self.path / file_name, self.path / file_name1)
         (self.path / file_name).parent.mkdir(parents=True, exist_ok=True)
-        (self.path / file_name).write_text(content, encoding=encoding)
+        if append:
+            with (self.path / file_name).open(mode='a', encoding=encoding) as file:
+                file.write(content)
+        else:
+            (self.path / file_name).write_text(content, encoding=encoding)
         return file_name
 
     def clean(self, path: str | Path):
