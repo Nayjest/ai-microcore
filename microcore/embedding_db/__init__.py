@@ -1,3 +1,4 @@
+import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
@@ -45,6 +46,23 @@ class AbstractEmbeddingDB(ABC):
             **kwargs: additional arguments
         """
 
+    def find(self, *args, **kwargs) -> list[str | SearchResult]:
+        """
+        Alias for `search`
+        """
+        return self.search(*args, **kwargs)
+
+    def find_all(
+        self,
+        collection: str,
+        query: str | list,
+        where: dict = None,
+        **kwargs,
+    ) -> list[str | SearchResult]:
+        return self.search(
+            collection, query, n_results=sys.maxsize - 1, where=where, **kwargs
+        )
+
     @abstractmethod
     def get_all(self, collection: str) -> list[str | SearchResult]:
         """Return all documents in the collection"""
@@ -69,3 +87,22 @@ class AbstractEmbeddingDB(ABC):
             Most similar document or None if collection is empty
         """
         return next(iter(self.search(collection, query, 1)), None)
+
+    @abstractmethod
+    def count(self, collection: str) -> int:
+        """
+        Count the number of documents in the collection
+
+        Returns:
+            Number of documents in the collection
+        """
+
+    @abstractmethod
+    def delete(self, collection: str, what: str | list[str] | dict):
+        """
+        Delete documents from the collection
+
+        Args:
+            collection (str): collection name
+            what (str | list[str] | dict): id, list ids or metadata query
+        """

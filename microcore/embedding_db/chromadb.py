@@ -90,6 +90,32 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
         except ValueError:
             pass
 
+    def count(self, collection: str) -> int:
+        try:
+            chroma_collection = self.client.get_collection(
+                collection, embedding_function=self.embedding_function
+            )
+        except ValueError:
+            return 0
+        return chroma_collection.count()
+
+    def delete(self, collection: str, what: str | list[str] | dict):
+        try:
+            chroma_collection = self.client.get_collection(
+                collection, embedding_function=self.embedding_function
+            )
+        except ValueError:
+            return
+        if isinstance(what, str):
+            ids, where = [what], None
+        elif isinstance(what, list):
+            ids, where = what, None
+        elif isinstance(what, dict):
+            ids, where = None, what
+        else:
+            raise ValueError("Invalid `what` argument")
+        chroma_collection.delete(ids=ids, where=where)
+
     def get_all(self, collection: str) -> list[str | SearchResult]:
         try:
             chroma_collection = self.client.get_collection(

@@ -61,6 +61,18 @@ class _EmbeddingDBProxy(AbstractEmbeddingDB):
     ) -> list[str | SearchResult]:
         return env().texts.search(collection, query, n_results, where, **kwargs)
 
+    def find(self, *args, **kwargs) -> list[str | SearchResult]:
+        return self.search(*args, **kwargs)
+
+    def find_all(
+            self,
+            collection: str,
+            query: str | list,
+            where: dict = None,
+            **kwargs,
+    ) -> list[str | SearchResult]:
+        return env().texts.find_all(collection, query, where, **kwargs)
+
     def save_many(self, collection: str, items: list[tuple[str, dict] | str]):
         return env().texts.save_many(collection, items)
 
@@ -69,6 +81,12 @@ class _EmbeddingDBProxy(AbstractEmbeddingDB):
 
     def clear(self, collection: str):
         return env().texts.clear(collection)
+
+    def count(self, collection: str) -> int:
+        return env().texts.count(collection)
+
+    def delete(self, collection: str, what: str | list[str] | dict):
+        return env().texts.delete(collection, what)
 
 
 texts = _EmbeddingDBProxy()
@@ -108,4 +126,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "0.7.15"
+__version__ = "0.8.0"

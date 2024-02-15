@@ -195,7 +195,13 @@ class Config(LLMConfig):
 
     JINJA2_AUTO_ESCAPE: bool = None
 
+    ELEVENLABS_API_KEY: str = from_env()
+
+    TEXT_TO_SPEECH_PATH: str | Path = from_env()
+
     def __post_init__(self):
         if self.JINJA2_AUTO_ESCAPE is None:
             self.JINJA2_AUTO_ESCAPE = get_bool_from_env("JINJA2_AUTO_ESCAPE", False)
         super().__post_init__()
+        if self.TEXT_TO_SPEECH_PATH is None:
+            self.TEXT_TO_SPEECH_PATH = Path(self.STORAGE_PATH) / "voicing"
