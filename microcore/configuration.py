@@ -34,6 +34,7 @@ class ApiType:
     """See https://www.anyscale.com/endpoints"""
     DEEP_INFRA = "deep_infra"
     """List of text generation models: https://deepinfra.com/models?type=text-generation"""
+    ANTHROPIC = "anthropic"
 
 
 _default_dotenv_loaded = False
@@ -80,7 +81,12 @@ class _OpenAIEnvVars:
 
 
 @dataclass
-class LLMConfig(BaseConfig, _OpenAIEnvVars):
+class _AnthropicEnvVars:
+    ANTHROPIC_API_KEY: str = from_env()
+
+
+@dataclass
+class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars):
     """LLM configuration"""
 
     LLM_API_TYPE: str = from_env()
@@ -116,24 +122,28 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars):
     def _init_llm_options(self):
         # Use defaults from ENV variables expected by OpenAI API
         self.LLM_API_TYPE = self.LLM_API_TYPE or self.OPENAI_API_TYPE
-        self.LLM_API_KEY = self.LLM_API_KEY or self.OPENAI_API_KEY
-        self.LLM_API_BASE = self.LLM_API_BASE or self.OPENAI_API_BASE
+        self.LLM_API_KEY = (
+            self.LLM_API_KEY or self.OPENAI_API_KEY or self.ANTHROPIC_API_KEY
+        )
         self.LLM_API_VERSION = self.LLM_API_VERSION or self.OPENAI_API_VERSION
 
         if self.LLM_API_TYPE == ApiType.AZURE:
             self.LLM_DEPLOYMENT_ID = self.LLM_DEPLOYMENT_ID or self.AZURE_DEPLOYMENT_ID
-
-        if self.LLM_API_TYPE == ApiType.ANYSCALE:
+        elif self.LLM_API_TYPE == ApiType.ANYSCALE:
             self.LLM_API_BASE = (
                 self.LLM_API_BASE or "https://api.endpoints.anyscale.com/v1"
             )
             self.MODEL = self.MODEL or "meta-llama/Llama-2-70b-chat-hf"
-
-        if self.LLM_API_TYPE == ApiType.DEEP_INFRA:
+        elif self.LLM_API_TYPE == ApiType.DEEP_INFRA:
             self.LLM_API_BASE = (
                 self.LLM_API_BASE or "https://api.deepinfra.com/v1/openai"
             )
             self.MODEL = self.MODEL or "meta-llama/Llama-2-70b-chat-hf"
+        elif self.LLM_API_TYPE == ApiType.ANTHROPIC:
+            self.LLM_API_BASE = self.LLM_API_BASE or "https://api.anthropic.com/"
+            self.MODEL = self.MODEL or "claude-3-opus-20240229"
+        else:
+            self.LLM_API_BASE = self.LLM_API_BASE or self.OPENAI_API_BASE
 
         self.MODEL = self.MODEL or "gpt-3.5-turbo"
 

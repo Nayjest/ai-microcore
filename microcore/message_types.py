@@ -1,4 +1,5 @@
 """ Message classes for OpenAI Chat API """
+
 from dataclasses import dataclass, field
 
 

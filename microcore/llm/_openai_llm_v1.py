@@ -54,7 +54,7 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
         "model",
         args.get("deployment_id", config.LLM_DEPLOYMENT_ID or config.MODEL)
         if config.LLM_API_TYPE == ApiType.AZURE
-        else config.MODEL,
+        else config.MODEL
     )
     callbacks: list[callable] = args.pop("callbacks", [])
     if "callback" in args:
@@ -66,8 +66,6 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
 
 
 def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctionType]:
-    # _configure_open_ai_package(config)
-
     if config.LLM_API_TYPE == ApiType.AZURE:
         connection_type = openai.AzureOpenAI
         async_connection_type = openai.AsyncAzureOpenAI
@@ -90,8 +88,6 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
     async def allm(prompt, **kwargs):
         args, options = _prepare_llm_arguments(config, kwargs)
         if is_chat_model(args["model"]):
-            # _connection.chat.completions.create()
-
             response = await _async_connection.chat.completions.create(
                 messages=prepare_chat_messages(prompt), **args
             )

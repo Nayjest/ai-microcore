@@ -6,6 +6,7 @@ and Semantic Search APIs allowing to
 communicate with these services convenient way, make it easily switchable
 and separate business logic from implementation details.
 """
+
 import os
 import microcore.ui  # noqa
 from .embedding_db import SearchResult, AbstractEmbeddingDB
@@ -65,11 +66,11 @@ class _EmbeddingDBProxy(AbstractEmbeddingDB):
         return self.search(*args, **kwargs)
 
     def find_all(
-            self,
-            collection: str,
-            query: str | list,
-            where: dict = None,
-            **kwargs,
+        self,
+        collection: str,
+        query: str | list,
+        where: dict = None,
+        **kwargs,
     ) -> list[str | SearchResult]:
         return env().texts.find_all(collection, query, where, **kwargs)
 
@@ -126,4 +127,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "0.8.0"
+__version__ = "1.0.0"

@@ -2,11 +2,11 @@ from dataclasses import dataclass, field
 from importlib.util import find_spec
 import jinja2
 
-from .configuration import Config
+from .configuration import Config, ApiType
 from . import AbstractEmbeddingDB
 from .types import TplFunctionType, LLMAsyncFunctionType, LLMFunctionType
 from .templating.jinja2 import make_jinja2_env, make_tpl_function
-from .llm.openai_llm import make_llm_functions
+from .llm.openai_llm import make_llm_functions as make_openai_llm_functions
 
 
 @dataclass
@@ -36,7 +36,24 @@ class Env:
         self.tpl_function = make_tpl_function(self)
 
     def init_llm(self):
-        self.llm_function, self.llm_async_function = make_llm_functions(self.config)
+        if self.config.LLM_API_TYPE == ApiType.ANTHROPIC:
+            try:
+                from .llm.anthropic import (
+                    make_llm_functions as make_anthropic_llm_functions,
+                )
+            except ModuleNotFoundError:
+                raise ModuleNotFoundError(
+                    "To use the Anthropic language models, "
+                    "you need to install the `anthropic` package. "
+                    "Run `pip install anthropic`."
+                )
+            self.llm_function, self.llm_async_function = make_anthropic_llm_functions(
+                self.config
+            )
+        else:
+            self.llm_function, self.llm_async_function = make_openai_llm_functions(
+                self.config
+            )
 
     def init_similarity_search(self):
         if find_spec("chromadb") is not None:
