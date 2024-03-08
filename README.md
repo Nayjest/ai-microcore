@@ -70,7 +70,7 @@ There are a few options available for configuring microcore:
 
 -   Use `microcore.configure()`
     <br>💡 <small>All configuration options should be available in IDE autocompletion tooltips</small>
--   Create a `.env` file in your project root ([example](https://github.com/Nayjest/ai-microcore/blob/main/.env.example))
+-   Create a `.env` file in your project root; examples: [basic .env](https://github.com/Nayjest/ai-microcore/blob/main/.env.example), [Mistral Large .env](https://github.com/Nayjest/ai-microcore/blob/main/.env.mistral.example), [Anthropic Claude 3 Opus .env](https://github.com/Nayjest/ai-microcore/blob/main/.env.anthropic.example)
 -   Use a custom configuration file: `mc.configure(DOT_ENV_FILE='dev-config.ini')`
 -   Define OS environment variables
 
@@ -172,12 +172,14 @@ LLM Microcore supports all models & API providers having OpenAI API.
 
 ### List of API providers and models tested with LLM Microcore:
 
-| API Provider                                                                             |                                                                                                                                      Models |
-|------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------:|
-| [OpenAI](https://openai.com)                                                             |                                    All GPT-4 and GTP-3.5-Turbo models<br/>all text completion models (davinci, gpt-3.5-turbo-instruct, etc) |
-| [Microsoft Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |                                                                                                                           All OpenAI models |
-| [deepinfra.com](https://deepinfra.com)                                                   | deepinfra/airoboros-70b<br/>jondurbin/airoboros-l2-70b-gpt4-1.4.1<br/>meta-llama/Llama-2-70b-chat-hf<br/>and other models having OpenAI API |
-| [Anyscale](https://anyscale.com)                                                         |                                           meta-llama/Llama-2-70b-chat-hf<br/>meta-llama/Llama-2-13b-chat-hf<br/>meta-llama/Llama-7b-chat-hf |
+| API Provider                                                                            |                                                                                                                                      Models |
+|-----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------:|
+| [OpenAI](https://openai.com)                                                            |                                    All GPT-4 and GTP-3.5-Turbo models<br/>all text completion models (davinci, gpt-3.5-turbo-instruct, etc) |
+| [Microsoft Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |                                                                                                            All OpenAI models, Mistral Large |
+| [Anthropic](https://anthropic.com)                                                      |                                                                                                                             Claude 3 models |
+| [MistralAI](https://mistral.ai)                                                         |                                                                                                                          All Mistral models |
+| [Deep Infra](https://deepinfra.com)                                                  | deepinfra/airoboros-70b<br/>jondurbin/airoboros-l2-70b-gpt4-1.4.1<br/>meta-llama/Llama-2-70b-chat-hf<br/>and other models having OpenAI API |
+| [Anyscale](https://anyscale.com)                                                        |                                           meta-llama/Llama-2-70b-chat-hf<br/>meta-llama/Llama-2-13b-chat-hf<br/>meta-llama/Llama-7b-chat-hf |
 
 
 ## 🖼️ Examples
