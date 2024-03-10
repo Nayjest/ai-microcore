@@ -7,7 +7,7 @@ import dotenv
 
 _MISSING = object()
 
-TRUE_VALUES = ["1", "TRUE", "YES", "ON", "ENABLED"]
+TRUE_VALUES = ["1", "TRUE", "YES", "ON", "ENABLED", "Y", "+"]
 """@private"""
 
 
@@ -35,6 +35,7 @@ class ApiType:
     DEEP_INFRA = "deep_infra"
     """List of text generation models: https://deepinfra.com/models?type=text-generation"""
     ANTHROPIC = "anthropic"
+    GOOGLE_VERTEX_AI = "google_vertex_ai"
 
 
 _default_dotenv_loaded = False
@@ -86,7 +87,17 @@ class _AnthropicEnvVars:
 
 
 @dataclass
-class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars):
+class _GoogleVertexAiEnvVars:
+    GOOGLE_VERTEX_ACCESS_TOKEN: str = from_env()
+    GOOGLE_VERTEX_PROJECT_ID: str = from_env()
+    GOOGLE_VERTEX_LOCATION: str = from_env()
+    GOOGLE_VERTEX_GCLOUD_AUTH: bool = None
+    GOOGLE_GEMINI_RESPONSE_VALIDATION: bool = None
+    GOOGLE_GEMINI_SAFETY_SETTINGS: dict = None
+
+
+@dataclass
+class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEnvVars):
     """LLM configuration"""
 
     LLM_API_TYPE: str = from_env()
@@ -122,13 +133,20 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars):
     def _init_llm_options(self):
         # Use defaults from ENV variables expected by OpenAI API
         self.LLM_API_TYPE = self.LLM_API_TYPE or self.OPENAI_API_TYPE
-        self.LLM_API_KEY = (
-            self.LLM_API_KEY or self.OPENAI_API_KEY or self.ANTHROPIC_API_KEY
-        )
         self.LLM_API_VERSION = self.LLM_API_VERSION or self.OPENAI_API_VERSION
 
         if self.LLM_API_TYPE == ApiType.AZURE:
             self.LLM_DEPLOYMENT_ID = self.LLM_DEPLOYMENT_ID or self.AZURE_DEPLOYMENT_ID
+        elif self.LLM_API_TYPE == ApiType.GOOGLE_VERTEX_AI:
+            self.MODEL = self.MODEL or "gemini-1.0-pro"
+            if self.GOOGLE_VERTEX_GCLOUD_AUTH is None:
+                self.GOOGLE_VERTEX_GCLOUD_AUTH = get_bool_from_env(
+                    "GOOGLE_VERTEX_GCLOUD_AUTH", not self.GOOGLE_VERTEX_ACCESS_TOKEN
+                )
+            if self.GOOGLE_GEMINI_RESPONSE_VALIDATION is None:
+                self.GOOGLE_VERTEX_RESPONSE_VALIDATION = get_bool_from_env(
+                    "GOOGLE_GEMINI_RESPONSE_VALIDATION", False
+                )
         elif self.LLM_API_TYPE == ApiType.ANYSCALE:
             self.LLM_API_BASE = (
                 self.LLM_API_BASE or "https://api.endpoints.anyscale.com/v1"
@@ -142,8 +160,10 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars):
         elif self.LLM_API_TYPE == ApiType.ANTHROPIC:
             self.LLM_API_BASE = self.LLM_API_BASE or "https://api.anthropic.com/"
             self.MODEL = self.MODEL or "claude-3-opus-20240229"
+            self.LLM_API_KEY = self.LLM_API_KEY or self.ANTHROPIC_API_KEY
         else:
             self.LLM_API_BASE = self.LLM_API_BASE or self.OPENAI_API_BASE
+            self.LLM_API_KEY = self.LLM_API_KEY or self.OPENAI_API_KEY
 
         self.MODEL = self.MODEL or "gpt-3.5-turbo"
 
@@ -154,24 +174,32 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars):
         Raises:
             LLMConfigError
         """
-        if not self.LLM_API_KEY:
-            raise LLMConfigError("LLM configuration error: LLM_API_KEY is absent")
-        if self.LLM_API_TYPE == ApiType.AZURE:
-            if not self.LLM_API_BASE:
+        if self.LLM_API_TYPE == ApiType.GOOGLE_VERTEX_AI:
+            if not self.GOOGLE_VERTEX_ACCESS_TOKEN and not self.GOOGLE_VERTEX_GCLOUD_AUTH:
                 raise LLMConfigError(
                     "LLM configuration error: "
-                    "LLM_API_BASE is required for using Azure models"
+                    "GOOGLE_VERTEX_ACCESS_TOKEN should be provided "
+                    "or GOOGLE_VERTEX_GCLOUD_AUTH should be enabled"
                 )
-            if not self.LLM_DEPLOYMENT_ID:
-                raise LLMConfigError(
-                    "LLM configuration error: "
-                    "LLM_DEPLOYMENT_ID is required for using Azure models"
-                )
-            if not self.LLM_API_VERSION:
-                raise LLMConfigError(
-                    "LLM configuration error: "
-                    "LLM_API_VERSION is required for using Azure models"
-                )
+        else:
+            if not self.LLM_API_KEY:
+                raise LLMConfigError("LLM configuration error: LLM_API_KEY is absent")
+            if self.LLM_API_TYPE == ApiType.AZURE:
+                if not self.LLM_API_BASE:
+                    raise LLMConfigError(
+                        "LLM configuration error: "
+                        "LLM_API_BASE is required for using Azure models"
+                    )
+                if not self.LLM_DEPLOYMENT_ID:
+                    raise LLMConfigError(
+                        "LLM configuration error: "
+                        "LLM_DEPLOYMENT_ID is required for using Azure models"
+                    )
+                if not self.LLM_API_VERSION:
+                    raise LLMConfigError(
+                        "LLM configuration error: "
+                        "LLM_API_VERSION is required for using Azure models"
+                    )
 
 
 class LLMConfigError(ValueError):

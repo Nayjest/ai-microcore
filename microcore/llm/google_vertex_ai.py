@@ -1,0 +1,135 @@
+import asyncio
+import logging
+import os
+from vertexai.generative_models import (
+    Content,
+    Part,
+    GenerationConfig,
+    HarmCategory,
+    HarmBlockThreshold,
+    ResponseValidationError,
+)
+
+from ..configuration import Config
+from .._prepare_llm_args import prepare_chat_messages
+from ..message_types import Role
+from ..types import LLMAsyncFunctionType, LLMFunctionType, BadAIAnswer
+from ..wrappers.llm_response_wrapper import LLMResponse
+
+import vertexai
+from vertexai.preview.generative_models import GenerativeModel
+from google.oauth2.credentials import Credentials
+
+
+async def _a_process_streamed_response(response, callbacks: list[callable]):
+    response_text: str = ""
+    async for chunk in response:
+        if text_chunk := chunk.text:
+            response_text += text_chunk
+            for cb in callbacks:
+                if asyncio.iscoroutinefunction(cb):
+                    await cb(text_chunk)
+                else:
+                    cb(text_chunk)
+    return LLMResponse(response_text, {})
+
+
+def _process_streamed_response(response, callbacks: list[callable]):
+    response_text: str = ""
+    for chunk in response:
+        if text_chunk := chunk.text:
+            response_text += text_chunk
+            [cb(text_chunk) for cb in callbacks]
+    return LLMResponse(response_text, {})
+
+
+def init_vertex_ai(config: Config):
+    if (not config.GOOGLE_VERTEX_ACCESS_TOKEN) and config.GOOGLE_VERTEX_GCLOUD_AUTH:
+        logging.info("Authenticating with Google Cloud...")
+        config.GOOGLE_VERTEX_ACCESS_TOKEN = (
+            os.popen("gcloud auth application-default print-access-token")
+            .read()
+            .replace("Python", "")
+            .strip()
+        )
+        if not config.GOOGLE_VERTEX_ACCESS_TOKEN:
+            raise Exception(
+                "Failed to authenticate with Google Cloud. "
+                "Please make sure you have gcloud installed and configured "
+                "(try `gcloud auth application-default login`; "
+                "`gcloud auth application-default print-access-token`)."
+            )
+    credentials = Credentials(token=config.GOOGLE_VERTEX_ACCESS_TOKEN)
+    vertexai.init(
+        credentials=credentials,
+        project=config.GOOGLE_VERTEX_PROJECT_ID,
+        location=config.GOOGLE_VERTEX_LOCATION or None,
+        api_endpoint=config.LLM_API_BASE or None,
+    )
+
+
+def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctionType]:
+    init_vertex_ai(config)
+    if config.GOOGLE_GEMINI_SAFETY_SETTINGS is None:
+        config.GOOGLE_GEMINI_SAFETY_SETTINGS = {
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+        }
+
+    def _prepare_chat(prompt, **kwargs):
+        model_name = kwargs.pop("model", config.MODEL)
+        callbacks: list[callable] = kwargs.pop("callbacks", [])
+        if "callback" in kwargs:
+            cb = kwargs.pop("callback")
+            if cb:
+                callbacks.append(cb)
+        model = GenerativeModel(
+            model_name,
+            generation_config=GenerationConfig(**kwargs),
+            safety_settings=config.GOOGLE_GEMINI_SAFETY_SETTINGS,
+        )
+        messages = _chat_messages_to_vertex(prepare_chat_messages(prompt))
+        last_message = messages.pop()
+        chat = model.start_chat(
+            history=messages,
+            response_validation=config.GOOGLE_VERTEX_RESPONSE_VALIDATION,
+        )
+        return chat, last_message.parts[0], callbacks
+
+    async def allm(prompt, **kwargs):
+        chat, msg, callbacks = _prepare_chat(prompt, **kwargs)
+        try:
+            response = await chat.send_message_async(msg, stream=bool(callbacks))
+            if callbacks:
+                return await _a_process_streamed_response(response, callbacks)
+            return LLMResponse(response.text, response.__dict__)
+        except (ResponseValidationError, ValueError) as e:
+            raise BadAIAnswer(str(e))
+
+    def llm(prompt, **kwargs):
+        chat, msg, callbacks = _prepare_chat(prompt, **kwargs)
+        try:
+            response = chat.send_message(msg, stream=bool(callbacks))
+            if callbacks:
+                return _process_streamed_response(response, callbacks)
+            return LLMResponse(response.text, response.__dict__)
+        except (ResponseValidationError, ValueError) as e:
+            raise BadAIAnswer(str(e))
+
+    return llm, allm
+
+
+def _chat_messages_to_vertex(messages: list[dict]):
+    for msg in messages:
+        if msg["role"] == Role.SYSTEM:
+            msg["role"] = "user"
+        elif msg["role"] == Role.ASSISTANT:
+            msg["role"] = "model"
+
+    vertex_messages = [
+        Content(role=msg["role"], parts=[Part.from_text(msg["content"])])
+        for msg in messages
+    ]
+    return vertex_messages

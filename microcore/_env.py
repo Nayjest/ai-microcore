@@ -50,6 +50,21 @@ class Env:
             self.llm_function, self.llm_async_function = make_anthropic_llm_functions(
                 self.config
             )
+        elif self.config.LLM_API_TYPE == ApiType.GOOGLE_VERTEX_AI:
+            try:
+                from .llm.google_vertex_ai import (
+                    make_llm_functions as make_google_vertex_llm_functions,
+                )
+            except ModuleNotFoundError:
+                raise ModuleNotFoundError(
+                    "To use the Google Vertex language models, "
+                    "you need to install the `vertexai` package "
+                    "and authenticate with Google Cloud cli."
+                    "Run `pip install vertexai`."
+                )
+            self.llm_function, self.llm_async_function = make_google_vertex_llm_functions(
+                self.config
+            )
         else:
             self.llm_function, self.llm_async_function = make_openai_llm_functions(
                 self.config
