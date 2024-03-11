@@ -36,6 +36,7 @@ class ApiType:
     """List of text generation models: https://deepinfra.com/models?type=text-generation"""
     ANTHROPIC = "anthropic"
     GOOGLE_VERTEX_AI = "google_vertex_ai"
+    GOOGLE_AI_STUDIO = "google_ai_studio"
 
 
 _default_dotenv_loaded = False
@@ -92,7 +93,8 @@ class _GoogleVertexAiEnvVars:
     GOOGLE_VERTEX_PROJECT_ID: str = from_env()
     GOOGLE_VERTEX_LOCATION: str = from_env()
     GOOGLE_VERTEX_GCLOUD_AUTH: bool = None
-    GOOGLE_GEMINI_RESPONSE_VALIDATION: bool = None
+
+    GOOGLE_VERTEX_RESPONSE_VALIDATION: bool = None
     GOOGLE_GEMINI_SAFETY_SETTINGS: dict = None
 
 
@@ -133,19 +135,21 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
     def _init_llm_options(self):
         # Use defaults from ENV variables expected by OpenAI API
         self.LLM_API_TYPE = self.LLM_API_TYPE or self.OPENAI_API_TYPE
-        self.LLM_API_VERSION = self.LLM_API_VERSION or self.OPENAI_API_VERSION
+        if self.GOOGLE_VERTEX_RESPONSE_VALIDATION is None:
+            self.GOOGLE_VERTEX_RESPONSE_VALIDATION = get_bool_from_env(
+                "GOOGLE_VERTEX_RESPONSE_VALIDATION", False
+            )
 
         if self.LLM_API_TYPE == ApiType.AZURE:
+            self.LLM_API_VERSION = self.LLM_API_VERSION or self.OPENAI_API_VERSION
             self.LLM_DEPLOYMENT_ID = self.LLM_DEPLOYMENT_ID or self.AZURE_DEPLOYMENT_ID
+        elif self.LLM_API_TYPE == ApiType.GOOGLE_AI_STUDIO:
+            self.MODEL = self.MODEL or "gemini-pro"
         elif self.LLM_API_TYPE == ApiType.GOOGLE_VERTEX_AI:
             self.MODEL = self.MODEL or "gemini-1.0-pro"
             if self.GOOGLE_VERTEX_GCLOUD_AUTH is None:
                 self.GOOGLE_VERTEX_GCLOUD_AUTH = get_bool_from_env(
                     "GOOGLE_VERTEX_GCLOUD_AUTH", not self.GOOGLE_VERTEX_ACCESS_TOKEN
-                )
-            if self.GOOGLE_GEMINI_RESPONSE_VALIDATION is None:
-                self.GOOGLE_VERTEX_RESPONSE_VALIDATION = get_bool_from_env(
-                    "GOOGLE_GEMINI_RESPONSE_VALIDATION", False
                 )
         elif self.LLM_API_TYPE == ApiType.ANYSCALE:
             self.LLM_API_BASE = (
@@ -164,8 +168,8 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
         else:
             self.LLM_API_BASE = self.LLM_API_BASE or self.OPENAI_API_BASE
             self.LLM_API_KEY = self.LLM_API_KEY or self.OPENAI_API_KEY
-
-        self.MODEL = self.MODEL or "gpt-3.5-turbo"
+            self.LLM_API_VERSION = self.LLM_API_VERSION or self.OPENAI_API_VERSION
+            self.MODEL = self.MODEL or "gpt-3.5-turbo"
 
     def validate(self):
         """
@@ -175,7 +179,10 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
             LLMConfigError
         """
         if self.LLM_API_TYPE == ApiType.GOOGLE_VERTEX_AI:
-            if not self.GOOGLE_VERTEX_ACCESS_TOKEN and not self.GOOGLE_VERTEX_GCLOUD_AUTH:
+            if (
+                not self.GOOGLE_VERTEX_ACCESS_TOKEN
+                and not self.GOOGLE_VERTEX_GCLOUD_AUTH
+            ):
                 raise LLMConfigError(
                     "LLM configuration error: "
                     "GOOGLE_VERTEX_ACCESS_TOKEN should be provided "

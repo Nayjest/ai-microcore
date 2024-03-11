@@ -55,7 +55,9 @@ def _resolve_model(**kwargs):
 
 def _log_response(out):
     nl = "\n" if LoggingConfig.DENSE else "\n" + LoggingConfig.INDENT
-    out_indented = (" " if LoggingConfig.DENSE else nl) + nl.join((out or '').split("\n"))
+    out_indented = (" " if LoggingConfig.DENSE else nl) + nl.join(
+        (out or "").split("\n")
+    )
     print(f"LLM Response:{LoggingConfig.RESPONSE_COLOR}{out_indented}")
 
 

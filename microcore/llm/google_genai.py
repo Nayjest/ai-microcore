@@ -1,24 +1,14 @@
 import asyncio
-import logging
-import os
-from vertexai.generative_models import (
-    Content,
-    Part,
-    GenerationConfig,
-    HarmCategory,
-    HarmBlockThreshold,
-    ResponseValidationError,
-)
-
+from google.ai.generativelanguage import Content, Part
+from google.generativeai import GenerationConfig
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from ..configuration import Config
 from .._prepare_llm_args import prepare_chat_messages
 from ..message_types import Role
 from ..types import LLMAsyncFunctionType, LLMFunctionType, BadAIAnswer
 from ..wrappers.llm_response_wrapper import LLMResponse
 
-import vertexai
-from vertexai.preview.generative_models import GenerativeModel
-from google.oauth2.credentials import Credentials
+import google.generativeai as genai
 
 
 async def _a_process_streamed_response(response, callbacks: list[callable]):
@@ -43,39 +33,15 @@ def _process_streamed_response(response, callbacks: list[callable]):
     return LLMResponse(response_text, {})
 
 
-def init_vertex_ai(config: Config):
-    if (not config.GOOGLE_VERTEX_ACCESS_TOKEN) and config.GOOGLE_VERTEX_GCLOUD_AUTH:
-        logging.info("Authenticating with Google Cloud...")
-        config.GOOGLE_VERTEX_ACCESS_TOKEN = (
-            os.popen("gcloud auth application-default print-access-token")
-            .read()
-            .replace("Python", "")
-            .strip()
-        )
-        if not config.GOOGLE_VERTEX_ACCESS_TOKEN:
-            raise Exception(
-                "Failed to authenticate with Google Cloud. "
-                "Please make sure you have gcloud installed and configured "
-                "(try `gcloud auth application-default login`; "
-                "`gcloud auth application-default print-access-token`)."
-            )
-    credentials = Credentials(token=config.GOOGLE_VERTEX_ACCESS_TOKEN)
-    vertexai.init(
-        credentials=credentials,
-        project=config.GOOGLE_VERTEX_PROJECT_ID,
-        location=config.GOOGLE_VERTEX_LOCATION or None,
-        api_endpoint=config.LLM_API_BASE or None,
-    )
-
-
 def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctionType]:
-    init_vertex_ai(config)
+    genai.configure(api_key=config.LLM_API_KEY)
     if config.GOOGLE_GEMINI_SAFETY_SETTINGS is None:
+        # Only new categories
         config.GOOGLE_GEMINI_SAFETY_SETTINGS = {
-            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
             HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
             HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
         }
 
     def _prepare_chat(prompt, **kwargs):
@@ -85,17 +51,14 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             cb = kwargs.pop("callback")
             if cb:
                 callbacks.append(cb)
-        model = GenerativeModel(
+        model = genai.GenerativeModel(
             model_name,
             generation_config=GenerationConfig(**kwargs),
             safety_settings=config.GOOGLE_GEMINI_SAFETY_SETTINGS,
         )
         messages = _chat_messages_to_google(prepare_chat_messages(prompt))
         last_message = messages.pop()
-        chat = model.start_chat(
-            history=messages,
-            response_validation=config.GOOGLE_VERTEX_RESPONSE_VALIDATION,
-        )
+        chat = model.start_chat(history=messages)
         return chat, last_message.parts[0], callbacks
 
     async def allm(prompt, **kwargs):
@@ -105,7 +68,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             if callbacks:
                 return await _a_process_streamed_response(response, callbacks)
             return LLMResponse(response.text, response.__dict__)
-        except (ResponseValidationError, ValueError) as e:
+        except ValueError as e:
             raise BadAIAnswer(str(e))
 
     def llm(prompt, **kwargs):
@@ -115,7 +78,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             if callbacks:
                 return _process_streamed_response(response, callbacks)
             return LLMResponse(response.text, response.__dict__)
-        except (ResponseValidationError, ValueError) as e:
+        except ValueError as e:
             raise BadAIAnswer(str(e))
 
     return llm, allm
@@ -140,9 +103,8 @@ def _chat_messages_to_google(messages: list[dict]):
             merged_msg[-1]["content"] += "\n" + msg["content"]
         else:
             merged_msg.append(msg)
-
     vertex_messages = [
-        Content(role=msg["role"], parts=[Part.from_text(msg["content"])])
+        Content(role=msg["role"], parts=[Part(text=msg["content"])])
         for msg in merged_msg
     ]
     return vertex_messages

@@ -70,11 +70,29 @@ There are a few options available for configuring microcore:
 
 -   Use `microcore.configure()`
     <br>💡 <small>All configuration options should be available in IDE autocompletion tooltips</small>
--   Create a `.env` file in your project root; examples: [basic .env](https://github.com/Nayjest/ai-microcore/blob/main/.env.example), [Mistral Large .env](https://github.com/Nayjest/ai-microcore/blob/main/.env.mistral.example), [Anthropic Claude 3 Opus .env](https://github.com/Nayjest/ai-microcore/blob/main/.env.anthropic.example), [Gemini Pro on Google Vertex AI](https://github.com/Nayjest/ai-microcore/blob/main/.env.google-vertex-gemini.example)
+-   Create a `.env` file in your project root; examples: [basic.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.example), [Mistral Large.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.mistral.example), [Anthropic Claude 3 Opus.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.anthropic.example), [Gemini on Vertex AI.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.google-vertex-gemini.example), [Gemini on AI Studio.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.gemini.example)
 -   Use a custom configuration file: `mc.configure(DOT_ENV_FILE='dev-config.ini')`
 -   Define OS environment variables
 
 For the full list of available configuration options, you may also check [`microcore/config.py`](https://github.com/Nayjest/ai-microcore/blob/main/microcore/config.py).
+
+### Installing vendor-specific packages
+For the models working not via OpenAI API, you may need to install additional packages:
+#### Anthropic Claude 3
+```bash
+pip install anthropic
+```
+#### Google Gemini via AI Studio
+```bash
+pip install google-generativeai
+```
+#### Google Gemini via Vertex AI
+```bash
+pip install vertexai
+```
+📌Additonaly for working through [Vertex AI](https://cloud.google.com/vertex-ai) you need to
+[install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install)
+and [configure the authorization](https://cloud.google.com/sdk/docs/authorizing).
 
 ### Priority of Configuration Sources
 
@@ -88,7 +106,9 @@ For the full list of available configuration options, you may also check [`micro
 
 ### llm(prompt: str, \*\*kwargs) → str
 
-Performs a request to a large language model (LLM)
+Performs a request to a large language model (LLM).
+
+Asynchronous variant: `allm(prompt: str, **kwargs)`
 
 ```python
 from microcore import *
@@ -178,7 +198,8 @@ LLM Microcore supports all models & API providers having OpenAI API.
 | [Microsoft Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |                                                                                                            All OpenAI models, Mistral Large |
 | [Anthropic](https://anthropic.com)                                                       |                                                                                                                             Claude 3 models |
 | [MistralAI](https://mistral.ai)                                                          |                                                                                                                          All Mistral models |
-| [Google Vertex AI](https://cloud.google.com/vertex-ai?hl=en)                                                   |                                                   Gemini Pro & [other models](https://cloud.google.com/vertex-ai/docs/start/explore-models) |
+| [Google AI Studio](https://aistudio.google.com/)                             |                                                                                                                        Google Gemini models |
+| [Google Vertex AI](https://cloud.google.com/vertex-ai?hl=en)                             |                                                   Gemini Pro & [other models](https://cloud.google.com/vertex-ai/docs/start/explore-models) |
 | [Deep Infra](https://deepinfra.com)                                                      | deepinfra/airoboros-70b<br/>jondurbin/airoboros-l2-70b-gpt4-1.4.1<br/>meta-llama/Llama-2-70b-chat-hf<br/>and other models having OpenAI API |
 | [Anyscale](https://anyscale.com)                                                         |                                           meta-llama/Llama-2-70b-chat-hf<br/>meta-llama/Llama-2-13b-chat-hf<br/>meta-llama/Llama-7b-chat-hf |
 
