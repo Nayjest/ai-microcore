@@ -38,6 +38,7 @@ def _process_streamed_response(response, callbacks: list[callable]):
 def _prepare_llm_arguments(config: Config, kwargs: dict):
     args = {"max_tokens": 1024, **config.LLM_DEFAULT_ARGS, **kwargs}
     args["model"] = args.get("model", config.MODEL)
+    args.pop('seed', None)  # Not supported by Anthropic
     callbacks: list[callable] = args.pop("callbacks", [])
     if "callback" in args:
         cb = args.pop("callback")
