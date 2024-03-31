@@ -9,16 +9,15 @@ from vertexai.generative_models import (
     HarmBlockThreshold,
     ResponseValidationError,
 )
+import vertexai
+from vertexai.preview.generative_models import GenerativeModel
+from google.oauth2.credentials import Credentials
 
 from ..configuration import Config
 from .._prepare_llm_args import prepare_chat_messages
 from ..message_types import Role
 from ..types import LLMAsyncFunctionType, LLMFunctionType, BadAIAnswer
 from ..wrappers.llm_response_wrapper import LLMResponse
-
-import vertexai
-from vertexai.preview.generative_models import GenerativeModel
-from google.oauth2.credentials import Credentials
 
 
 async def _a_process_streamed_response(response, callbacks: list[callable]):
@@ -53,7 +52,7 @@ def init_vertex_ai(config: Config):
             .strip()
         )
         if not config.GOOGLE_VERTEX_ACCESS_TOKEN:
-            raise Exception(
+            raise ValueError(
                 "Failed to authenticate with Google Cloud. "
                 "Please make sure you have gcloud installed and configured "
                 "(try `gcloud auth application-default login`; "
@@ -106,7 +105,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
                 return await _a_process_streamed_response(response, callbacks)
             return LLMResponse(response.text, response.__dict__)
         except (ResponseValidationError, ValueError) as e:
-            raise BadAIAnswer(str(e))
+            raise BadAIAnswer(str(e)) from e
 
     def llm(prompt, **kwargs):
         chat, msg, callbacks = _prepare_chat(prompt, **kwargs)
@@ -116,7 +115,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
                 return _process_streamed_response(response, callbacks)
             return LLMResponse(response.text, response.__dict__)
         except (ResponseValidationError, ValueError) as e:
-            raise BadAIAnswer(str(e))
+            raise BadAIAnswer(str(e)) from e
 
     return llm, allm
 

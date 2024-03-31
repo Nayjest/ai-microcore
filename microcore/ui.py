@@ -1,7 +1,8 @@
 from colorama import Fore, init
+from .utils import is_notebook
 
-init(autoreset=True)
-_input = input
+if not is_notebook():
+    init(autoreset=True)
 
 
 def info(*args, color=Fore.LIGHTYELLOW_EX, **kwargs):
@@ -39,3 +40,35 @@ def ask_choose(msg, variants: list):
 
     item = variants[int(i)]
     return item
+
+
+def magenta(msg):
+    return f"{Fore.MAGENTA}{msg}{Fore.RESET}"
+
+
+def yellow(msg):
+    return f"{Fore.YELLOW}{msg}{Fore.RESET}"
+
+
+def red(msg):
+    return f"{Fore.RED}{msg}{Fore.RESET}"
+
+
+def blue(msg):
+    return f"{Fore.BLUE}{msg}{Fore.RESET}"
+
+
+def green(msg):
+    return f"{Fore.GREEN}{msg}{Fore.RESET}"
+
+
+def cyan(msg):
+    return f"{Fore.CYAN}{msg}{Fore.RESET}"
+
+
+def white(msg):
+    return f"{Fore.WHITE}{msg}{Fore.RESET}"
+
+
+def gray(msg):
+    return f"\033[90m{msg}{Fore.RESET}"

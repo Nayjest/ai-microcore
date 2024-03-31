@@ -50,6 +50,8 @@ ignore=
     CVS,
     _openai_llm_v0.py,
     _openai_llm_v1.py,
+    google_genai.py,
+    google_vertex_ai.py,
 
 # Add files or directories matching the regular expressions patterns to the
 # ignore-list. The regex matches against paths and can be in Posix or Windows
@@ -450,6 +452,7 @@ disable=raw-checker-failed,
         cyclic-import,
         import-error,
         R0913,
+        E0402,
 #       C0103,
 
 

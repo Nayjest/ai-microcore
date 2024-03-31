@@ -2,13 +2,12 @@ import asyncio
 from google.ai.generativelanguage import Content, Part
 from google.generativeai import GenerationConfig
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
+import google.generativeai as genai
 from ..configuration import Config
 from .._prepare_llm_args import prepare_chat_messages
 from ..message_types import Role
 from ..types import LLMAsyncFunctionType, LLMFunctionType, BadAIAnswer
 from ..wrappers.llm_response_wrapper import LLMResponse
-
-import google.generativeai as genai
 
 
 async def _a_process_streamed_response(response, callbacks: list[callable]):
@@ -69,7 +68,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
                 return await _a_process_streamed_response(response, callbacks)
             return LLMResponse(response.text, response.__dict__)
         except ValueError as e:
-            raise BadAIAnswer(str(e))
+            raise BadAIAnswer(str(e)) from e
 
     def llm(prompt, **kwargs):
         chat, msg, callbacks = _prepare_chat(prompt, **kwargs)
@@ -79,7 +78,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
                 return _process_streamed_response(response, callbacks)
             return LLMResponse(response.text, response.__dict__)
         except ValueError as e:
-            raise BadAIAnswer(str(e))
+            raise BadAIAnswer(str(e)) from e
 
     return llm, allm
 

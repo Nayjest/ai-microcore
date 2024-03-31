@@ -3,6 +3,7 @@ import dataclasses
 import inspect
 import json
 import os
+import sys
 import re
 from fnmatch import fnmatch
 from pathlib import Path
@@ -136,3 +137,11 @@ def list_files(
             )
         )
     ]
+
+
+def is_kaggle() -> bool:
+    return "KAGGLE_KERNEL_RUN_TYPE" in os.environ
+
+
+def is_notebook() -> bool:
+    return "ipykernel" in sys.modules
