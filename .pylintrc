@@ -48,7 +48,6 @@ fail-under=10
 # Files or directories to be skipped. They should be base names, not paths.
 ignore=
     CVS,
-    E0402,
     _openai_llm_v0.py,
     _openai_llm_v1.py,
     google_genai.py,
@@ -453,6 +452,7 @@ disable=raw-checker-failed,
         cyclic-import,
         import-error,
         R0913,
+        E0402,
 #       C0103,
 
 
