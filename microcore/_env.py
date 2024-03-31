@@ -41,12 +41,12 @@ class Env:
                 from .llm.anthropic import (
                     make_llm_functions as make_anthropic_llm_functions,
                 )
-            except ModuleNotFoundError:
+            except ModuleNotFoundError as e:
                 raise ModuleNotFoundError(
                     "To use the Anthropic language models, "
                     "you need to install the `anthropic` package. "
                     "Run `pip install anthropic`."
-                )
+                ) from e
             self.llm_function, self.llm_async_function = make_anthropic_llm_functions(
                 self.config
             )
@@ -55,13 +55,13 @@ class Env:
                 from .llm.google_vertex_ai import (
                     make_llm_functions as make_google_vertex_llm_functions,
                 )
-            except ModuleNotFoundError:
+            except ModuleNotFoundError as e:
                 raise ModuleNotFoundError(
                     "To use the Google Vertex language models, "
                     "you need to install the `vertexai` package "
                     "and authenticate with Google Cloud cli."
                     "Run `pip install vertexai`."
-                )
+                ) from e
             (
                 self.llm_function,
                 self.llm_async_function,
@@ -71,12 +71,12 @@ class Env:
                 from .llm.google_genai import (
                     make_llm_functions as make_google_genai_llm_functions,
                 )
-            except ModuleNotFoundError:
+            except ModuleNotFoundError as e:
                 raise ModuleNotFoundError(
                     "To use the Google Gemini language models via AI Studio, "
                     "you need to install the `google-generativeai` package. "
                     "Run `pip install google-generativeai`."
-                )
+                ) from e
             (
                 self.llm_function,
                 self.llm_async_function,

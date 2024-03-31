@@ -4,7 +4,7 @@ from colorama import Fore, Style, init
 from .configuration import ApiType
 from ._env import env, config
 from ._prepare_llm_args import prepare_chat_messages, prepare_prompt
-from .utils import is_chat_model
+from .utils import is_chat_model, is_notebook
 
 
 class LoggingConfig:
@@ -63,7 +63,8 @@ def _log_response(out):
 
 def use_logging():
     """Turns on logging of LLM requests and responses to console."""
-    init(autoreset=True)
+    if not is_notebook():
+        init(autoreset=True)
     if _log_request not in env().llm_before_handlers:
         env().llm_before_handlers.append(_log_request)
     if _log_response not in env().llm_after_handlers:
