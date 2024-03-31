@@ -1,9 +1,7 @@
 import os
-
-import aiohttp
-
-from .._env import env
 from datetime import datetime
+import aiohttp
+from .._env import env
 
 
 async def text_to_speech(
@@ -37,7 +35,7 @@ async def text_to_speech(
     async with aiohttp.request("POST", url, json=data, headers=headers) as response:
         if response.status != 200:
             r = await response.json()
-            raise Exception(f"Bad response status: {response.status}: {r}")
+            raise RuntimeError(f"Bad response status: {response.status}: {r}")
         with open(out_file, "wb") as file:
             async for chunk in response.content.iter_chunked(chunk_size):
                 if chunk:
