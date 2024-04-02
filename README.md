@@ -203,6 +203,7 @@ LLM Microcore supports all models & API providers having OpenAI API.
 | [Deep Infra](https://deepinfra.com)                                                      | deepinfra/airoboros-70b<br/>jondurbin/airoboros-l2-70b-gpt4-1.4.1<br/>meta-llama/Llama-2-70b-chat-hf<br/>and other models having OpenAI API |
 | [Anyscale](https://anyscale.com)                                                         |                                           meta-llama/Llama-2-70b-chat-hf<br/>meta-llama/Llama-2-13b-chat-hf<br/>meta-llama/Llama-7b-chat-hf |
 | [Groq](https://groq.com/)                                                         |                                           LLaMA2 70b<br>Mixtral 8x7b<br>Gemma 7b |
+| [Fireworks](fireworks.ai)                                                         |                                           [Over 50 open-source language models](https://fireworks.ai/models?show=All) |
 
 
 ## 🖼️ Examples
