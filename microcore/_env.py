@@ -96,6 +96,8 @@ class Env:
 @dataclass
 class _Configure(Config):
     def __post_init__(self):
+        global _env
+        _env = None
         super().__post_init__()
         Env(self)
 
