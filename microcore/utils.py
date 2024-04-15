@@ -5,8 +5,11 @@ import json
 import os
 import sys
 import re
+import subprocess
+from dataclasses import dataclass
 from fnmatch import fnmatch
 from pathlib import Path
+from colorama import Fore
 
 from .types import BadAIAnswer
 from .message_types import UserMsg, SysMsg, AssistantMsg
@@ -164,3 +167,40 @@ def is_kaggle() -> bool:
 
 def is_notebook() -> bool:
     return "ipykernel" in sys.modules
+
+
+def is_google_colab() -> bool:
+    return "google.colab" in sys.modules
+
+
+def get_vram_usage(as_string=True, color=Fore.GREEN):
+    @dataclass
+    class _MemUsage:
+        name: str
+        used: int
+        free: int
+        total: int
+
+    cmd = (
+        "nvidia-smi"
+        " --query-gpu=name,memory.used,memory.free,memory.total"
+        " --format=csv,noheader,nounits"
+    )
+    out = subprocess.check_output(cmd, shell=True, text=True).strip()
+
+    mu = [_MemUsage(*[i.strip() for i in line.split(",")]) for line in out.splitlines()]
+    if not as_string:
+        return mu
+    c, r = (color, Fore.RESET) if color else ("", "")
+    return "\n".join(
+        [
+            f"GPU: {c}{i.name}{r}, "
+            f"VRAM: {c}{i.used}{r}/{c}{i.total}{r} MiB used, "
+            f"{c}{i.free}{r} MiB free"
+            for i in mu
+        ]
+    )
+
+
+def show_vram_usage():
+    print(get_vram_usage(as_string=True))
