@@ -2,8 +2,8 @@ import json
 from typing import Any
 
 from ..types import BadAIJsonAnswer
-from ..utils import ExtendedString
-from ..message_types import Role
+from ..utils import ExtendedString, ConvertableToMessage
+from ..message_types import Role, AssistantMsg
 
 
 def remove_json_wrapper(input_string: str) -> str:
@@ -15,7 +15,7 @@ def remove_json_wrapper(input_string: str) -> str:
     return input_string
 
 
-class LLMResponse(ExtendedString):
+class LLMResponse(ExtendedString, ConvertableToMessage):
     """
     Response from the Large Language Model.
 
@@ -39,6 +39,7 @@ class LLMResponse(ExtendedString):
     def parse_json(
         self, raise_errors: bool = True, required_fields: list[str] = None
     ) -> list | dict | Any:
+        assert isinstance(required_fields, list) or required_fields is None
         try:
             res = json.loads(remove_json_wrapper(self.content))
             if required_fields:
@@ -52,3 +53,6 @@ class LLMResponse(ExtendedString):
             if raise_errors:
                 raise BadAIJsonAnswer() from e
             return False
+
+    def as_message(self) -> AssistantMsg:
+        return self.as_assistant

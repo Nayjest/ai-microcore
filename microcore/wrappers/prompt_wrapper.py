@@ -1,8 +1,8 @@
 from .._llm_functions import allm, llm
-from ..utils import ExtendedString
+from ..utils import ExtendedString, ConvertableToMessage
 
 
-class PromptWrapper(ExtendedString):
+class PromptWrapper(ExtendedString, ConvertableToMessage):
     def to_llm(self, **kwargs):
         """
         Send prompt to Large Language Model, see `llm`

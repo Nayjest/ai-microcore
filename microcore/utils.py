@@ -9,12 +9,31 @@ from fnmatch import fnmatch
 from pathlib import Path
 
 from .types import BadAIAnswer
+from .message_types import UserMsg, SysMsg, AssistantMsg
 
 
 def is_chat_model(model: str) -> bool:
     """Detects if model is chat model or text completion model"""
     completion_keywords = ["instruct", "davinci", "babbage", "curie", "ada"]
     return not any(keyword in model.lower() for keyword in completion_keywords)
+
+
+class ConvertableToMessage:
+    @property
+    def as_user(self) -> UserMsg:
+        return UserMsg(str(self))
+
+    @property
+    def as_system(self) -> SysMsg:
+        return SysMsg(str(self))
+
+    @property
+    def as_assistant(self) -> AssistantMsg:
+        return AssistantMsg(str(self))
+
+    @property
+    def as_model(self) -> AssistantMsg:
+        return self.as_assistant
 
 
 class ExtendedString(str):
