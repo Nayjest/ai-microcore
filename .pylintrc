@@ -50,6 +50,7 @@ ignore=
     CVS,
     _openai_llm_v0.py,
     _openai_llm_v1.py,
+    anthropic.py,
     google_genai.py,
     google_vertex_ai.py,
 
@@ -453,6 +454,7 @@ disable=raw-checker-failed,
         import-error,
         R0913,
         E0402,
+        W1203,
 #       C0103,
 
 

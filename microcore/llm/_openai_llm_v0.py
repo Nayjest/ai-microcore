@@ -56,6 +56,8 @@ def _configure_open_ai_package(config: Config):
     openai.api_key = config.LLM_API_KEY
     openai.api_base = config.LLM_API_BASE
     openai.api_version = config.LLM_API_VERSION
+    for key, value in config.INIT_PARAMS.items():
+        setattr(openai, key, value)
 
 
 def _prepare_llm_arguments(config: Config, kwargs: dict):
@@ -80,7 +82,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
 
     async def allm(prompt, **kwargs):
         args, options = _prepare_llm_arguments(config, kwargs)
-        if is_chat_model(args["model"]):
+        if is_chat_model(args["model"], config):
             response = await openai.ChatCompletion.acreate(
                 messages=prepare_chat_messages(prompt), **args
             )
@@ -105,7 +107,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
 
     def llm(prompt, **kwargs):
         args, options = _prepare_llm_arguments(config, kwargs)
-        if is_chat_model(args["model"]):
+        if is_chat_model(args["model"], config):
             response = openai.ChatCompletion.create(
                 messages=prepare_chat_messages(prompt), **args
             )

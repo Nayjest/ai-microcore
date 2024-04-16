@@ -11,14 +11,17 @@ from fnmatch import fnmatch
 from pathlib import Path
 from colorama import Fore
 
+from .configuration import Config
 from .types import BadAIAnswer
 from .message_types import UserMsg, SysMsg, AssistantMsg
 
 
-def is_chat_model(model: str) -> bool:
+def is_chat_model(model: str, config: Config = None) -> bool:
     """Detects if model is chat model or text completion model"""
+    if config and config.CHAT_MODE is not None:
+        return config.CHAT_MODE
     completion_keywords = ["instruct", "davinci", "babbage", "curie", "ada"]
-    return not any(keyword in model.lower() for keyword in completion_keywords)
+    return not any(keyword in str(model).lower() for keyword in completion_keywords)
 
 
 class ConvertableToMessage:

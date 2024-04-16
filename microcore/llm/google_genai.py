@@ -33,7 +33,7 @@ def _process_streamed_response(response, callbacks: list[callable]):
 
 
 def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctionType]:
-    genai.configure(api_key=config.LLM_API_KEY)
+    genai.configure(api_key=config.LLM_API_KEY, **config.INIT_PARAMS)
     if config.GOOGLE_GEMINI_SAFETY_SETTINGS is None:
         # Only new categories
         config.GOOGLE_GEMINI_SAFETY_SETTINGS = {

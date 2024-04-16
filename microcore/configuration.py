@@ -1,7 +1,9 @@
+import logging
 import os
 from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Any
+from typing import Union, Callable
 
 import dotenv
 
@@ -29,7 +31,8 @@ class ApiType:
     OPEN_AI = "open_ai"
     AZURE = "azure"
     """See https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models"""
-    LLM = "llm"
+    LOCAL_FUNC = "local"
+    LOCAL_TRANSFORMERS = "local_transformers"
     ANYSCALE = "anyscale"
     """See https://www.anyscale.com/endpoints"""
     DEEP_INFRA = "deep_infra"
@@ -69,6 +72,11 @@ class BaseConfig:
         for f in fields(self):
             if f.metadata.get("_from_env") and getattr(self, f.name) is _MISSING:
                 setattr(self, f.name, os.getenv(f.name.upper(), f.metadata["_default"]))
+
+    def __iter__(self):
+        for f in fields(self):
+            value = getattr(self, f.name)
+            yield f.name, value
 
 
 @dataclass
@@ -127,12 +135,28 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
 
     AZURE_DEPLOYMENT_ID: str = from_env()
 
+    INFERENCE_FUNC: Union[Callable, str] = None
+    """Inference function for local models"""
+    CHAT_MODE: bool = None
+    """Is it a chat or completion model"""
+    INIT_PARAMS: dict = field(default_factory=dict)
+    """Custom initialization parameters for the model"""
+
     def __post_init__(self):
         super().__post_init__()
         self._init_llm_options()
         self.validate()
 
+    def is_local_llm_used(self) -> bool:
+        return self.LLM_API_TYPE in (ApiType.LOCAL_FUNC, ApiType.LOCAL_TRANSFORMERS)
+
     def _init_llm_options(self):
+        if self.INFERENCE_FUNC:
+            if not self.LLM_API_TYPE:
+                self.LLM_API_TYPE = ApiType.LOCAL_FUNC
+        if self.is_local_llm_used():
+            return
+
         # Use defaults from ENV variables expected by OpenAI API
         self.LLM_API_TYPE = self.LLM_API_TYPE or self.OPENAI_API_TYPE
         if self.GOOGLE_VERTEX_RESPONSE_VALIDATION is None:
@@ -171,6 +195,32 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
             self.LLM_API_VERSION = self.LLM_API_VERSION or self.OPENAI_API_VERSION
             self.MODEL = self.MODEL or "gpt-3.5-turbo"
 
+    def _validate_local_llm(self):
+        if self.CHAT_MODE is None:
+            logging.warning(
+                "When using local models, "
+                "(bool)CHAT_MODE configuration option should be explicitly set"
+            )
+        if self.LLM_API_TYPE == ApiType.LOCAL_FUNC:
+            if not self.INFERENCE_FUNC:
+                raise LLMConfigError(
+                    "LLM configuration error: "
+                    "INFERENCE_FUNC should be provided for local models"
+                )
+            if (
+                isinstance(self.INFERENCE_FUNC, str)
+                and self.INFERENCE_FUNC not in globals()
+            ):
+                raise LLMConfigError(
+                    f"LLM configuration error: inference function '{self.INFERENCE_FUNC}' not found"
+                )
+        elif self.LLM_API_TYPE == ApiType.LOCAL_TRANSFORMERS:
+            if not self.MODEL:
+                raise LLMConfigError(
+                    "LLM configuration error: "
+                    "MODEL should be provided for local transformers models"
+                )
+
     def validate(self):
         """
         Validate LLM configuration
@@ -178,6 +228,13 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
         Raises:
             LLMConfigError
         """
+        if self.is_local_llm_used():
+            self._validate_local_llm()
+            return
+        if self.INFERENCE_FUNC:
+            raise LLMConfigError(
+                "LLM configuration error: INFERENCE_FUNC should be provided only for local models"
+            )
         if self.LLM_API_TYPE == ApiType.GOOGLE_VERTEX_AI:
             if (
                 not self.GOOGLE_VERTEX_ACCESS_TOKEN
@@ -243,6 +300,7 @@ class Config(LLMConfig):
     ELEVENLABS_API_KEY: str = from_env()
 
     TEXT_TO_SPEECH_PATH: str | Path = from_env()
+    """Path to the folder with generated voice files"""
 
     def __post_init__(self):
         if self.JINJA2_AUTO_ESCAPE is None:

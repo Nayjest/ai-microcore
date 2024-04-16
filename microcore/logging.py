@@ -21,7 +21,7 @@ def _log_request(prompt, **kwargs):
         f"Requesting LLM {Fore.MAGENTA}{model}{Style.RESET_ALL}:",
         end=" " if LoggingConfig.DENSE else "\n",
     )
-    if is_chat_model(model):
+    if is_chat_model(model, env().config):
         for msg in prepare_chat_messages(prompt):
             role, content = (
                 (msg["role"], msg["content"])

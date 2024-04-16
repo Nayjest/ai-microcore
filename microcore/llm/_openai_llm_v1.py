@@ -73,6 +73,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             api_key=config.LLM_API_KEY,
             azure_endpoint=config.LLM_API_BASE,
             api_version=config.LLM_API_VERSION,
+            **config.INIT_PARAMS
         )
     else:
         connection_type = openai.OpenAI
@@ -80,6 +81,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
         params = dict(
             api_key=config.LLM_API_KEY,
             base_url=config.LLM_API_BASE,
+            # **config.INIT_PARAMS
         )
 
     _connection = connection_type(**params)
@@ -87,7 +89,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
 
     async def allm(prompt, **kwargs):
         args, options = _prepare_llm_arguments(config, kwargs)
-        if is_chat_model(args["model"]):
+        if is_chat_model(args["model"], config):
             response = await _async_connection.chat.completions.create(
                 messages=prepare_chat_messages(prompt), **args
             )
@@ -112,7 +114,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
 
     def llm(prompt, **kwargs):
         args, options = _prepare_llm_arguments(config, kwargs)
-        if is_chat_model(args["model"]):
+        if is_chat_model(args["model"], config):
             response = _connection.chat.completions.create(
                 messages=prepare_chat_messages(prompt), **args
             )

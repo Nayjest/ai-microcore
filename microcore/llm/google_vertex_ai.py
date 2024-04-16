@@ -64,6 +64,7 @@ def init_vertex_ai(config: Config):
         project=config.GOOGLE_VERTEX_PROJECT_ID,
         location=config.GOOGLE_VERTEX_LOCATION or None,
         api_endpoint=config.LLM_API_BASE or None,
+        **config.INIT_PARAMS,
     )
 
 
