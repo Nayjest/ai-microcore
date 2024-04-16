@@ -189,20 +189,27 @@ def get_vram_usage(as_string=True, color=Fore.GREEN):
         " --query-gpu=name,memory.used,memory.free,memory.total"
         " --format=csv,noheader,nounits"
     )
-    out = subprocess.check_output(cmd, shell=True, text=True).strip()
+    try:
+        out = subprocess.check_output(cmd, shell=True, text=True).strip()
 
-    mu = [_MemUsage(*[i.strip() for i in line.split(",")]) for line in out.splitlines()]
-    if not as_string:
-        return mu
-    c, r = (color, Fore.RESET) if color else ("", "")
-    return "\n".join(
-        [
-            f"GPU: {c}{i.name}{r}, "
-            f"VRAM: {c}{i.used}{r}/{c}{i.total}{r} MiB used, "
-            f"{c}{i.free}{r} MiB free"
-            for i in mu
+        mu = [
+            _MemUsage(*[i.strip() for i in line.split(",")])
+            for line in out.splitlines()
         ]
-    )
+        if not as_string:
+            return mu
+        c, r = (color, Fore.RESET) if color else ("", "")
+        return "\n".join(
+            [
+                f"GPU: {c}{i.name}{r}, "
+                f"VRAM: {c}{i.used}{r}/{c}{i.total}{r} MiB used, "
+                f"{c}{i.free}{r} MiB free"
+                for i in mu
+            ]
+        )
+    except subprocess.CalledProcessError:
+        msg = "No GPU found or nvidia-smi is not installed"
+        return f"{Fore.RED}{msg}{Fore.RESET}" if as_string else None
 
 
 def show_vram_usage():
