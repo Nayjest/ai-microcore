@@ -1,18 +1,6 @@
-import json
-from typing import Any
-
-from ..types import BadAIJsonAnswer
+from ..json_parsing import parse_json
 from ..utils import ExtendedString, ConvertableToMessage
 from ..message_types import Role, AssistantMsg
-
-
-def remove_json_wrapper(input_string: str) -> str:
-    input_string = str(input_string).strip()
-    if input_string.startswith("```json") and input_string.endswith("```"):
-        json_content = input_string[7:-3].strip()
-        return json_content
-
-    return input_string
 
 
 class LLMResponse(ExtendedString, ConvertableToMessage):
@@ -38,21 +26,8 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
 
     def parse_json(
         self, raise_errors: bool = True, required_fields: list[str] = None
-    ) -> list | dict | Any:
-        assert isinstance(required_fields, list) or required_fields is None
-        try:
-            res = json.loads(remove_json_wrapper(self.content))
-            if required_fields:
-                if not isinstance(res, dict):
-                    raise BadAIJsonAnswer("Not an object")
-                for field in required_fields:
-                    if field not in res:
-                        raise BadAIJsonAnswer(f'Missing field "{field}"')
-            return res
-        except json.decoder.JSONDecodeError as e:
-            if raise_errors:
-                raise BadAIJsonAnswer() from e
-            return False
+    ) -> list | dict | float | int | str:
+        return parse_json(self.content, raise_errors, required_fields)
 
     def as_message(self) -> AssistantMsg:
         return self.as_assistant
