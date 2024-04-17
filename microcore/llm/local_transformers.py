@@ -44,7 +44,7 @@ def make_llm_functions(
             ),
             **{k: v for k, v in params.items() if k not in mc_param_names},
         )
-        if "quantize_4bit" in params:
+        if params.get("quantize_4bit"):
             model_init_params["quantization_config"] = transformers.BitsAndBytesConfig(
                 load_in_4bit=True,
                 bnb_4bit_quant_type="nf4",
