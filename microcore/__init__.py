@@ -19,7 +19,7 @@ from .types import BadAIJsonAnswer, BadAIAnswer
 from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
 from ._llm_functions import llm, allm
-from .utils import parse
+from .utils import parse, dedent
 
 
 def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
@@ -27,8 +27,10 @@ def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
     return PromptWrapper(env().tpl_function(file, **kwargs))
 
 
-def prompt(template_str: str, **kwargs) -> str | PromptWrapper:
+def prompt(template_str: str, remove_indent=True, **kwargs) -> str | PromptWrapper:
     """Renders a prompt template from string using the provided parameters."""
+    if remove_indent:
+        template_str = dedent(template_str)
     return PromptWrapper(env().jinja_env.from_string(template_str).render(**kwargs))
 
 
@@ -116,6 +118,7 @@ __all__ = [
     "LLMResponse",
     "PromptWrapper",
     "parse",
+    "dedent",
     # submodules
     "embedding_db",
     "file_storage",
@@ -127,4 +130,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "3.2.1"
+__version__ = "3.3.0"
