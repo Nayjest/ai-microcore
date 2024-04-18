@@ -17,10 +17,10 @@ def prepare_chat_messages(prompt) -> list[dict]:
     """Converts prompt to messages for LLM chat API (OpenAI)"""
     messages = prompt if isinstance(prompt, list) else [prompt]
     return [
-        dict(role=DEFAULT_MESSAGE_ROLE, content=msg)
-        if isinstance(msg, str)
-        else asdict(msg)
-        if isinstance(msg, Msg)
-        else msg
+        (
+            dict(role=DEFAULT_MESSAGE_ROLE, content=msg)
+            if isinstance(msg, str)
+            else asdict(msg) if isinstance(msg, Msg) else msg
+        )
         for msg in messages
     ]

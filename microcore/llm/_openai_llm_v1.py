@@ -52,9 +52,11 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
     args = {**config.LLM_DEFAULT_ARGS, **kwargs}
     args["model"] = args.get(
         "model",
-        args.get("deployment_id", config.LLM_DEPLOYMENT_ID or config.MODEL)
-        if config.LLM_API_TYPE == ApiType.AZURE
-        else config.MODEL,
+        (
+            args.get("deployment_id", config.LLM_DEPLOYMENT_ID or config.MODEL)
+            if config.LLM_API_TYPE == ApiType.AZURE
+            else config.MODEL
+        ),
     )
     callbacks: list[callable] = args.pop("callbacks", [])
     if "callback" in args:

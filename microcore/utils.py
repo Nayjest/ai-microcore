@@ -259,17 +259,20 @@ def extract_number(
             ...
     return return_default(default, text)
 
+
 def dedent(text: str):
     lines = text.splitlines()
-    while lines and lines[0].strip() == '':
+    while lines and lines[0].strip() == "":
         lines.pop(0)
-    while lines and lines[-1].strip() == '':
+    while lines and lines[-1].strip() == "":
         lines.pop()
     non_empty_lines = [line for line in lines if line.strip()]
     if non_empty_lines:
         min_indent = min((len(line) - len(line.lstrip())) for line in non_empty_lines)
-        dedented_lines = [line[min_indent:] if line and len(line) >= min_indent else line for line in lines]
+        dedented_lines = [
+            line[min_indent:] if line and len(line) >= min_indent else line
+            for line in lines
+        ]
     else:
         dedented_lines = lines
-    return '\n'.join(dedented_lines)
-
+    return "\n".join(dedented_lines)

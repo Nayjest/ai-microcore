@@ -44,9 +44,7 @@ def unwrap_json_substring(
     return (
         input_string[start : end + 1]
         if brace
-        else input_string
-        if return_original_on_fail
-        else ""
+        else input_string if return_original_on_fail else ""
     )
 
 
