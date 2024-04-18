@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from .message_types import Msg
 from .wrappers.llm_response_wrapper import LLMResponse
 from ._env import env
@@ -36,7 +38,12 @@ def llm(prompt: str | Msg | list[str] | list[Msg], **kwargs) -> str | LLMRespons
         - https://platform.openai.com/docs/api-reference/chat/object
     """
     [h(prompt, **kwargs) for h in env().llm_before_handlers]
+    start = datetime.now()
     response = env().llm_function(prompt, **kwargs)
+    try:
+        response.gen_duration = (datetime.now() - start).total_seconds()
+    except AttributeError:
+        ...
     [h(response) for h in env().llm_after_handlers]
     return response
 
@@ -78,6 +85,11 @@ async def allm(
         - https://platform.openai.com/docs/api-reference/chat/object
     """
     [h(prompt, **kwargs) for h in env().llm_before_handlers]
+    start = datetime.now()
     response = await env().llm_async_function(prompt, **kwargs)
+    try:
+        response.gen_duration = (datetime.now() - start).total_seconds()
+    except AttributeError:
+        ...
     [h(response) for h in env().llm_after_handlers]
     return response
