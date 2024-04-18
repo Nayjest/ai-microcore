@@ -1,3 +1,5 @@
+import pytest
+
 import microcore as mc
 from microcore.configuration import Config
 from dataclasses import asdict
@@ -24,3 +26,24 @@ def test_config_from_inst(monkeypatch):
     assert mc.config().MODEL != 'MODEL2'
     mc.configure(LLM_API_KEY='KEY4')
     assert mc.config().LLM_API_KEY == "KEY4"
+
+
+def test_config_wrong_key(monkeypatch):
+    with pytest.raises(TypeError):
+        Config(WRONG_KEY="KEY1", LLM_API_KEY="KEY2")
+
+
+def test_config_case_convert(monkeypatch):
+    assert mc.configure(llm_api_key='k1').LLM_API_KEY == 'k1'
+
+
+def test_config_key_prefixing(monkeypatch):
+    assert mc.configure(api_key='k2').LLM_API_KEY == 'k2'
+
+
+def test_config_from_dict(monkeypatch):
+    assert mc.configure(dict(api_key='k3')).LLM_API_KEY == 'k3'
+
+
+def test_config_from_config(monkeypatch):
+    assert mc.configure(Config(LLM_API_KEY='k4')).LLM_API_KEY == 'k4'

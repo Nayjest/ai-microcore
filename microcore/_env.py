@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from importlib.util import find_spec
 import jinja2
 
@@ -51,9 +51,10 @@ class Env:
                     "To use local Transformers language models, "
                     "you need to install the `transformers`, `pytorch` and `accelerate` packages. "
                 ) from e
-            (self.llm_function, self.llm_async_function) = (
-                make_transformers_llm_functions(self.config, self)
-            )
+            (
+                self.llm_function,
+                self.llm_async_function,
+            ) = make_transformers_llm_functions(self.config, self)
         elif self.config.LLM_API_TYPE == ApiType.ANTHROPIC:
             try:
                 from .llm.anthropic import (
@@ -122,6 +123,26 @@ class _Configure(Config):
 
 configure: callable = _Configure
 """Applies configuration to MicroCore environment"""
+
+if True:  # pylint: disable=W0125
+    # This block is inside a condition to avoid breaking IDE autocompletion
+    def _config_builder_wrapper(cfg: Config | dict = None, **kwargs):
+        """
+        - Convert configuration keys to uppercase
+        - Add LLM_ prefix to keys if necessary
+        - Allow to configure from Config instance or dictionary
+        """
+        if cfg:
+            assert not kwargs, "Cannot pass both cfg and kwargs"
+        if isinstance(cfg, dict):
+            return _config_builder_wrapper(**cfg)
+        kwargs = {str(k).upper(): v for k, v in kwargs.items()}
+        for k in list(kwargs.keys()):
+            if not hasattr(Config, k) and hasattr(Config, f"LLM_{k}"):
+                kwargs[f"LLM_{k}"] = kwargs.pop(k)
+        return _Configure(**(cfg and asdict(cfg) or kwargs))
+
+    configure = _config_builder_wrapper
 
 _env: Env | None = None
 
