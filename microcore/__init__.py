@@ -14,7 +14,7 @@ from .file_storage import storage
 from ._env import configure, env, config
 from .logging import use_logging
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg
-from .configuration import ApiType, LLMConfigError
+from .configuration import ApiType, LLMConfigError, Config
 from .types import BadAIJsonAnswer, BadAIAnswer
 from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
@@ -32,6 +32,9 @@ def prompt(template_str: str, remove_indent=True, **kwargs) -> str | PromptWrapp
     if remove_indent:
         template_str = dedent(template_str)
     return PromptWrapper(env().jinja_env.from_string(template_str).render(**kwargs))
+
+
+fmt = prompt
 
 
 def use_model(name: str):
@@ -99,6 +102,8 @@ __all__ = [
     "llm",
     "allm",
     "tpl",
+    "prompt",
+    "fmt",
     "texts",
     "configure",
     "validate_config",
@@ -125,6 +130,7 @@ __all__ = [
     "message_types",
     "utils",
     "configuration",
+    "Config",
     "types",
     "ui",
     # "wrappers",
