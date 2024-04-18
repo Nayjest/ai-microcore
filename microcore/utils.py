@@ -9,6 +9,8 @@ import subprocess
 from dataclasses import dataclass
 from fnmatch import fnmatch
 from pathlib import Path
+from typing import Any
+
 from colorama import Fore
 
 from .configuration import Config
@@ -214,3 +216,45 @@ def get_vram_usage(as_string=True, color=Fore.GREEN):
 
 def show_vram_usage():
     print(get_vram_usage(as_string=True))
+
+
+def return_default(default, *args):
+    if isinstance(default, type) and issubclass(default, BaseException):
+        raise default()
+    if isinstance(default, BaseException):
+        raise default
+    if inspect.isbuiltin(default):
+        return default(*args)
+    if inspect.isfunction(default):
+        arg_count = default.__code__.co_argcount
+        if inspect.ismethod(default):
+            arg_count -= 1
+        return default(*args) if arg_count >= len(args) else default()
+
+    return default
+
+
+def extract_number(
+    text: str,
+    default=None,
+    position="last",
+    dtype: type | str = float,
+    rounding: bool = False,
+) -> int | float | Any:
+    assert position in ["last", "first"], f"Invalid position: {position}"
+    idx = {"last": -1, "first": 0}[position]
+
+    dtype = {"int": int, "float": float}.get(dtype, dtype)
+    assert dtype in [int, float], f"Invalid dtype: {dtype}"
+    if rounding:
+        dtype = float
+    regex = {int: r"[-+]?\d+", float: r"[-+]?\d*\.?\d+"}[dtype]
+
+    numbers = re.findall(regex, str(text))
+    if numbers:
+        try:
+            value = dtype(numbers[idx].strip())
+            return round(value) if rounding else value
+        except ValueError:
+            ...
+    return return_default(default, text)
