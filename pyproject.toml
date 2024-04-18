@@ -47,3 +47,7 @@ addopts = "-vv --capture=no --log-cli-level=INFO"
 testpaths = [
     "tests/basic",
 ]
+filterwarnings = [
+    "ignore:Deprecated call to `pkg_resources\\.declare_namespace\\('.*'\\):DeprecationWarning",
+    "ignore::DeprecationWarning:google.rpc",
+]
