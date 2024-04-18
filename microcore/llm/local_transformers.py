@@ -34,7 +34,7 @@ def make_llm_functions(
             trust_remote_code=True,
         )
         mc_param_names = ["model", "tokenizer", "device", "quantize_4bit", "inference"]
-        model_init_params = dict(
+        model_init_params = {
             **dict(
                 trust_remote_code=True,
                 torch_dtype="auto",
@@ -43,8 +43,11 @@ def make_llm_functions(
                 offload_folder=config.STORAGE_PATH,
             ),
             **{k: v for k, v in params.items() if k not in mc_param_names},
-        )
-        if params.get("quantize_4bit"):
+        }
+        if (
+            params.get("quantize_4bit")
+            and "quantization_config" not in model_init_params
+        ):
             model_init_params["quantization_config"] = transformers.BitsAndBytesConfig(
                 load_in_4bit=True,
                 bnb_4bit_quant_type="nf4",

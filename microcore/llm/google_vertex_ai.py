@@ -59,13 +59,13 @@ def init_vertex_ai(config: Config):
                 "`gcloud auth application-default print-access-token`)."
             )
     credentials = Credentials(token=config.GOOGLE_VERTEX_ACCESS_TOKEN)
-    vertexai.init(
+    defaults = dict(
         credentials=credentials,
         project=config.GOOGLE_VERTEX_PROJECT_ID,
         location=config.GOOGLE_VERTEX_LOCATION or None,
         api_endpoint=config.LLM_API_BASE or None,
-        **config.INIT_PARAMS,
     )
+    vertexai.init(**{**defaults, **config.INIT_PARAMS})
 
 
 def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctionType]:

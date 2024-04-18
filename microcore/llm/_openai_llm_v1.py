@@ -54,7 +54,7 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
         "model",
         args.get("deployment_id", config.LLM_DEPLOYMENT_ID or config.MODEL)
         if config.LLM_API_TYPE == ApiType.AZURE
-        else config.MODEL
+        else config.MODEL,
     )
     callbacks: list[callable] = args.pop("callbacks", [])
     if "callback" in args:
@@ -69,20 +69,20 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
     if config.LLM_API_TYPE == ApiType.AZURE:
         connection_type = openai.AzureOpenAI
         async_connection_type = openai.AsyncAzureOpenAI
-        params = dict(
-            api_key=config.LLM_API_KEY,
-            azure_endpoint=config.LLM_API_BASE,
-            api_version=config.LLM_API_VERSION,
-            **config.INIT_PARAMS
-        )
+        params = {
+            "api_key": config.LLM_API_KEY,
+            "azure_endpoint": config.LLM_API_BASE,
+            "api_version": config.LLM_API_VERSION,
+            **config.INIT_PARAMS,
+        }
     else:
         connection_type = openai.OpenAI
         async_connection_type = openai.AsyncOpenAI
-        params = dict(
-            api_key=config.LLM_API_KEY,
-            base_url=config.LLM_API_BASE,
-            # **config.INIT_PARAMS
-        )
+        params = {
+            "api_key": config.LLM_API_KEY,
+            "base_url": config.LLM_API_BASE,
+            **config.INIT_PARAMS,
+        }
 
     _connection = connection_type(**params)
     _async_connection = async_connection_type(**params)
