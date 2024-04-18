@@ -5,7 +5,7 @@ from .types import BadAIJsonAnswer
 
 
 def unwrap_json_substring(
-        input_string: str, allow_in_text: bool = True, return_original_on_fail: bool = True
+    input_string: str, allow_in_text: bool = True, return_original_on_fail: bool = True
 ) -> str:
     input_string = str(input_string).strip()
     if input_string.endswith("```"):
@@ -42,9 +42,11 @@ def unwrap_json_substring(
         ...
 
     return (
-        input_string[start: end + 1]
+        input_string[start : end + 1]
         if brace
-        else input_string if return_original_on_fail else ""
+        else input_string
+        if return_original_on_fail
+        else ""
     )
 
 
@@ -115,16 +117,16 @@ def fix_json(s: str) -> str:
         ...
 
     # incomplete JSON
-    if s.startswith('{') and not s.endswith('}'):
+    if s.startswith("{") and not s.endswith("}"):
         # count number of "
         if s.count('"') % 2 == 1:
             s += '"'
-        s += '}'
+        s += "}"
     return s
 
 
 def parse_json(
-        input_string: str, raise_errors: bool = True, required_fields: list[str] = None
+    input_string: str, raise_errors: bool = True, required_fields: list[str] = None
 ) -> list | dict | float | int | str:
     assert isinstance(required_fields, list) or required_fields is None
     try:
