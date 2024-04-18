@@ -42,10 +42,11 @@ class ApiType:
     # Local models
     FUNCTION = "function"
     TRANSFORMERS = "transformers"
+    NONE = "none"
 
     @staticmethod
     def is_local(api_type: str) -> bool:
-        return api_type in (ApiType.FUNCTION, ApiType.TRANSFORMERS)
+        return api_type in (ApiType.FUNCTION, ApiType.TRANSFORMERS, ApiType.NONE)
 
 
 _default_dotenv_loaded = False
@@ -234,6 +235,8 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
         Raises:
             LLMConfigError
         """
+        if self.LLM_API_TYPE == ApiType.NONE:
+            return
         if self.uses_local_model():
             self._validate_local_llm()
             return
