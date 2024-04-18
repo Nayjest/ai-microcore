@@ -7,14 +7,14 @@ def test_no_model():
     # should raise an error
     with pytest.raises(LLMConfigError):
         # No model name
-        mc.configure(LLM_API_TYPE=mc.ApiType.LOCAL_TRANSFORMERS, CHAT_MODE=True)
+        mc.configure(LLM_API_TYPE=mc.ApiType.TRANSFORMERS, CHAT_MODE=True)
 
 
 def test():
     import os
     os.environ['NVIDIA_VISIBLE_DEVICES'] = 'all'
     defaults = dict(
-        LLM_API_TYPE=mc.ApiType.LOCAL_TRANSFORMERS,
+        LLM_API_TYPE=mc.ApiType.TRANSFORMERS,
         LLM_DEFAULT_ARGS={
             "max_new_tokens": 30,
         },

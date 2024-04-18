@@ -31,8 +31,6 @@ class ApiType:
     OPEN_AI = "open_ai"
     AZURE = "azure"
     """See https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models"""
-    LOCAL_FUNC = "local"
-    LOCAL_TRANSFORMERS = "local_transformers"
     ANYSCALE = "anyscale"
     """See https://www.anyscale.com/endpoints"""
     DEEP_INFRA = "deep_infra"
@@ -40,6 +38,14 @@ class ApiType:
     ANTHROPIC = "anthropic"
     GOOGLE_VERTEX_AI = "google_vertex_ai"
     GOOGLE_AI_STUDIO = "google_ai_studio"
+
+    # Local models
+    FUNCTION = "function"
+    TRANSFORMERS = "transformers"
+
+    @staticmethod
+    def is_local(api_type: str) -> bool:
+        return api_type in (ApiType.FUNCTION, ApiType.TRANSFORMERS)
 
 
 _default_dotenv_loaded = False
@@ -147,14 +153,14 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
         self._init_llm_options()
         self.validate()
 
-    def is_local_llm_used(self) -> bool:
-        return self.LLM_API_TYPE in (ApiType.LOCAL_FUNC, ApiType.LOCAL_TRANSFORMERS)
+    def uses_local_model(self) -> bool:
+        return ApiType.is_local(self.LLM_API_TYPE)
 
     def _init_llm_options(self):
         if self.INFERENCE_FUNC:
             if not self.LLM_API_TYPE:
-                self.LLM_API_TYPE = ApiType.LOCAL_FUNC
-        if self.is_local_llm_used():
+                self.LLM_API_TYPE = ApiType.FUNCTION
+        if self.uses_local_model():
             return
 
         # Use defaults from ENV variables expected by OpenAI API
@@ -201,7 +207,7 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
                 "When using local models, "
                 "(bool)CHAT_MODE configuration option should be explicitly set"
             )
-        if self.LLM_API_TYPE == ApiType.LOCAL_FUNC:
+        if self.LLM_API_TYPE == ApiType.FUNCTION:
             if not self.INFERENCE_FUNC:
                 raise LLMConfigError(
                     "LLM configuration error: "
@@ -214,7 +220,7 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
                 raise LLMConfigError(
                     f"LLM configuration error: inference function '{self.INFERENCE_FUNC}' not found"
                 )
-        elif self.LLM_API_TYPE == ApiType.LOCAL_TRANSFORMERS:
+        elif self.LLM_API_TYPE == ApiType.TRANSFORMERS:
             if not self.MODEL:
                 raise LLMConfigError(
                     "LLM configuration error: "
@@ -228,7 +234,7 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
         Raises:
             LLMConfigError
         """
-        if self.is_local_llm_used():
+        if self.uses_local_model():
             self._validate_local_llm()
             return
         if self.INFERENCE_FUNC:

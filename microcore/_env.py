@@ -37,11 +37,11 @@ class Env:
         self.tpl_function = make_tpl_function(self)
 
     def init_llm(self):
-        if self.config.LLM_API_TYPE == ApiType.LOCAL_FUNC:
+        if self.config.LLM_API_TYPE == ApiType.FUNCTION:
             self.llm_function, self.llm_async_function = make_local_llm_functions(
                 self.config
             )
-        elif self.config.LLM_API_TYPE == ApiType.LOCAL_TRANSFORMERS:
+        elif self.config.LLM_API_TYPE == ApiType.TRANSFORMERS:
             try:
                 from .llm.local_transformers import (
                     make_llm_functions as make_transformers_llm_functions,
