@@ -72,3 +72,7 @@ def white(msg):
 
 def gray(msg):
     return f"\033[90m{msg}{Fore.RESET}"
+
+
+def black(msg):
+    return f"{Fore.BLACK}{msg}{Fore.RESET}"
