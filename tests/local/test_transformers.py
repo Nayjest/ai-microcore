@@ -1,5 +1,12 @@
+import gc
+import logging
+
+import torch
+
 import microcore as mc
 import pytest
+
+from microcore import ui
 from microcore.configuration import Config, LLMConfigError
 
 
@@ -24,22 +31,29 @@ def test():
     )
     configs = [
         Config(
+            LLM_API_TYPE=mc.ApiType.TRANSFORMERS,
+            MODEL='Qwen/Qwen1.5-1.8B-Chat',
+            CHAT_MODE=True,
+        ),
+        Config(
+            MODEL='google/gemma-2b-it',
+            CHAT_MODE=True,
+            **{**defaults,
+               "INIT_PARAMS": {'quantize_4bit': False, 'use_pipeline': True, 'gradient_checkpointing': True}}
+        ),
+        Config(
             MODEL='microsoft/phi-1_5',
             CHAT_MODE=False,
-            **defaults
+            **{**defaults, "INIT_PARAMS": {'quantize_4bit': True, 'use_pipeline': True}}
         ),
         Config(
             MODEL='deepseek-ai/deepseek-coder-1.3b-instruct',
             CHAT_MODE=False,
             **defaults
         ),
-        Config(
-            MODEL='google/gemma-2b-it',
-            CHAT_MODE=True,
-            **defaults
-        ),
     ]
     for config in configs:
+        logging.info(ui.magenta(f"Testing model {config.MODEL}..."))
         mc.configure(**dict(config))
         mc.use_logging()
         assert '3' in mc.llm('Count from 1 to 3: 1..., 2...')
