@@ -116,10 +116,10 @@ def make_llm_functions(
             torch.cuda.empty_cache()
         if use_pipeline:
             return pipeline_inference(prompt, pipeline, **args)
-        else:
-            return env.inference(
-                prompt, model=env.model, tokenizer=env.tokenizer, **args
-            )
+
+        return env.inference(
+            prompt, model=env.model, tokenizer=env.tokenizer, **args
+        )
 
     logging.debug(f"Local Transformers model loaded: {config.MODEL}")
     return make_local_llm_functions(config, wrapped_inference)
