@@ -18,7 +18,7 @@ from .configuration import ApiType, LLMConfigError, Config
 from .types import BadAIJsonAnswer, BadAIAnswer
 from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
-from ._llm_functions import llm, allm
+from ._llm_functions import llm, allm, llm_parallel
 from .utils import parse, dedent
 
 
@@ -101,6 +101,7 @@ texts = _EmbeddingDBProxy()
 __all__ = [
     "llm",
     "allm",
+    "llm_parallel",
     "tpl",
     "prompt",
     "fmt",
@@ -136,4 +137,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "3.4.0"
+__version__ = "3.5.0"

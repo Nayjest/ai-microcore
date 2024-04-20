@@ -1,3 +1,4 @@
+import asyncio
 import builtins
 import dataclasses
 import inspect
@@ -276,3 +277,13 @@ def dedent(text: str):
     else:
         dedented_lines = lines
     return "\n".join(dedented_lines)
+
+
+async def run_parallel(tasks: list, max_concurrent_tasks: int):
+    semaphore = asyncio.Semaphore(max_concurrent_tasks)
+
+    async def worker(task):
+        async with semaphore:
+            return await task
+
+    return await asyncio.gather(*[worker(task) for task in tasks])

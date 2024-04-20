@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from .message_types import Msg
+from .utils import run_parallel
 from .wrappers.llm_response_wrapper import LLMResponse
 from ._env import env
 
@@ -93,3 +94,16 @@ async def allm(
         ...
     [h(response) for h in env().llm_after_handlers]
     return response
+
+
+async def llm_parallel(
+    prompts: list, max_concurrent_tasks: int = None, **kwargs
+) -> list[str] | list[LLMResponse]:
+    tasks = [allm(prompt, **kwargs) for prompt in prompts]
+
+    if max_concurrent_tasks is None:
+        max_concurrent_tasks = int(env().config.MAX_CONCURRENT_TASKS)
+    if not max_concurrent_tasks:
+        max_concurrent_tasks = len(tasks)
+
+    return await run_parallel(tasks, max_concurrent_tasks=max_concurrent_tasks)

@@ -311,6 +311,8 @@ class Config(LLMConfig):
     TEXT_TO_SPEECH_PATH: str | Path = from_env()
     """Path to the folder with generated voice files"""
 
+    MAX_CONCURRENT_TASKS: int = from_env(None)
+
     def __post_init__(self):
         if self.JINJA2_AUTO_ESCAPE is None:
             self.JINJA2_AUTO_ESCAPE = get_bool_from_env("JINJA2_AUTO_ESCAPE", False)
