@@ -24,14 +24,20 @@ from .utils import parse, dedent
 
 def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
     """Renders a prompt template using the provided parameters."""
-    return PromptWrapper(env().tpl_function(file, **kwargs))
+    return PromptWrapper(
+        env().tpl_function(file, **kwargs),
+        kwargs
+    )
 
 
 def prompt(template_str: str, remove_indent=True, **kwargs) -> str | PromptWrapper:
     """Renders a prompt template from string using the provided parameters."""
     if remove_indent:
         template_str = dedent(template_str)
-    return PromptWrapper(env().jinja_env.from_string(template_str).render(**kwargs))
+    return PromptWrapper(
+        env().jinja_env.from_string(template_str).render(**kwargs),
+        kwargs
+    )
 
 
 fmt = prompt
@@ -137,4 +143,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "3.5.0"
+__version__ = "3.6.0"
