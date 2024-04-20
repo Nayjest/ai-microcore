@@ -2,7 +2,7 @@ from dataclasses import dataclass, field, asdict
 from importlib.util import find_spec
 import jinja2
 
-from .configuration import Config, ApiType
+from .configuration import Config, ApiType, LLMConfigError
 from . import AbstractEmbeddingDB
 from .types import TplFunctionType, LLMAsyncFunctionType, LLMFunctionType
 from .templating.jinja2 import make_jinja2_env, make_tpl_function
@@ -37,7 +37,20 @@ class Env:
         self.tpl_function = make_tpl_function(self)
 
     def init_llm(self):
-        if self.config.LLM_API_TYPE == ApiType.FUNCTION:
+        if self.config.LLM_API_TYPE == ApiType.NONE:
+
+            def not_configured(*args, **kwargs):
+                raise LLMConfigError("Language model is not configured")
+
+            async def a_not_configured(*args, **kwargs):
+                raise LLMConfigError("Language model is not configured")
+
+            self.llm_function, self.llm_async_function = (
+                not_configured,
+                a_not_configured,
+            )
+
+        elif self.config.LLM_API_TYPE == ApiType.FUNCTION:
             self.llm_function, self.llm_async_function = make_local_llm_functions(
                 self.config
             )
