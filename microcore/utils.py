@@ -256,7 +256,7 @@ def extract_number(
         try:
             value = dtype(numbers[idx].strip())
             return round(value) if rounding else value
-        except ValueError:
+        except (ValueError, OverflowError):
             ...
     return return_default(default, text)
 
