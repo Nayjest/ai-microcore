@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, fields
 from importlib.util import find_spec
 import jinja2
 
@@ -139,6 +139,9 @@ configure: callable = _Configure
 
 if True:  # pylint: disable=W0125
     # This block is inside a condition to avoid breaking IDE autocompletion
+
+    _fields = list(map(lambda f: f.name, fields(Config)))
+
     def _config_builder_wrapper(cfg: Config | dict = None, **kwargs):
         """
         - Convert configuration keys to uppercase
@@ -151,8 +154,10 @@ if True:  # pylint: disable=W0125
             return _config_builder_wrapper(**cfg)
         kwargs = {str(k).upper(): v for k, v in kwargs.items()}
         for k in list(kwargs.keys()):
-            if not hasattr(Config, k) and hasattr(Config, f"LLM_{k}"):
-                kwargs[f"LLM_{k}"] = kwargs.pop(k)
+            if not hasattr(Config, k) and (
+                hasattr(Config, key := f"LLM_{k}") or key in _fields
+            ):
+                kwargs[key] = kwargs.pop(k)
         return _Configure(**(cfg and asdict(cfg) or kwargs))
 
     configure = _config_builder_wrapper

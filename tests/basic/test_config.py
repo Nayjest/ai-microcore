@@ -47,3 +47,10 @@ def test_config_from_dict(monkeypatch):
 
 def test_config_from_config(monkeypatch):
     assert mc.configure(Config(LLM_API_KEY='k4')).LLM_API_KEY == 'k4'
+
+
+def test_dataclass_fields_prefixing(monkeypatch):
+    assert mc.configure(
+        api_type=mc.ApiType.NONE,
+        default_args={"max_new_tokens": 77},
+    ).LLM_DEFAULT_ARGS["max_new_tokens"] == 77
