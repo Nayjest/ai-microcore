@@ -60,7 +60,9 @@ def make_llm_functions(
             response = await inference_fn(prompt, **args)
             for cb in options["callbacks"]:
                 cb(response)
-            return LLMResponse(response)
+            if not isinstance(response, LLMResponse):
+                response = LLMResponse(response)
+            return response
 
         def llm(prompt, **kwargs):
             try:
@@ -86,7 +88,9 @@ def make_llm_functions(
             response = inference_fn(prompt, **args)
             for cb in options["callbacks"]:
                 cb(response)
-            return LLMResponse(response)
+            if not isinstance(response, LLMResponse):
+                response = LLMResponse(response)
+            return response
 
         async def allm(prompt, **kwargs):
             return llm(prompt, **kwargs)

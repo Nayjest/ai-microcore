@@ -5,21 +5,49 @@ import transformers
 import torch
 
 from .local_llm import make_llm_functions as make_local_llm_functions
-from ..configuration import Config
+from ..wrappers.llm_response_wrapper import LLMResponse
+from ..configuration import Config, LLMConfigError
 from ..types import LLMFunctionType, LLMAsyncFunctionType
 
 
 def inference(prompt: str, model, tokenizer, **kwargs):
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     outputs = model.generate(**inputs, **kwargs)
-    out = tokenizer.decode(outputs[0][len(inputs[0]) :], skip_special_tokens=True)
-    return out
+    outputs = [
+        tokenizer.decode(i[len(inputs[0]) :], skip_special_tokens=True) for i in outputs
+    ]
+    return LLMResponse(outputs[0], dict(all=outputs))
 
 
 def pipeline_inference(prompt: str, pipeline, **kwargs):
     raw_output = pipeline(prompt, **{"return_full_text": False, **kwargs})
-    return raw_output[0]["generated_text"]
+    return LLMResponse(
+        raw_output[0]["generated_text"],
+        dict(all=list(map(lambda x: x["generated_text"], raw_output))),
+    )
 
+
+def clear_mem():
+    gc.collect()
+    torch.cuda.empty_cache()
+
+
+def try_make_model_config(config: Config):
+    try:
+        model_config = transformers.AutoConfig.from_pretrained(
+            config.MODEL,
+            trust_remote_code=True,
+        )
+    except OSError:
+        model_config = None
+    if config.INIT_PARAMS.get("gradient_checkpointing"):
+        if model_config:
+            model_config.gradient_checkpointing = True
+        else:
+            raise LLMConfigError(
+                "Can't apply gradient checkpointing without model config."
+            )
+    return model_config
 
 def make_llm_functions(
     config: Config, env
@@ -32,14 +60,7 @@ def make_llm_functions(
     )
 
     if not (model := params.get("model")):
-        gc.collect()
-        torch.cuda.empty_cache()
-        model_config = transformers.AutoConfig.from_pretrained(
-            config.MODEL,
-            trust_remote_code=True,
-        )
-        if params.get("gradient_checkpointing"):
-            model_config.gradient_checkpointing = True
+        clear_mem()
         mc_param_names = [
             "model",  # custom transformers model instance
             "tokenizer",  # custom tokenizer instance
@@ -53,16 +74,19 @@ def make_llm_functions(
             "use_pipeline",  # bool
             "pipeline_task",  # str, pipeline task name
         ]
+
         model_init_params = {
             **dict(
                 trust_remote_code=True,
                 torch_dtype="auto",
-                config=model_config,
                 device_map="auto",
                 offload_folder=config.STORAGE_PATH,
             ),
             **{k: v for k, v in params.items() if k not in mc_param_names},
         }
+        if 'config' not in model_init_params:
+            model_init_params['config'] = try_make_model_config(config)
+
         if (
             params.get("quantize_4bit")
             and "quantization_config" not in model_init_params
@@ -77,6 +101,13 @@ def make_llm_functions(
         model = transformers.AutoModelForCausalLM.from_pretrained(
             config.MODEL, **model_init_params
         )
+        try:
+            model.generation_config = transformers.GenerationConfig.from_pretrained(
+                config.MODEL
+            )
+        except:  # pylint: disable=bare-except
+            logging.warning("Can't create generation config")
+
         if "device" in params:
             model.to(params["device"])
 
@@ -111,15 +142,16 @@ def make_llm_functions(
                 prompt, add_generation_prompt=True, tokenize=False
             )
         args = {**transformers_model_args, **kwargs}
-        if always_clear_mem:
-            gc.collect()
-            torch.cuda.empty_cache()
+        always_clear_mem and clear_mem()
         if use_pipeline:
-            return pipeline_inference(prompt, pipeline, **args)
-
-        return env.inference(
-            prompt, model=env.model, tokenizer=env.tokenizer, **args
-        )
+            out = pipeline_inference(prompt, pipeline, **args)
+        else:
+            out = env.inference(
+                prompt, model=env.model, tokenizer=env.tokenizer, **args
+            )
+        if not isinstance(out, LLMResponse):
+            out = LLMResponse(out)
+        return out
 
     logging.debug(f"Local Transformers model loaded: {config.MODEL}")
     return make_local_llm_functions(config, wrapped_inference)
