@@ -12,6 +12,8 @@ import chardet
 from ._env import config
 from .utils import file_link, list_files
 
+_missing = object()
+
 
 class Storage:
     @property
@@ -102,7 +104,7 @@ class Storage:
     def write(
         self,
         name: str | Path,
-        content: str = None,
+        content: str = _missing,
         rewrite_existing: bool = None,
         backup_existing: bool = None,
         encoding: str = None,
@@ -116,7 +118,7 @@ class Storage:
         if backup_existing is None:
             backup_existing = not append
         encoding = encoding or self.default_encoding
-        if content is None:
+        if content == _missing:
             content = name
             name = f"out{self.default_ext}"
 

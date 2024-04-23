@@ -120,3 +120,10 @@ def test_copy():
     assert mc.storage.read_json("tests_tmp/o2/test.a") == ['a_new']
 
     mc.storage.delete("tests_tmp")
+
+
+def test_create_no_name():
+    fn = mc.storage.write('test_data')
+    assert (mc.storage.path / fn).exists()
+    assert mc.storage.read(fn) == 'test_data'
+    mc.storage.delete(fn)
