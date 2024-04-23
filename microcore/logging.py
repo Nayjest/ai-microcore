@@ -18,7 +18,7 @@ def _log_request(prompt, **kwargs):
     nl = "\n" if LoggingConfig.DENSE else "\n" + LoggingConfig.INDENT
     model = _resolve_model(**kwargs)
     print(
-        f"Requesting LLM {Fore.MAGENTA}{model}{Style.RESET_ALL}:",
+        f"{Fore.RESET}Requesting LLM {Fore.MAGENTA}{model}{Style.RESET_ALL}:",
         end=" " if LoggingConfig.DENSE else "\n",
     )
     if is_chat_model(model, env().config):
@@ -58,7 +58,7 @@ def _log_response(out):
     out_indented = (" " if LoggingConfig.DENSE else nl) + nl.join(
         (out or "").split("\n")
     )
-    print(f"LLM Response:{LoggingConfig.RESPONSE_COLOR}{out_indented}")
+    print(f"{Fore.RESET}LLM Response:{LoggingConfig.RESPONSE_COLOR}{out_indented}")
 
 
 def use_logging():
