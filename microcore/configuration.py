@@ -6,6 +6,7 @@ from typing import Any
 from typing import Union, Callable
 
 import dotenv
+from colorama import Fore
 
 _MISSING = object()
 
@@ -273,6 +274,27 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
                         "LLM configuration error: "
                         "LLM_API_VERSION is required for using Azure models"
                     )
+
+    def describe(self, return_dict=False):
+        """
+        Informal description of the configuration
+        """
+        default = Config(LLM_API_TYPE=ApiType.NONE, USE_DOT_ENV=False)
+        data = {
+            k.lower().replace("llm_", ""): v
+            for k, v in dict(self).items()
+            if v is not None and v != getattr(default, k) and k != "USE_DOT_ENV"
+        }
+        for k, v in data.items():
+            if "_key" in k and isinstance(v, str):
+                data[k] = v[:1] + "****" + v[-2:]
+        if return_dict:
+            return data
+
+        print("Config:")
+        for k, v in data.items():
+            print(f"  {k}: {Fore.GREEN}{v}{Fore.RESET}")
+        return None
 
 
 class LLMConfigError(ValueError):

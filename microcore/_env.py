@@ -20,6 +20,8 @@ class Env:
     llm_before_handlers: list[callable] = field(default_factory=list)
     llm_after_handlers: list[callable] = field(default_factory=list)
     texts: AbstractEmbeddingDB = None
+    model: "PreTrainedModel" = field(default=None, init=False, repr=False)
+    tokenizer: "PreTrainedTokenizer" = field(default=None, init=False, repr=False)
 
     def __post_init__(self):
         global _env
@@ -31,6 +33,9 @@ class Env:
 
             use_logging()
         self.init_similarity_search()
+
+    def make_stopping_criteria(self, seq: str | list[str]) -> list[callable]:
+        raise NotImplementedError
 
     def init_templating(self):
         self.jinja_env = make_jinja2_env(self)

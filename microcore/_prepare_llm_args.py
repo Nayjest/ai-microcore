@@ -20,7 +20,11 @@ def prepare_chat_messages(prompt) -> list[dict]:
         (
             dict(role=DEFAULT_MESSAGE_ROLE, content=msg)
             if isinstance(msg, str)
-            else asdict(msg) if isinstance(msg, Msg) else msg
+            else (
+                asdict(msg, dict_factory=msg.dict_factory)
+                if isinstance(msg, Msg)
+                else msg
+            )
         )
         for msg in messages
     ]

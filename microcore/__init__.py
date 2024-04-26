@@ -13,7 +13,7 @@ from .embedding_db import SearchResult, AbstractEmbeddingDB
 from .file_storage import storage
 from ._env import configure, env, config
 from .logging import use_logging
-from .message_types import UserMsg, AssistantMsg, SysMsg, Msg
+from .message_types import UserMsg, AssistantMsg, SysMsg, Msg, PartialMsg
 from .configuration import ApiType, LLMConfigError, Config
 from .types import BadAIJsonAnswer, BadAIAnswer
 from .wrappers.prompt_wrapper import PromptWrapper
@@ -24,10 +24,7 @@ from .utils import parse, dedent
 
 def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
     """Renders a prompt template using the provided parameters."""
-    return PromptWrapper(
-        env().tpl_function(file, **kwargs),
-        kwargs
-    )
+    return PromptWrapper(env().tpl_function(file, **kwargs), kwargs)
 
 
 def prompt(template_str: str, remove_indent=True, **kwargs) -> str | PromptWrapper:
@@ -35,8 +32,7 @@ def prompt(template_str: str, remove_indent=True, **kwargs) -> str | PromptWrapp
     if remove_indent:
         template_str = dedent(template_str)
     return PromptWrapper(
-        env().jinja_env.from_string(template_str).render(**kwargs),
-        kwargs
+        env().jinja_env.from_string(template_str).render(**kwargs), kwargs
     )
 
 
@@ -123,6 +119,7 @@ __all__ = [
     "UserMsg",
     "SysMsg",
     "AssistantMsg",
+    "PartialMsg",
     "ApiType",
     "BadAIJsonAnswer",
     "BadAIAnswer",
@@ -143,4 +140,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "3.6.1"
+__version__ = "3.7.0"
