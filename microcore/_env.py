@@ -20,8 +20,10 @@ class Env:
     llm_before_handlers: list[callable] = field(default_factory=list)
     llm_after_handlers: list[callable] = field(default_factory=list)
     texts: AbstractEmbeddingDB = None
-    model: "PreTrainedModel" = field(default=None, init=False, repr=False)
-    tokenizer: "PreTrainedTokenizer" = field(default=None, init=False, repr=False)
+    model: "PreTrainedModel" = field(default=None, init=False, repr=False)  # noqa
+    tokenizer: "PreTrainedTokenizer" = field(
+        default=None, init=False, repr=False
+    )  # noqa
 
     def __post_init__(self):
         global _env

@@ -74,7 +74,9 @@ def get_last_message_ending(tokenizer) -> str:
 
 
 def resolve_tokenizer(config: Config):
-    return config.INIT_PARAMS.get("tokenizer") or transformers.AutoTokenizer.from_pretrained(
+    return config.INIT_PARAMS.get(
+        "tokenizer"
+    ) or transformers.AutoTokenizer.from_pretrained(
         config.MODEL, trust_remote_code=True
     )
 
@@ -128,7 +130,7 @@ def resolve_model(config: Config):
             model.generation_config = transformers.GenerationConfig.from_pretrained(
                 config.MODEL
             )
-        except:  # pylint: disable=bare-except
+        except:  # pylint: disable=bare-except  # noqa
             logging.warning("Can't create generation config")
 
         if "device" in params:

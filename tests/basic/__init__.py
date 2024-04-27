@@ -1,7 +1,6 @@
 import importlib.metadata
 import os
 
-import dotenv
 import pytest
 import microcore as mc
 

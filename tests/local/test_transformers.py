@@ -1,7 +1,4 @@
-import gc
 import logging
-
-import torch
 
 import microcore as mc
 import pytest
