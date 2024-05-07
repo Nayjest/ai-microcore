@@ -46,7 +46,7 @@ def execute(
                     )
             except subprocess.TimeoutExpired:
                 proc.kill()
-                error = "The command timed out"
+                error = f"The command timed out (max execution time is {timeout} seconds)"
                 stderr = f"{stderr}\n{error}"
                 log_errors and logging.error(stderr)
     finally:
