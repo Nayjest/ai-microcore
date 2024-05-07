@@ -97,14 +97,14 @@ def test_delete():
     ])
     assert 5 == texts.count(cid)
     texts.delete(cid, {"field": "value_a"})
-    assert "3,4,5" == ','.join(texts.get_all(cid))
+    assert "3,4,5" == ','.join(sorted(texts.get_all(cid)))
     texts.delete(cid, texts.find_one(cid, "4").id)
-    assert "3,5" == ','.join(texts.get_all(cid))
+    assert "3,5" == ','.join(sorted(texts.get_all(cid)))
     texts.save(cid, "6")
     texts.save(cid, "7")
     texts.save(cid, "8")
     texts.delete(cid, [texts.find_one(cid, "3").id, texts.find_one(cid, "7").id])
-    assert "5,6,8" == ','.join(texts.get_all(cid))
+    assert "5,6,8" == ','.join(sorted(texts.get_all(cid)))
 
 
 def test_find_all():
