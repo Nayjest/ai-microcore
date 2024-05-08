@@ -204,13 +204,13 @@ def make_llm_functions(
 
     def wrapped_inference(prompt: list[dict] | str, **kwargs):
         if (n := kwargs.pop("n", None)) is not None:  # open_ai style
-            kwargs['num_return_sequences'] = n
+            kwargs["num_return_sequences"] = n
 
         if (seed := kwargs.pop("seed", None)) is not None:  # open_ai style
             transformers.set_seed(seed)
 
         if (stop := kwargs.pop("stop", None)) is not None:  # open_ai style
-            kwargs['stopping_criteria'] = make_stopping_criteria(stop)
+            kwargs["stopping_criteria"] = make_stopping_criteria(stop)
 
         partial_msg_used = False
         if config.CHAT_MODE:
