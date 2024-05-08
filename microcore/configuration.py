@@ -14,15 +14,19 @@ TRUE_VALUES = ["1", "TRUE", "YES", "ON", "ENABLED", "Y", "+"]
 """@private"""
 
 
-def from_env(default=None):
+def from_env(default=None, dtype=None):
     """
     Provides default value for the configuration dataclass
     from the environment variable with the name equal to field name in upper case"""
-    return field(default=_MISSING, metadata=dict(_from_env=True, _default=default))
+    return field(
+        default=_MISSING, metadata=dict(_from_env=True, _default=default, _dtype=dtype)
+    )
 
 
-def get_bool_from_env(env_var: str, default: bool = False) -> bool:
+def get_bool_from_env(env_var: str, default: bool | None = False) -> bool | None:
     """Convert value of environment variable to boolean"""
+    if env_var not in os.environ:
+        return default
     return os.getenv(env_var, str(default)).upper() in TRUE_VALUES
 
 
@@ -79,7 +83,13 @@ class BaseConfig:
     def _update_from_env(self):
         for f in fields(self):
             if f.metadata.get("_from_env") and getattr(self, f.name) is _MISSING:
-                setattr(self, f.name, os.getenv(f.name.upper(), f.metadata["_default"]))
+                if f.metadata.get("_dtype") is bool:
+                    val_from_env = get_bool_from_env(
+                        f.name.upper(), f.metadata["_default"]
+                    )
+                else:
+                    val_from_env = os.getenv(f.name.upper(), f.metadata["_default"])
+                setattr(self, f.name, val_from_env)
 
     def __iter__(self):
         for f in fields(self):
@@ -110,7 +120,7 @@ class _GoogleVertexAiEnvVars:
     GOOGLE_VERTEX_LOCATION: str = from_env()
     GOOGLE_VERTEX_GCLOUD_AUTH: bool = None
 
-    GOOGLE_VERTEX_RESPONSE_VALIDATION: bool = None
+    GOOGLE_VERTEX_RESPONSE_VALIDATION: bool = from_env(dtype=bool, default=False)
     GOOGLE_GEMINI_SAFETY_SETTINGS: dict = None
 
 
@@ -145,7 +155,7 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
 
     INFERENCE_FUNC: Union[Callable, str] = None
     """Inference function for local models"""
-    CHAT_MODE: bool = None
+    CHAT_MODE: bool = from_env(dtype=bool)
     """Is it a chat or completion model"""
     INIT_PARAMS: dict = field(default_factory=dict)
     """Custom initialization parameters for the model"""
@@ -167,10 +177,6 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
 
         # Use defaults from ENV variables expected by OpenAI API
         self.LLM_API_TYPE = self.LLM_API_TYPE or self.OPENAI_API_TYPE
-        if self.GOOGLE_VERTEX_RESPONSE_VALIDATION is None:
-            self.GOOGLE_VERTEX_RESPONSE_VALIDATION = get_bool_from_env(
-                "GOOGLE_VERTEX_RESPONSE_VALIDATION", False
-            )
 
         if self.LLM_API_TYPE == ApiType.AZURE:
             self.LLM_API_VERSION = self.LLM_API_VERSION or self.OPENAI_API_VERSION
@@ -279,7 +285,10 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
         """
         Informal description of the configuration
         """
+        prev_env = os.environ.copy()
+        os.environ.clear()
         default = Config(LLM_API_TYPE=ApiType.NONE, USE_DOT_ENV=False)
+        os.environ.update(prev_env)
         data = {
             k.lower().replace("llm_", ""): v
             for k, v in dict(self).items()
@@ -287,7 +296,9 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
         }
         for k, v in data.items():
             if "_key" in k and isinstance(v, str):
-                data[k] = v[:1] + "****" + v[-2:]
+                if not len(v):
+                    continue
+                data[k] = v[: 1 if len(v) <= 12 else 3] + "****" + v[-2:]
         if return_dict:
             return data
 
@@ -305,7 +316,7 @@ class LLMConfigError(ValueError):
 class Config(LLMConfig):
     """MicroCore configuration"""
 
-    USE_LOGGING: bool = False
+    USE_LOGGING: bool = from_env(default=False)
     """Whether to use logging or not, see `microcore.use_logging`"""
 
     PROMPT_TEMPLATES_PATH: str | Path = from_env("tpl")
@@ -321,12 +332,12 @@ class Config(LLMConfig):
 
     EMBEDDING_DB_FUNCTION: Any = from_env()
 
-    EMBEDDING_DB_ALLOW_DUPLICATES: bool = False
+    EMBEDDING_DB_ALLOW_DUPLICATES: bool = from_env(dtype=bool, default=False)
 
     DEFAULT_ENCODING: str = from_env("utf-8")
     """Used in file system operations, utf-8 by default"""
 
-    JINJA2_AUTO_ESCAPE: bool = None
+    JINJA2_AUTO_ESCAPE: bool = from_env(dtype=bool, default=False)
 
     ELEVENLABS_API_KEY: str = from_env()
 
@@ -336,8 +347,6 @@ class Config(LLMConfig):
     MAX_CONCURRENT_TASKS: int = from_env(None)
 
     def __post_init__(self):
-        if self.JINJA2_AUTO_ESCAPE is None:
-            self.JINJA2_AUTO_ESCAPE = get_bool_from_env("JINJA2_AUTO_ESCAPE", False)
         super().__post_init__()
         if self.TEXT_TO_SPEECH_PATH is None:
             self.TEXT_TO_SPEECH_PATH = Path(self.STORAGE_PATH) / "voicing"
