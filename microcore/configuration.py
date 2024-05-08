@@ -31,9 +31,9 @@ def get_bool_from_env(env_var: str, default: bool | None = False) -> bool | None
 
 
 def get_object_from_env(env_var: str, dtype: type, default: Any = None):
-    val_from_env = os.getenv(
+    val_from_env = os.getenv(  # pylint: disable=W1508
         env_var, _MISSING
-    )  # pylint: disable=invalid-envvar-default
+    )
     if isinstance(val_from_env, str):
         val_from_env = val_from_env.strip()
         if val_from_env:
