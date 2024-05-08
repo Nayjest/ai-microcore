@@ -160,7 +160,7 @@ if True:  # pylint: disable=W0125
             assert not kwargs, "Cannot pass both cfg and kwargs"
         if isinstance(cfg, dict):
             return _config_builder_wrapper(**cfg)
-        elif isinstance(cfg, str):
+        if isinstance(cfg, str):
             if not os.path.isfile(cfg):
                 raise LLMConfigError(f"Configuration file not found: {cfg}")
             return _config_builder_wrapper(Config(USE_DOT_ENV=True, DOT_ENV_FILE=cfg))

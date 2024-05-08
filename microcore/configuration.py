@@ -30,6 +30,32 @@ def get_bool_from_env(env_var: str, default: bool | None = False) -> bool | None
     return os.getenv(env_var, str(default)).upper() in TRUE_VALUES
 
 
+def get_object_from_env(env_var: str, dtype: type, default: Any = None):
+    val_from_env = os.getenv(
+        env_var, _MISSING
+    )  # pylint: disable=invalid-envvar-default
+    if isinstance(val_from_env, str):
+        val_from_env = val_from_env.strip()
+        if val_from_env:
+            try:
+                val_from_env = json.loads(val_from_env.strip())
+                assert isinstance(
+                    val_from_env, dtype
+                ), f"Expected {dtype.__name__}, got {type(val_from_env).__name__}"
+            except (json.JSONDecodeError, AssertionError) as e:
+                raise LLMConfigError(
+                    f"Invalid value in environment variable '{env_var}'. "
+                    f"Expected: JSON {dtype.__name__}, received: '{val_from_env}'"
+                ) from e
+        else:
+            val_from_env = _MISSING
+    if val_from_env is _MISSING:
+        if default is None:  # instead of default factory
+            default = dtype()
+        val_from_env = default
+    return val_from_env
+
+
 class ApiType:
     """LLM API types"""
 
@@ -89,26 +115,7 @@ class BaseConfig:
                 if dtype is bool:
                     val_from_env = get_bool_from_env(env_name, default)
                 elif dtype in [dict, list]:
-                    val_from_env = os.getenv(env_name, _MISSING)
-                    if isinstance(val_from_env, str):
-                        val_from_env = val_from_env.strip()
-                        if val_from_env:
-                            try:
-                                val_from_env = json.loads(val_from_env.strip())
-                                assert isinstance(
-                                    val_from_env, dtype
-                                ), f"Expected {dtype.__name__}, got {type(val_from_env).__name__}"
-                            except (json.JSONDecodeError, AssertionError) as e:
-                                raise LLMConfigError(
-                                    f"Invalid value in environment variable '{env_name}'. "
-                                    f"Expected: JSON {dtype.__name__}, received: '{val_from_env}'"
-                                ) from e
-                        else:
-                            val_from_env = _MISSING
-                    if val_from_env is _MISSING:
-                        if default is None:  # instead of default factory
-                            default = dtype()
-                        val_from_env = default
+                    val_from_env = get_object_from_env(env_name, dtype, default)
                 else:
                     val_from_env = os.getenv(env_name, default)
 
