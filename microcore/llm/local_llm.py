@@ -3,9 +3,10 @@ import inspect
 import threading
 from typing import Awaitable, Optional, Any, TypeVar
 
-from ..configuration import Config
+from ..configuration import Config, LLMConfigError
 from .._prepare_llm_args import prepare_chat_messages, prepare_prompt
 from ..types import LLMAsyncFunctionType, LLMFunctionType
+from ..utils import resolve_callable
 from ..wrappers.llm_response_wrapper import LLMResponse
 
 T = TypeVar("T")
@@ -45,9 +46,13 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
 def make_llm_functions(
     config: Config, overriden_inference_func: callable = None
 ) -> tuple[LLMFunctionType, LLMAsyncFunctionType]:
-    inference_fn = overriden_inference_func or config.INFERENCE_FUNC
-    if isinstance(inference_fn, str):
-        inference_fn = globals()[inference_fn]
+    try:
+        inference_fn = resolve_callable(
+            overriden_inference_func or config.INFERENCE_FUNC
+        )
+    except ValueError as e:
+        raise LLMConfigError(f"Invalid inference function, {e}") from e
+
     if inspect.iscoroutinefunction(inference_fn):
 
         async def allm(prompt, **kwargs):

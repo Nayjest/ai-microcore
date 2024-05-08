@@ -1,9 +1,9 @@
+import json
 import logging
 import os
 from dataclasses import dataclass, field, fields
 from pathlib import Path
-from typing import Any
-from typing import Union, Callable
+from typing import Any, Union, Callable
 
 import dotenv
 from colorama import Fore
@@ -83,12 +83,35 @@ class BaseConfig:
     def _update_from_env(self):
         for f in fields(self):
             if f.metadata.get("_from_env") and getattr(self, f.name) is _MISSING:
-                if f.metadata.get("_dtype") is bool:
-                    val_from_env = get_bool_from_env(
-                        f.name.upper(), f.metadata["_default"]
-                    )
+                env_name = f.name.upper()
+                default = f.metadata["_default"]
+                dtype = f.metadata.get("_dtype")
+                if dtype is bool:
+                    val_from_env = get_bool_from_env(env_name, default)
+                elif dtype in [dict, list]:
+                    val_from_env = os.getenv(env_name, _MISSING)
+                    if isinstance(val_from_env, str):
+                        val_from_env = val_from_env.strip()
+                        if val_from_env:
+                            try:
+                                val_from_env = json.loads(val_from_env.strip())
+                                assert isinstance(
+                                    val_from_env, dtype
+                                ), f"Expected {dtype.__name__}, got {type(val_from_env).__name__}"
+                            except (json.JSONDecodeError, AssertionError) as e:
+                                raise LLMConfigError(
+                                    f"Invalid value in environment variable '{env_name}'. "
+                                    f"Expected: JSON {dtype.__name__}, received: '{val_from_env}'"
+                                ) from e
+                        else:
+                            val_from_env = _MISSING
+                    if val_from_env is _MISSING:
+                        if default is None:  # instead of default factory
+                            default = dtype()
+                        val_from_env = default
                 else:
-                    val_from_env = os.getenv(f.name.upper(), f.metadata["_default"])
+                    val_from_env = os.getenv(env_name, default)
+
                 setattr(self, f.name, val_from_env)
 
     def __iter__(self):
@@ -118,10 +141,10 @@ class _GoogleVertexAiEnvVars:
     GOOGLE_VERTEX_ACCESS_TOKEN: str = from_env()
     GOOGLE_VERTEX_PROJECT_ID: str = from_env()
     GOOGLE_VERTEX_LOCATION: str = from_env()
-    GOOGLE_VERTEX_GCLOUD_AUTH: bool = None
+    GOOGLE_VERTEX_GCLOUD_AUTH: bool = from_env(dtype=bool)
 
     GOOGLE_VERTEX_RESPONSE_VALIDATION: bool = from_env(dtype=bool, default=False)
-    GOOGLE_GEMINI_SAFETY_SETTINGS: dict = None
+    GOOGLE_GEMINI_SAFETY_SETTINGS: dict = from_env(dtype=dict)
 
 
 @dataclass
@@ -145,7 +168,7 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
     MODEL: str = from_env()
     """Language model name"""
 
-    LLM_DEFAULT_ARGS: dict = field(default_factory=dict)
+    LLM_DEFAULT_ARGS: dict = from_env(dtype=dict)
     """
     You may specify here default arguments for the LLM API calls,
      i. e. temperature, max_tokens, etc.
@@ -153,11 +176,11 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
 
     AZURE_DEPLOYMENT_ID: str = from_env()
 
-    INFERENCE_FUNC: Union[Callable, str] = None
+    INFERENCE_FUNC: Union[Callable, str] = from_env()
     """Inference function for local models"""
     CHAT_MODE: bool = from_env(dtype=bool)
     """Is it a chat or completion model"""
-    INIT_PARAMS: dict = field(default_factory=dict)
+    INIT_PARAMS: dict = from_env(dtype=dict)
     """Custom initialization parameters for the model"""
 
     def __post_init__(self):
@@ -220,13 +243,6 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
                 raise LLMConfigError(
                     "LLM configuration error: "
                     "INFERENCE_FUNC should be provided for local models"
-                )
-            if (
-                isinstance(self.INFERENCE_FUNC, str)
-                and self.INFERENCE_FUNC not in globals()
-            ):
-                raise LLMConfigError(
-                    f"LLM configuration error: inference function '{self.INFERENCE_FUNC}' not found"
                 )
         elif self.LLM_API_TYPE == ApiType.TRANSFORMERS:
             if not self.MODEL:
@@ -325,9 +341,9 @@ class Config(LLMConfig):
     STORAGE_PATH: str | Path = from_env("storage")
     """Path to the folder with file storage, ./storage by default"""
 
-    STORAGE_DEFAULT_FILE_EXT: str = field(default="")
+    STORAGE_DEFAULT_FILE_EXT: str = from_env(default="")
 
-    EMBEDDING_DB_FOLDER: str = "embedding_db"
+    EMBEDDING_DB_FOLDER: str = from_env(default="embedding_db")
     """Folder within microcore.config.Config.STORAGE_PATH for storing embeddings"""
 
     EMBEDDING_DB_FUNCTION: Any = from_env()
@@ -344,7 +360,7 @@ class Config(LLMConfig):
     TEXT_TO_SPEECH_PATH: str | Path = from_env()
     """Path to the folder with generated voice files"""
 
-    MAX_CONCURRENT_TASKS: int = from_env(None)
+    MAX_CONCURRENT_TASKS: int = from_env(default=None)
 
     def __post_init__(self):
         super().__post_init__()

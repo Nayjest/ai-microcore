@@ -20,6 +20,7 @@ from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
 from ._llm_functions import llm, allm, llm_parallel
 from .utils import parse, dedent
+from .metrics import Metrics
 
 
 def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
@@ -137,7 +138,8 @@ __all__ = [
     "Config",
     "types",
     "ui",
+    "Metrics",
     # "wrappers",
 ]
 
-__version__ = "3.8.0"
+__version__ = "3.9.0"

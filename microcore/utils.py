@@ -10,7 +10,7 @@ import subprocess
 from dataclasses import dataclass
 from fnmatch import fnmatch
 from pathlib import Path
-from typing import Any
+from typing import Any, Union, Callable
 
 from colorama import Fore
 
@@ -216,6 +216,7 @@ def get_vram_usage(as_string=True, color=Fore.GREEN):
 
 
 def show_vram_usage():
+    """Prints GPU VRAM usage."""
     print(get_vram_usage(as_string=True))
 
 
@@ -242,6 +243,9 @@ def extract_number(
     dtype: type | str = float,
     rounding: bool = False,
 ) -> int | float | Any:
+    """
+    Extract a number from a string.
+    """
     assert position in ["last", "first"], f"Invalid position: {position}"
     idx = {"last": -1, "first": 0}[position]
 
@@ -261,7 +265,11 @@ def extract_number(
     return return_default(default, text)
 
 
-def dedent(text: str):
+def dedent(text: str) -> str:
+    """
+    Removes minimal shared leading whitespace from each line
+    and strips leading and trailing empty lines.
+    """
     lines = text.splitlines()
     while lines and lines[0].strip() == "":
         lines.pop(0)
@@ -280,6 +288,9 @@ def dedent(text: str):
 
 
 async def run_parallel(tasks: list, max_concurrent_tasks: int):
+    """
+    Run tasks in parallel with a limit on the number of concurrent tasks.
+    """
     semaphore = asyncio.Semaphore(max_concurrent_tasks)
 
     async def worker(task):
@@ -287,3 +298,32 @@ async def run_parallel(tasks: list, max_concurrent_tasks: int):
             return await task
 
     return await asyncio.gather(*[worker(task) for task in tasks])
+
+
+def resolve_callable(
+    fn: Union[Callable, str, None], allow_empty=False
+) -> Union[Callable, None]:
+    """
+    Resolves a callable function from a string (module.function)
+    """
+    if callable(fn):
+        return fn
+    if not fn:
+        if allow_empty:
+            return None
+        raise ValueError("Function is not specified")
+    try:
+        if "." not in fn:
+            fn = globals()[fn]
+        else:
+            parts = fn.split(".")
+            module_name = ".".join(parts[:-1])
+            func_name = parts[-1]
+            if not module_name:
+                raise ValueError(f"Invalid module name: {module_name}")
+            module = __import__(module_name, fromlist=[func_name])
+            fn = getattr(module, func_name)
+        assert callable(fn)
+    except (ImportError, AttributeError, AssertionError, ValueError) as e:
+        raise ValueError(f"Can't resolve callable by name '{fn}', {e}") from e
+    return fn
