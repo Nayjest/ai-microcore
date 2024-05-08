@@ -296,7 +296,7 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
         }
         for k, v in data.items():
             if "_key" in k and isinstance(v, str):
-                if not len(v):
+                if len(v) <= 3:
                     continue
                 data[k] = v[: 1 if len(v) <= 12 else 3] + "****" + v[-2:]
         if return_dict:
