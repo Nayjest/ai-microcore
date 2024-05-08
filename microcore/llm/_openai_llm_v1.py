@@ -3,7 +3,7 @@ import openai
 
 from ..configuration import Config, ApiType
 from .._prepare_llm_args import prepare_chat_messages, prepare_prompt
-from ..types import LLMAsyncFunctionType, LLMFunctionType
+from ..types import LLMAsyncFunctionType, LLMFunctionType, BadAIAnswer
 from ..wrappers.llm_response_wrapper import LLMResponse
 from ..utils import is_chat_model
 
@@ -67,6 +67,11 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
     return args, {"callbacks": callbacks}
 
 
+def check_for_errors(response):
+    if hasattr(response, 'object') and response.object == 'error':
+        raise BadAIAnswer(response.message)
+
+
 def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctionType]:
     if config.LLM_API_TYPE == ApiType.AZURE:
         connection_type = openai.AzureOpenAI
@@ -95,6 +100,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             response = await _async_connection.chat.completions.create(
                 messages=prepare_chat_messages(prompt), **args
             )
+            check_for_errors(response)
             if args["stream"]:
                 return await _a_process_streamed_response(
                     response, options["callbacks"], chat_model_used=True
@@ -107,11 +113,11 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
         response = await _async_connection.completions.create(
             prompt=prepare_prompt(prompt), **args
         )
+        check_for_errors(response)
         if args["stream"]:
             return await _a_process_streamed_response(
                 response, options["callbacks"], chat_model_used=False
             )
-
         return LLMResponse(response.choices[0].text, response.__dict__)
 
     def llm(prompt, **kwargs):
@@ -120,6 +126,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             response = _connection.chat.completions.create(
                 messages=prepare_chat_messages(prompt), **args
             )
+            check_for_errors(response)
             if args["stream"]:
                 return _process_streamed_response(
                     response, options["callbacks"], chat_model_used=True
@@ -131,11 +138,11 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
 
         # Else (if it is text completion model)
         response = _connection.completions.create(prompt=prepare_prompt(prompt), **args)
+        check_for_errors(response)
         if args["stream"]:
             return _process_streamed_response(
                 response, options["callbacks"], chat_model_used=False
             )
-
         return LLMResponse(response.choices[0].text, response.__dict__)
 
     return llm, allm
