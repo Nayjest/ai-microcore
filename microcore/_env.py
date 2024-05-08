@@ -1,3 +1,4 @@
+import os.path
 from dataclasses import dataclass, field, asdict, fields
 from importlib.util import find_spec
 import jinja2
@@ -149,7 +150,7 @@ if True:  # pylint: disable=W0125
 
     _fields = list(map(lambda f: f.name, fields(Config)))
 
-    def _config_builder_wrapper(cfg: Config | dict = None, **kwargs):
+    def _config_builder_wrapper(cfg: Config | dict | str = None, **kwargs):
         """
         - Convert configuration keys to uppercase
         - Add LLM_ prefix to keys if necessary
@@ -159,6 +160,10 @@ if True:  # pylint: disable=W0125
             assert not kwargs, "Cannot pass both cfg and kwargs"
         if isinstance(cfg, dict):
             return _config_builder_wrapper(**cfg)
+        elif isinstance(cfg, str):
+            if not os.path.isfile(cfg):
+                raise LLMConfigError(f"Configuration file not found: {cfg}")
+            return _config_builder_wrapper(Config(USE_DOT_ENV=True, DOT_ENV_FILE=cfg))
         kwargs = {str(k).upper(): v for k, v in kwargs.items()}
         for k in list(kwargs.keys()):
             if not hasattr(Config, k) and (
