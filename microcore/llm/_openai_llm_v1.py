@@ -68,7 +68,7 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
 
 
 def check_for_errors(response):
-    if hasattr(response, 'object') and response.object == 'error':
+    if hasattr(response, "object") and response.object == "error":
         raise BadAIAnswer(response.message)
 
 
