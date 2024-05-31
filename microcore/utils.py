@@ -89,9 +89,10 @@ class DataclassEncoder(json.JSONEncoder):
     def default(self, o):
         if dataclasses.is_dataclass(o):
             return dataclasses.asdict(o)
-        return super().default(o)
+        return _default(self, o)
 
 
+_default = json.JSONEncoder.default
 json.JSONEncoder.default = DataclassEncoder().default
 
 
