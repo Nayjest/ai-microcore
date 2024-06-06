@@ -205,6 +205,9 @@ LLM Microcore supports all models & API providers having OpenAI API.
 | [Groq](https://groq.com/)                                                         |                                           LLaMA2 70b<br>Mixtral 8x7b<br>Gemma 7b |
 | [Fireworks](fireworks.ai)                                                         |                                           [Over 50 open-source language models](https://fireworks.ai/models?show=All) |
 
+## Supported local language model APIs:
+- HuggingFace [Transformers](https://huggingface.co/docs/transformers/index)
+- Custom local models by providing own function for chat / text completion, sync / async inference.
 
 ## 🖼️ Examples
 
