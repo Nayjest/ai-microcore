@@ -214,6 +214,9 @@ LLM Microcore supports all models & API providers having OpenAI API.
 #### [code-review-tool example](https://github.com/llm-microcore/microcore/blob/main/examples/code-review-tool)
 Performs code review by LLM for changes in git .patch files in any programming languages.
 
+#### [image analysis example](https://colab.research.google.com/drive/1qTJ51wxCv3VlyqLt3M8OZ7183YXPFpic) (Google Colab)
+Determine the number of petals and the color of the flower from a photo (gpt-4-turbo)
+ 
 #### [Other examples](https://github.com/llm-microcore/microcore/tree/main/examples)
 
 ## Python functions as AI tools
