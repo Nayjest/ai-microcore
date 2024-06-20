@@ -9,7 +9,7 @@
 
 # AI MicroCore: A Minimalistic Foundation for AI Applications
 
-**microcore** is a collection of python adapters for Large Language Models
+**MicroCore** is a collection of python adapters for Large Language Models
 and Semantic Search APIs allowing to 
 communicate with these services in a convenient way, make it easily switchable 
 and separate business logic from implementation details.
