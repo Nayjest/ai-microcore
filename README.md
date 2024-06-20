@@ -96,7 +96,7 @@ and [configure the authorization](https://cloud.google.com/sdk/docs/authorizing)
 
 #### Local language models via Hugging Face Transformers
 
-You will need to install transformers and deep learning library of your choice (PyTorch, TensorFlow, Flax, etc)
+You will need to install transformers and deep learning library of your choice (PyTorch, TensorFlow, Flax, etc).
 
 See [transformers installation](https://huggingface.co/docs/transformers/installation).
 
