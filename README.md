@@ -51,7 +51,7 @@ git clone git@github.com:Nayjest/ai-microcore.git && mv ai-microcore/microcore .
 
 ## 📋 Requirements
 
-Python 3.10+ / 3.11+
+Python 3.10 / 3.11 / 3.12
 
 Both v0.28+ and v1.X OpenAI package versions are supported.
 
@@ -68,7 +68,7 @@ Similarity search features will work out of the box if you have the `chromadb` p
 
 There are a few options available for configuring microcore:
 
--   Use `microcore.configure()`
+-   Use `microcore.configure(**params)`
     <br>💡 <small>All configuration options should be available in IDE autocompletion tooltips</small>
 -   Create a `.env` file in your project root; examples: [basic.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.example), [Mistral Large.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.mistral.example), [Anthropic Claude 3 Opus.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.anthropic.example), [Gemini on Vertex AI.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.google-vertex-gemini.example), [Gemini on AI Studio.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.gemini.example)
 -   Use a custom configuration file: `mc.configure(DOT_ENV_FILE='dev-config.ini')`
@@ -93,6 +93,11 @@ pip install vertexai
 📌Additonaly for working through [Vertex AI](https://cloud.google.com/vertex-ai) you need to
 [install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install)
 and [configure the authorization](https://cloud.google.com/sdk/docs/authorizing).
+
+#### Local language models via Hugging Face Transformers
+```bash
+pip install transformers
+```
 
 ### Priority of Configuration Sources
 
