@@ -35,7 +35,7 @@ maintainers = [
 license = { file = "LICENSE" }
 
 [project.urls]
-"Source Code" = "https://github.com/ai-microcore/microcore"
+"Source Code" = "https://github.com/Nayjest/ai-microcore"
 
 [tool.flit.module]
 name = "microcore"
