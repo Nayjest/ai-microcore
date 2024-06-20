@@ -11,11 +11,11 @@
 
 **MicroCore** is a collection of python adapters for Large Language Models
 and Semantic Search APIs allowing to 
-communicate with these services in a convenient way, make it easily switchable 
-and separate business logic from implementation details.
+communicate with these services in a convenient way, make them easily switchable 
+and separate business logic from the implementation details.
 
 It defines interfaces for features typically used in AI applications,
-that allows you to keep your application as simple as possible and try various models & services
+which allows you to keep your application as simple as possible and try various models & services
 without need to change your application code.
 
 You even can switch between text completion and chat completion models only using configuration.
@@ -53,7 +53,7 @@ git clone git@github.com:Nayjest/ai-microcore.git && mv ai-microcore/microcore .
 
 Python 3.10+ / 3.11+
 
-Both v0.28.X and v1.x.x OpenAI package versions are supported.
+Both v0.28+ and v1.X OpenAI package versions are supported.
 
 
 ## ⚙️ Configuring
