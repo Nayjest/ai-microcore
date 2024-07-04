@@ -212,7 +212,7 @@ LLM Microcore supports all models & API providers having OpenAI API.
 | [Fireworks](fireworks.ai)                                                         |                                           [Over 50 open-source language models](https://fireworks.ai/models?show=All) |
 
 ## Supported local language model APIs:
-- HuggingFace [Transformers](https://huggingface.co/docs/transformers/index)
+- HuggingFace [Transformers](https://huggingface.co/docs/transformers/index) (see configuration examples [here](https://github.com/Nayjest/ai-microcore/blob/main/tests/local/test_transformers.py)).
 - Custom local models by providing own function for chat / text completion, sync / async inference.
 
 ## 🖼️ Examples
