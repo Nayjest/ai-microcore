@@ -12,12 +12,18 @@ class SearchResults(list):
     def fit_to_token_size(
             self,
             max_tokens: int,
+            min_documents: int = None,
             for_model: str = None,
             encoding: str | tiktoken.Encoding = None,
             verbose=True
     ):
         from ..tokenizing import fit_to_token_size
-        records, removed = fit_to_token_size(self, max_tokens, for_model, encoding)
+        records, removed = fit_to_token_size(
+            self, max_tokens=max_tokens,
+            min_documents=min_documents,
+            for_model=for_model,
+            encoding=encoding
+        )
         if verbose and len(records) < len(self):
             logging.info(
                 "For fitting %d records to %d tokens, %d records was removed",

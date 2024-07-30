@@ -57,6 +57,7 @@ def num_tokens_from_string(
 def fit_to_token_size(
     docs: list[str],
     max_tokens: int,
+    min_documents: int = None,
     for_model: str = None,
     encoding: str | tiktoken.Encoding = None,
 ) -> tuple[list[str], int]:
@@ -68,6 +69,8 @@ def fit_to_token_size(
     tot_size = 0
     for i, doc in enumerate(docs):
         tot_size += num_tokens_from_string(doc, encoding=encoding)
+        if min_documents and i < min_documents:
+            continue
         if tot_size > max_tokens:
             result = docs[:i]
             return result, len(docs) - len(result)
