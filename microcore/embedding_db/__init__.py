@@ -24,7 +24,7 @@ class SearchResults(list):
             for_model=for_model,
             encoding=encoding
         )
-        if verbose and len(records) < len(self):
+        if verbose and removed:
             logging.info(
                 "For fitting %d records to %d tokens, %d records was removed",
                 len(self),
