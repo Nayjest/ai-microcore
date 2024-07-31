@@ -5,3 +5,4 @@ colorama~=0.4.6
 chardet~=5.2.0
 PyYAML~=6.0
 aiohttp>=3.8.6,<4.0
+tiktoken>=0.7.0,<1.0

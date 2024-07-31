@@ -4,7 +4,7 @@ import chromadb
 from chromadb.config import Settings
 from chromadb.utils import embedding_functions
 from ..configuration import Config
-from .. import SearchResult, AbstractEmbeddingDB
+from .. import SearchResult, SearchResults, AbstractEmbeddingDB
 
 
 @dataclass
@@ -25,7 +25,7 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
 
     @classmethod
     def _wrap_results(cls, results) -> list[str | SearchResult]:
-        return [
+        return SearchResults([
             SearchResult(
                 results["documents"][0][i],
                 dict(
@@ -35,7 +35,7 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
                 ),
             )
             for i in range(len(results["documents"][0]))
-        ]
+        ])
 
     def search(
         self,
@@ -50,7 +50,7 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
                 collection, embedding_function=self.embedding_function
             )
         except ValueError:
-            return []
+            return SearchResults([])
 
         if isinstance(query, str):
             query = [query]
@@ -61,7 +61,7 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
         return (
             self._wrap_results(d)
             if d and d.get("documents") and d["documents"][0]
-            else []
+            else SearchResults([])
         )
 
     def save_many(self, collection: str, items: list[tuple[str, dict] | str]):
@@ -122,12 +122,12 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
                 collection, embedding_function=self.embedding_function
             )
         except ValueError:
-            return []
+            return SearchResults([])
         results = chroma_collection.get()
-        return [
+        return SearchResults([
             SearchResult(
                 results["documents"][i],
                 {"metadata": results["metadatas"][i] or {}, "id": results["ids"][i]},
             )
             for i in range(len(results["documents"]))
-        ]
+        ])

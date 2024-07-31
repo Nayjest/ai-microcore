@@ -9,7 +9,7 @@ and separate business logic from implementation details.
 
 import os
 import microcore.ui  # noqa
-from .embedding_db import SearchResult, AbstractEmbeddingDB
+from .embedding_db import SearchResult, AbstractEmbeddingDB, SearchResults
 from .file_storage import storage
 from ._env import configure, env, config
 from .logging import use_logging
@@ -67,10 +67,10 @@ class _EmbeddingDBProxy(AbstractEmbeddingDB):
         n_results: int = 5,
         where: dict = None,
         **kwargs,
-    ) -> list[str | SearchResult]:
+    ) -> SearchResults | list[str | SearchResult]:
         return env().texts.search(collection, query, n_results, where, **kwargs)
 
-    def find(self, *args, **kwargs) -> list[str | SearchResult]:
+    def find(self, *args, **kwargs) -> SearchResults | list[str | SearchResult]:
         return self.search(*args, **kwargs)
 
     def find_all(
@@ -79,7 +79,7 @@ class _EmbeddingDBProxy(AbstractEmbeddingDB):
         query: str | list,
         where: dict = None,
         **kwargs,
-    ) -> list[str | SearchResult]:
+    ) -> SearchResults | list[str | SearchResult]:
         return env().texts.find_all(collection, query, where, **kwargs)
 
     def save_many(self, collection: str, items: list[tuple[str, dict] | str]):
@@ -128,6 +128,8 @@ __all__ = [
     "LLMResponse",
     "PromptWrapper",
     "parse",
+    "SearchResult",
+    "SearchResults",
     "dedent",
     # submodules
     "embedding_db",
@@ -142,4 +144,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "3.9.1"
+__version__ = "3.10.0"

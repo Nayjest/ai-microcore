@@ -12,6 +12,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any, Union, Callable
 
+import tiktoken
 from colorama import Fore
 
 from .configuration import Config
@@ -81,6 +82,21 @@ class ExtendedString(str):
         raise AttributeError(
             f"'{self.__class__.__name__}' object has no attribute '{item}'"
         )
+
+    def to_tokens(
+        self,
+        for_model: str = None,
+        encoding: str | tiktoken.Encoding = None
+    ):
+        from .tokenizing import encode
+        return encode(self, for_model=for_model, encoding=encoding)
+
+    def num_tokens(
+        self,
+        for_model: str = None,
+        encoding: str | tiktoken.Encoding = None
+    ):
+        return len(self.to_tokens(for_model=for_model, encoding=encoding))
 
 
 class DataclassEncoder(json.JSONEncoder):

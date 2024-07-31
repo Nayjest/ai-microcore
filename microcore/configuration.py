@@ -175,6 +175,9 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
     MODEL: str = from_env()
     """Language model name"""
 
+    TIKTOKEN_ENCODING: str = from_env()
+    """Will enforce using specific encoding for token size measurement"""
+
     LLM_DEFAULT_ARGS: dict = from_env(dtype=dict)
     """
     You may specify here default arguments for the LLM API calls,

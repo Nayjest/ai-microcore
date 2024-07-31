@@ -1,8 +1,37 @@
+import logging
 import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+import tiktoken
+
 from ..utils import ExtendedString
+
+
+class SearchResults(list):
+    def fit_to_token_size(
+            self,
+            max_tokens: int,
+            min_documents: int = None,
+            for_model: str = None,
+            encoding: str | tiktoken.Encoding = None,
+            verbose=True
+    ):
+        from ..tokenizing import fit_to_token_size
+        records, removed = fit_to_token_size(
+            self, max_tokens=max_tokens,
+            min_documents=min_documents,
+            for_model=for_model,
+            encoding=encoding
+        )
+        if verbose and removed:
+            logging.info(
+                "For fitting %d records to %d tokens, %d records was removed",
+                len(self),
+                max_tokens,
+                removed
+            )
+        return SearchResults(list(records))
 
 
 class SearchResult(ExtendedString):
@@ -46,7 +75,7 @@ class AbstractEmbeddingDB(ABC):
             **kwargs: additional arguments
         """
 
-    def find(self, *args, **kwargs) -> list[str | SearchResult]:
+    def find(self, *args, **kwargs) -> SearchResults | list[str | SearchResult]:
         """
         Alias for `search`
         """
@@ -58,13 +87,13 @@ class AbstractEmbeddingDB(ABC):
         query: str | list,
         where: dict = None,
         **kwargs,
-    ) -> list[str | SearchResult]:
+    ) -> SearchResults | list[str | SearchResult]:
         return self.search(
             collection, query, n_results=sys.maxsize - 1, where=where, **kwargs
         )
 
     @abstractmethod
-    def get_all(self, collection: str) -> list[str | SearchResult]:
+    def get_all(self, collection: str) -> SearchResults | list[str | SearchResult]:
         """Return all documents in the collection"""
 
     def save(self, collection: str, text: str, metadata: dict = None):
