@@ -17,8 +17,17 @@ def error(*args, **kwargs):
     print(*[Fore.RED + i for i in args], **kwargs)
 
 
-def ask_yn(msg):
-    return "y" in input(msg + " (y/n)").lower().strip()
+def warning(*args, **kwargs):
+    print(*[Fore.YELLOW + i for i in args], **kwargs)
+
+
+def ask_yn(msg, default=False):
+    try:
+        input_val = input(msg + " (y/n) ").lower().strip()
+        return "y" in input_val if default else "n" not in input_val
+    except KeyboardInterrupt:
+        warning("Interrupted, using default:", "Yes" if default else "No")
+        return default
 
 
 def ask_choose(msg, variants: list):
