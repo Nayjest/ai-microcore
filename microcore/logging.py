@@ -28,8 +28,8 @@ def _format_request_log_str(prompt, **kwargs) -> str:
             )
             out += (
                 f"{'' if LoggingConfig.DENSE else LoggingConfig.INDENT}"
-                f"{LoggingConfig.PROMPT_COLOR}[{role.capitalize()}]:"
-                f"{content}{LoggingConfig.COLOR_RESET}"
+                f"[{role.capitalize()}]:"
+                f"{LoggingConfig.PROMPT_COLOR}{content}{LoggingConfig.COLOR_RESET}\n"
             )
     else:
         lines = prepare_prompt(prompt).split("\n")
@@ -39,6 +39,8 @@ def _format_request_log_str(prompt, **kwargs) -> str:
             + nl.join(lines)
             + LoggingConfig.COLOR_RESET
         )
+        if out.endswith("\n"):
+            out = out[:-1]
     return out
 
 
@@ -65,7 +67,7 @@ class LoggingConfig:
     PROMPT_COLOR = Fore.LIGHTGREEN_EX
     RESPONSE_COLOR = Fore.CYAN
     COLOR_RESET = Fore.RESET
-    INDENT: str = "\t"
+    INDENT: str = " " * 4
     DENSE: bool = False
     OUTPUT_METHOD: callable = print
     REQUEST_FORMATTER: callable = _format_request_log_str
