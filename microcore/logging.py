@@ -1,5 +1,5 @@
 import dataclasses
-from colorama import Fore, Style, init
+from colorama import Fore, init
 
 from .configuration import ApiType
 from ._env import env, config
@@ -7,19 +7,13 @@ from ._prepare_llm_args import prepare_chat_messages, prepare_prompt
 from .utils import is_chat_model, is_notebook
 
 
-class LoggingConfig:
-    PROMPT_COLOR = Fore.LIGHTGREEN_EX
-    RESPONSE_COLOR = Fore.CYAN
-    INDENT: str = "\t"
-    DENSE: bool = False
-
-
-def _log_request(prompt, **kwargs):
+def _format_request_log_str(prompt, **kwargs) -> str:
     nl = "\n" if LoggingConfig.DENSE else "\n" + LoggingConfig.INDENT
     model = _resolve_model(**kwargs)
-    print(
-        f"{Fore.RESET}Requesting LLM {Fore.MAGENTA}{model}{Style.RESET_ALL}:",
-        end=" " if LoggingConfig.DENSE else "\n",
+    out = (
+        f"{LoggingConfig.COLOR_RESET}Requesting LLM "
+        f"{Fore.MAGENTA}{model}{LoggingConfig.COLOR_RESET}:"
+        + (" " if LoggingConfig.DENSE else "\n")
     )
     if is_chat_model(model, env().config):
         for msg in prepare_chat_messages(prompt):
@@ -32,17 +26,20 @@ def _log_request(prompt, **kwargs):
             content = (" " if LoggingConfig.DENSE else nl2) + nl2.join(
                 content.split("\n")
             )
-            print(
-                f'{"" if LoggingConfig.DENSE else LoggingConfig.INDENT}'
-                f"{LoggingConfig.PROMPT_COLOR}[{role.capitalize()}]:{content}"
+            out += (
+                f"{'' if LoggingConfig.DENSE else LoggingConfig.INDENT}"
+                f"{LoggingConfig.PROMPT_COLOR}[{role.capitalize()}]:"
+                f"{content}{LoggingConfig.COLOR_RESET}"
             )
     else:
         lines = prepare_prompt(prompt).split("\n")
-        print(
+        out = (
             LoggingConfig.PROMPT_COLOR
             + (" " if LoggingConfig.DENSE else LoggingConfig.INDENT)
             + nl.join(lines)
+            + LoggingConfig.COLOR_RESET
         )
+    return out
 
 
 def _resolve_model(**kwargs):
@@ -53,12 +50,34 @@ def _resolve_model(**kwargs):
     return model
 
 
-def _log_response(out):
+def _format_response_log_str(out) -> str:
     nl = "\n" if LoggingConfig.DENSE else "\n" + LoggingConfig.INDENT
     out_indented = (" " if LoggingConfig.DENSE else nl) + nl.join(
         (out or "").split("\n")
     )
-    print(f"{Fore.RESET}LLM Response:{LoggingConfig.RESPONSE_COLOR}{out_indented}")
+    return (
+        f"{LoggingConfig.COLOR_RESET}LLM Response:"
+        f"{LoggingConfig.RESPONSE_COLOR}{out_indented}{LoggingConfig.COLOR_RESET}"
+    )
+
+
+class LoggingConfig:
+    PROMPT_COLOR = Fore.LIGHTGREEN_EX
+    RESPONSE_COLOR = Fore.CYAN
+    COLOR_RESET = Fore.RESET
+    INDENT: str = "\t"
+    DENSE: bool = False
+    OUTPUT_METHOD: callable = print
+    REQUEST_FORMATTER: callable = _format_request_log_str
+    RESPONSE_FORMATTER: callable = _format_response_log_str
+
+
+def _log_request(prompt, **kwargs):
+    LoggingConfig.OUTPUT_METHOD(_format_request_log_str(prompt, **kwargs))
+
+
+def _log_response(out):
+    LoggingConfig.OUTPUT_METHOD(_format_response_log_str(out))
 
 
 def use_logging():
