@@ -51,12 +51,36 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
 def _extract_sys_msg(prepared_messages: list[dict]) -> tuple[str, list[dict]]:
     """
     Anthropic does not support system messages,
-    so we need to extract them to pass as a separate argument
+    so we need to extract them to pass as a separate argument.
+    Also ensures the first and last messages are from user,
+    and there is assistants message between user messages.
     """
     system = "\n".join(
         i["content"] for i in prepared_messages if i.get("role") == Role.SYSTEM
     )
-    return system, [i for i in prepared_messages if i.get("role") != Role.SYSTEM]
+    messages = [i for i in prepared_messages if i.get("role") != Role.SYSTEM]
+
+    empty_user_msg = {"role": Role.USER, "content": "--//--"}
+    if not messages or messages[0]["role"] != Role.USER:
+        messages.insert(0, empty_user_msg)
+
+    # Ensure proper alternation and last message is from User
+    normalized_messages = []
+    expected_role = Role.USER
+    for msg in messages:
+        if msg["role"] == expected_role:
+            normalized_messages.append(msg)
+            expected_role = Role.ASSISTANT if expected_role == Role.USER else Role.USER
+        elif msg["role"] == Role.USER and expected_role == Role.ASSISTANT:
+            normalized_messages.append({"role": Role.ASSISTANT, "content": "--//--"})
+            normalized_messages.append(msg)
+            expected_role = Role.ASSISTANT
+
+    # Ensure the last message is from User
+    if normalized_messages[-1]["role"] != Role.USER:
+        normalized_messages.append(empty_user_msg)
+
+    return system, normalized_messages
 
 
 def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctionType]:
