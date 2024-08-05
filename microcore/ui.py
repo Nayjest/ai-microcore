@@ -24,7 +24,17 @@ def warning(*args, **kwargs):
 def ask_yn(msg, default=False):
     try:
         input_val = input(msg + " (y/n) ").lower().strip()
-        return "y" in input_val if default else "n" not in input_val
+        return (
+            any(
+                i in input_val
+                for i in ['y', 'si', 'так', 'да', '1', '+']
+            )
+            if default
+            else not any(
+                i in input_val
+                for i in ['n', '0', '-', 'н']
+            )
+        )
     except KeyboardInterrupt:
         warning("Interrupted, using default:", "Yes" if default else "No")
         return default
