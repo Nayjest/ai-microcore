@@ -48,6 +48,7 @@ def unwrap_json_substring(
     )
 
 
+# pylint: disable=too-many-return-statements
 def fix_json(s: str) -> str:
     """
     Fix internal JSON content
