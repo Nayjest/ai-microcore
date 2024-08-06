@@ -23,6 +23,7 @@ dependencies = [
     "colorama~=0.4.6",
     "PyYAML~=6.0",
     "chardet~=5.2.0",
+    "tiktoken>=0.7.0,<1.0",
 ]
 requires-python = ">=3.10"
 
