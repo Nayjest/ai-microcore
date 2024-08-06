@@ -44,6 +44,10 @@ def test_parse():
 
     """)
     assert parsed == {"a": 1, "b": 2}
+    assert parse_json('{"a": 1, "b": True}') == {"a": 1, "b": True}
+    assert parse_json('{"a": 1, "b":False, "c":"c"}') == {"a": 1, "b": False, "c": "c"}
+    assert parse_json('{"field": None}') == parse_json('{"field": null}')
+    assert parse_json('{"field": [/* comment */]}') == {"field": []}
     assert not parse_json('not json', raise_errors=False)
     assert parse_json('-- ["123"] -- ', raise_errors=False) == ["123"]
 

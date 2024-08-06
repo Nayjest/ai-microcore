@@ -114,6 +114,22 @@ def fix_json(s: str) -> str:
     except json.JSONDecodeError:
         ...
 
+    try:
+        # Python-style values instead of JSON (inside fields)
+        mapping = {"False": "false", "True":"true", "None": "null"}
+        for pythonic, jsonic in mapping.items():
+            s = re.sub(rf"\"\:\s*{pythonic}(?=\s*[\,\}}])", f"\": {jsonic}", s)
+        return json.dumps(json.loads(s), indent=4)
+    except json.JSONDecodeError:
+        ...
+
+    try:
+        # Drop inline comments
+        s = re.sub(r"\/\*[^\n]*\*\/", "", s)
+        return json.dumps(json.loads(s), indent=4)
+    except json.JSONDecodeError:
+        ...
+
     # incomplete JSON
     if s.startswith("{") and not s.endswith("}"):
         # count number of "
