@@ -36,6 +36,8 @@ class Storage:
         return config().DEFAULT_ENCODING
 
     def exists(self, name: str | Path) -> bool:
+        if isinstance(name, Path):
+            name = name.as_posix()
         return (self.path / name).exists()
 
     def abs_path(self, name: str | Path) -> Path:
