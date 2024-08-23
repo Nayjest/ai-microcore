@@ -87,7 +87,10 @@ class ExtendedString(str):
         self,
         for_model: str = None,
         encoding: str | tiktoken.Encoding = None
-    ):
+    ) -> list[int]:
+        """
+        Converts string to list of tokens.
+        """
         from .tokenizing import encode
         return encode(self, for_model=for_model, encoding=encoding)
 
@@ -95,7 +98,10 @@ class ExtendedString(str):
         self,
         for_model: str = None,
         encoding: str | tiktoken.Encoding = None
-    ):
+    ) -> int:
+        """
+        Calculates quantity of tokens in target string.
+        """
         return len(self.to_tokens(for_model=for_model, encoding=encoding))
 
 
@@ -185,14 +191,23 @@ def list_files(
 
 
 def is_kaggle() -> bool:
+    """
+    Returns True if the code is running in a Kaggle notebook.
+    """
     return "KAGGLE_KERNEL_RUN_TYPE" in os.environ
 
 
 def is_notebook() -> bool:
+    """
+    Returns True if the code is running in a Jupyter notebook.
+    """
     return "ipykernel" in sys.modules
 
 
 def is_google_colab() -> bool:
+    """
+    Returns True if the code is running in a Google Colab notebook
+    """
     return "google.colab" in sys.modules
 
 
