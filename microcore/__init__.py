@@ -97,6 +97,12 @@ class _EmbeddingDBProxy(AbstractEmbeddingDB):
     def delete(self, collection: str, what: str | list[str] | dict):
         return env().texts.delete(collection, what)
 
+    def collection_exists(self, collection: str) -> bool:
+        return env().texts.collection_exists(collection)
+
+    def has_content(self, collection: str) -> bool:
+        return env().texts.has_content(collection)
+
 
 texts = _EmbeddingDBProxy()
 """Embedding database, see `microcore.embedding_db.AbstractEmbeddingDB`"""
@@ -144,4 +150,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "3.10.4"
+__version__ = "3.11.0"

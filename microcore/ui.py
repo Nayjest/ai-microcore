@@ -25,15 +25,9 @@ def ask_yn(msg, default=False):
     try:
         input_val = input(msg + " (y/n) ").lower().strip()
         return (
-            any(
-                i in input_val
-                for i in ['y', 'si', 'так', 'да', '1', '+']
-            )
+            any(i in input_val for i in ["y", "si", "так", "да", "1", "+"])
             if default
-            else not any(
-                i in input_val
-                for i in ['n', '0', '-', 'н']
-            )
+            else not any(i in input_val for i in ["n", "0", "-", "н"])
         )
     except KeyboardInterrupt:
         warning("Interrupted, using default:", "Yes" if default else "No")

@@ -10,26 +10,28 @@ from ..utils import ExtendedString
 
 class SearchResults(list):
     def fit_to_token_size(
-            self,
-            max_tokens: int,
-            min_documents: int = None,
-            for_model: str = None,
-            encoding: str | tiktoken.Encoding = None,
-            verbose=True
+        self,
+        max_tokens: int,
+        min_documents: int = None,
+        for_model: str = None,
+        encoding: str | tiktoken.Encoding = None,
+        verbose=True,
     ):
         from ..tokenizing import fit_to_token_size
+
         records, removed = fit_to_token_size(
-            self, max_tokens=max_tokens,
+            self,
+            max_tokens=max_tokens,
             min_documents=min_documents,
             for_model=for_model,
-            encoding=encoding
+            encoding=encoding,
         )
         if verbose and removed:
             logging.info(
                 "For fitting %d records to %d tokens, %d records was removed",
                 len(self),
                 max_tokens,
-                removed
+                removed,
             )
         return SearchResults(list(records))
 
@@ -123,7 +125,7 @@ class AbstractEmbeddingDB(ABC):
         Count the number of documents in the collection
 
         Returns:
-            Number of documents in the collection
+            Number of documents in the collection, 0 if collection does not exist
         """
 
     @abstractmethod
@@ -135,3 +137,21 @@ class AbstractEmbeddingDB(ABC):
             collection (str): collection name
             what (str | list[str] | dict): id, list ids or metadata query
         """
+
+    @abstractmethod
+    def collection_exists(self, collection: str) -> bool:
+        """
+        Check if the collection exists
+
+        Returns:
+            True if collection exists, False otherwise
+        """
+
+    def has_content(self, collection: str) -> bool:
+        """
+        Check if the collection exists anf contains any documents
+
+        Returns:
+            True if collection exists and contains documents, False otherwise
+        """
+        return self.count(collection) > 0

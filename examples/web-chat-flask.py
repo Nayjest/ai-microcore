@@ -1,6 +1,7 @@
 """
 Requirements: pip install flask
 """
+
 from flask import Flask, request, jsonify
 
 import microcore as mc

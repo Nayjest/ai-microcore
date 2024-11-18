@@ -50,71 +50,92 @@ def test_get_all():
 def test_uuid():
     cid = "test_uuid"
     texts.clear(cid)
-    texts.save_many(cid, [
-        ("1", {}),
-    ])
-    texts.save_many(cid, [
-        ("1", {}),
-    ])
+    texts.save_many(
+        cid,
+        [
+            ("1", {}),
+        ],
+    )
+    texts.save_many(
+        cid,
+        [
+            ("1", {}),
+        ],
+    )
     assert 1 == len(texts.get_all(cid))
 
-    texts.save_many(cid, [
-        ("1", {}),
-        ("1", {}),
-    ])
+    texts.save_many(
+        cid,
+        [
+            ("1", {}),
+            ("1", {}),
+        ],
+    )
 
     assert 1 == len(texts.get_all(cid))
 
     env().config.EMBEDDING_DB_ALLOW_DUPLICATES = True
 
     texts.clear(cid)
-    texts.save_many(cid, [
-        ("1", {}),
-        ("1", {}),
-    ])
+    texts.save_many(
+        cid,
+        [
+            ("1", {}),
+            ("1", {}),
+        ],
+    )
     assert 2 == len(texts.get_all(cid))
 
 
 def test_count():
     cid = "test_count"
     texts.clear(cid)
-    texts.save_many(cid, [
-        ("1", {}),
-        ("1", {}),
-    ])
+    texts.save_many(
+        cid,
+        [
+            ("1", {}),
+            ("1", {}),
+        ],
+    )
     assert 2 == texts.count(cid)
 
 
 def test_delete():
     cid = "test_delete"
     texts.clear(cid)
-    texts.save_many(cid, [
-        ("1", {"field": "value_a"}),
-        ("2", {"field": "value_a"}),
-        ("3", {"field": "value_aaa"}),
-        ("4", {}),
-        ("5", {}),
-    ])
+    texts.save_many(
+        cid,
+        [
+            ("1", {"field": "value_a"}),
+            ("2", {"field": "value_a"}),
+            ("3", {"field": "value_aaa"}),
+            ("4", {}),
+            ("5", {}),
+        ],
+    )
     assert 5 == texts.count(cid)
     texts.delete(cid, {"field": "value_a"})
-    assert "3,4,5" == ','.join(sorted(texts.get_all(cid)))
+    assert "3,4,5" == ",".join(sorted(texts.get_all(cid)))
     texts.delete(cid, texts.find_one(cid, "4").id)
-    assert "3,5" == ','.join(sorted(texts.get_all(cid)))
+    assert "3,5" == ",".join(sorted(texts.get_all(cid)))
     texts.save(cid, "6")
     texts.save(cid, "7")
     texts.save(cid, "8")
     texts.delete(cid, [texts.find_one(cid, "3").id, texts.find_one(cid, "7").id])
-    assert "5,6,8" == ','.join(sorted(texts.get_all(cid)))
+    assert "5,6,8" == ",".join(sorted(texts.get_all(cid)))
 
 
 def test_find_all():
     cid = "test_find_all"
     texts.clear(cid)
-    texts.save_many(cid, [
-        ("1", {"field": "value_a"}),
-        ("2", {"field": "value_a"}),
-        ("3", {"field": "value_a"}),
-        ("4", {}),
-        ("5", {}),
-    ])
+    texts.save_many(
+        cid,
+        [
+            ("1", {"field": "value_a"}),
+            ("2", {"field": "value_a"}),
+            ("3", {"field": "value_a"}),
+            ("4", {}),
+            ("5", {}),
+        ],
+    )
     assert 3 == len(texts.find_all(cid, "", {"field": "value_a"}))

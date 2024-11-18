@@ -1,8 +1,13 @@
 from dataclasses import dataclass
 import uuid
+from typing import Optional
+
 import chromadb
+from chromadb.api.models import Collection
 from chromadb.config import Settings
+from chromadb.errors import ChromaError
 from chromadb.utils import embedding_functions
+from chromadb.errors import InvalidCollectionException
 from ..configuration import Config
 from .. import SearchResult, SearchResults, AbstractEmbeddingDB
 
@@ -25,17 +30,19 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
 
     @classmethod
     def _wrap_results(cls, results) -> list[str | SearchResult]:
-        return SearchResults([
-            SearchResult(
-                results["documents"][0][i],
-                dict(
-                    metadata=results["metadatas"][0][i] or {},
-                    id=results["ids"][0][i],
-                    distance=results["distances"][0][i],
-                ),
-            )
-            for i in range(len(results["documents"][0]))
-        ])
+        return SearchResults(
+            [
+                SearchResult(
+                    results["documents"][0][i],
+                    dict(
+                        metadata=results["metadatas"][0][i] or {},
+                        id=results["ids"][0][i],
+                        distance=results["distances"][0][i],
+                    ),
+                )
+                for i in range(len(results["documents"][0]))
+            ]
+        )
 
     def search(
         self,
@@ -45,17 +52,13 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
         where: dict = None,
         **kwargs,
     ) -> list[str | SearchResult]:
-        try:
-            chroma_collection = self.client.get_collection(
-                collection, embedding_function=self.embedding_function
-            )
-        except ValueError:
+        if not self.collection_exists(collection):
             return SearchResults([])
 
         if isinstance(query, str):
             query = [query]
 
-        d = chroma_collection.query(
+        d = self._get_collection(collection).query(
             query_texts=query, n_results=n_results, where=where, **kwargs
         )
         return (
@@ -65,9 +68,6 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
         )
 
     def save_many(self, collection: str, items: list[tuple[str, dict] | str]):
-        chroma_collection = self.client.get_or_create_collection(
-            name=collection, embedding_function=self.embedding_function
-        )
         unique = not self.config.EMBEDDING_DB_ALLOW_DUPLICATES
         texts, ids, metadatas = [], [], []
         for i in items:
@@ -82,30 +82,24 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
             texts.append(text)
             metadatas.append(metadata)
             ids.append(str(hash(text)) if unique else str(uuid.uuid4()))
-        chroma_collection.upsert(documents=texts, ids=ids, metadatas=metadatas)
+        self._get_collection(collection, create=True).upsert(
+            documents=texts, ids=ids, metadatas=metadatas
+        )
 
     def clear(self, collection: str):
         try:
             self.client.delete_collection(collection)
-        except ValueError:
+        except (ValueError, ChromaError):
             pass
 
     def count(self, collection: str) -> int:
-        try:
-            chroma_collection = self.client.get_collection(
-                collection, embedding_function=self.embedding_function
-            )
-        except ValueError:
-            return 0
-        return chroma_collection.count()
+        chroma_collection = self._get_collection(collection)
+        return chroma_collection.count() if chroma_collection else 0
 
     def delete(self, collection: str, what: str | list[str] | dict):
-        try:
-            chroma_collection = self.client.get_collection(
-                collection, embedding_function=self.embedding_function
-            )
-        except ValueError:
+        if not self.collection_exists(collection):
             return
+
         if isinstance(what, str):
             ids, where = [what], None
         elif isinstance(what, list):
@@ -114,20 +108,36 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
             ids, where = None, what
         else:
             raise ValueError("Invalid `what` argument")
-        chroma_collection.delete(ids=ids, where=where)
+        self._get_collection(collection).delete(ids=ids, where=where)
 
     def get_all(self, collection: str) -> list[str | SearchResult]:
-        try:
-            chroma_collection = self.client.get_collection(
-                collection, embedding_function=self.embedding_function
-            )
-        except ValueError:
+        if not self.collection_exists(collection):
             return SearchResults([])
-        results = chroma_collection.get()
-        return SearchResults([
-            SearchResult(
-                results["documents"][i],
-                {"metadata": results["metadatas"][i] or {}, "id": results["ids"][i]},
+        results = self._get_collection(collection).get()
+        return SearchResults(
+            [
+                SearchResult(
+                    results["documents"][i],
+                    {
+                        "metadata": results["metadatas"][i] or {},
+                        "id": results["ids"][i],
+                    },
+                )
+                for i in range(len(results["documents"]))
+            ]
+        )
+
+    def collection_exists(self, collection: str) -> bool:
+        return self._get_collection(collection) is not None
+
+    def _get_collection(self, name: str, create: bool = False) -> Optional[Collection]:
+        if create:
+            return self.client.get_or_create_collection(
+                name=name, embedding_function=self.embedding_function
             )
-            for i in range(len(results["documents"]))
-        ])
+        try:
+            return self.client.get_collection(
+                name, embedding_function=self.embedding_function
+            )
+        except (ValueError, InvalidCollectionException):
+            return None

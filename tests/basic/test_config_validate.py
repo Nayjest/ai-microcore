@@ -2,6 +2,7 @@ import os
 from . import *  # noqa
 import asyncio
 
+
 def test_valid():  # noqa
     original_env = dict(os.environ)
     os.environ.clear()
@@ -66,6 +67,7 @@ def test_azure_no_version():  # noqa
 
     os.environ.update(original_env)
 
+
 def test_local_llm():  # noqa
     original_env = dict(os.environ)
     os.environ.clear()
@@ -74,16 +76,11 @@ def test_local_llm():  # noqa
         return prompt
 
     mc.configure(
-        USE_DOT_ENV=False,
-        LLM_API_TYPE=mc.ApiType.FUNCTION,
-        INFERENCE_FUNC=inference
+        USE_DOT_ENV=False, LLM_API_TYPE=mc.ApiType.FUNCTION, INFERENCE_FUNC=inference
     )
     assert mc.env().config.uses_local_model()
     assert mc.llm("test") == "test"
-    mc.configure(
-        USE_DOT_ENV=False,
-        INFERENCE_FUNC=lambda x: x+':1'
-    )
+    mc.configure(USE_DOT_ENV=False, INFERENCE_FUNC=lambda x: x + ":1")
     assert mc.llm("test") == "test:1"
     assert mc.env().config.uses_local_model()
     with pytest.raises(mc.LLMConfigError):
@@ -110,5 +107,6 @@ def test_none():  # noqa
         async def fn():
             await asyncio.sleep(0.0001)
             await mc.allm("test")
+
         asyncio.run(fn())
     os.environ.update(original_env)

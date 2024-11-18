@@ -16,7 +16,9 @@ def test_storage_write_existing():
     assert mc.storage.read(filename) == "new content"
     assert filename2 == filename
     assert mc.storage.read(f"tests_tmp/test_b_1") == "old content"
-    filename3 = mc.storage.write("tests_tmp/test_b", "content 3", rewrite_existing=False)
+    filename3 = mc.storage.write(
+        "tests_tmp/test_b", "content 3", rewrite_existing=False
+    )
     assert mc.storage.read(filename) == "new content"
     assert mc.storage.read(filename3) == "content 3"
     assert filename != filename3
@@ -28,14 +30,24 @@ def test_list_files():
     mc.storage.write("tmp/file_1", "content")
     mc.storage.write("tmp/file_2", "content")
     lf = mc.storage.list_files
-    assert set([str(f) for f in lf('tmp')]) == {"file_1", "file_2"}
-    assert set([str(f) for f in lf('tmp', relative_to=mc.storage.path, posix=True)]) == {"tmp/file_1", "tmp/file_2"}
-    assert [str(f) for f in lf('tmp', exclude=['file_1'])] == ["file_2"]
-    assert [str(f) for f in lf('tmp', exclude=['*_1'])] == ["file_2"]
-    assert [str(f) for f in lf('tmp', exclude=['file_*'])] == []
-    assert [str(f) for f in lf('tmp', exclude=['file_1'], relative_to=mc.storage.path, posix=True)] == ["tmp/file_2"]
-    assert [str(f) for f in lf('tmp', exclude=['*_1'], relative_to=mc.storage.path, posix=True)] == ["tmp/file_2"]
-    assert [str(f) for f in lf('tmp', exclude=['file_*'], relative_to=mc.storage.path)] == []
+    assert set([str(f) for f in lf("tmp")]) == {"file_1", "file_2"}
+    assert set(
+        [str(f) for f in lf("tmp", relative_to=mc.storage.path, posix=True)]
+    ) == {"tmp/file_1", "tmp/file_2"}
+    assert [str(f) for f in lf("tmp", exclude=["file_1"])] == ["file_2"]
+    assert [str(f) for f in lf("tmp", exclude=["*_1"])] == ["file_2"]
+    assert [str(f) for f in lf("tmp", exclude=["file_*"])] == []
+    assert [
+        str(f)
+        for f in lf("tmp", exclude=["file_1"], relative_to=mc.storage.path, posix=True)
+    ] == ["tmp/file_2"]
+    assert [
+        str(f)
+        for f in lf("tmp", exclude=["*_1"], relative_to=mc.storage.path, posix=True)
+    ] == ["tmp/file_2"]
+    assert [
+        str(f) for f in lf("tmp", exclude=["file_*"], relative_to=mc.storage.path)
+    ] == []
     mc.storage.delete("tmp")
 
 
@@ -86,27 +98,27 @@ def test_json():
 
 def test_copy():
     mc.storage.delete("tests_tmp")
-    mc.storage.write_json("tests_tmp/folder/test.a", ['a'])
-    mc.storage.write_json("tests_tmp/folder/test.b", ['b'])
-    mc.storage.write_json("tests_tmp/folder/test.c", ['c'])
+    mc.storage.write_json("tests_tmp/folder/test.a", ["a"])
+    mc.storage.write_json("tests_tmp/folder/test.b", ["b"])
+    mc.storage.write_json("tests_tmp/folder/test.c", ["c"])
     mc.storage.copy("tests_tmp/folder", "tests_tmp/folder2", ["*.b"])
 
-    assert mc.storage.read_json("tests_tmp/folder2/test.a") == ['a']
-    assert mc.storage.read_json("tests_tmp/folder2/test.c") == ['c']
+    assert mc.storage.read_json("tests_tmp/folder2/test.a") == ["a"]
+    assert mc.storage.read_json("tests_tmp/folder2/test.c") == ["c"]
     assert mc.storage.read_json("tests_tmp/folder2/test.b", "none") == "none"
 
     # Test non wildcard
     mc.storage.copy("tests_tmp/folder", "tests_tmp/folder3", ["test.b"])
-    assert mc.storage.read_json("tests_tmp/folder3/test.c") == ['c']
+    assert mc.storage.read_json("tests_tmp/folder3/test.c") == ["c"]
     assert mc.storage.read_json("tests_tmp/folder3/test.b", "none") == "none"
 
     # Test no exceptions
     mc.storage.copy("tests_tmp/folder", "tests_tmp/folder3")
-    assert mc.storage.read_json("tests_tmp/folder3/test.b", "none") == ['b']
+    assert mc.storage.read_json("tests_tmp/folder3/test.b", "none") == ["b"]
 
     # Test copy file
     mc.storage.copy("tests_tmp/folder/test.a", "tests_tmp/folder/test.d")
-    assert mc.storage.read_json("tests_tmp/folder/test.d", "none") == ['a']
+    assert mc.storage.read_json("tests_tmp/folder/test.d", "none") == ["a"]
 
     # Test copy file to folder
     mc.storage.write("tests_tmp/copy_to_folder.txt", "ok")
@@ -114,16 +126,16 @@ def test_copy():
     assert mc.storage.read("tests_tmp/folder2/copy_to_folder.txt") == "ok"
 
     # Test overwrite
-    mc.storage.write_json("tests_tmp/o1/test.a", ['a_new'])
-    mc.storage.write_json("tests_tmp/o2/test.a", ['a'])
+    mc.storage.write_json("tests_tmp/o1/test.a", ["a_new"])
+    mc.storage.write_json("tests_tmp/o2/test.a", ["a"])
     mc.storage.copy("tests_tmp/o1", "tests_tmp/o2")
-    assert mc.storage.read_json("tests_tmp/o2/test.a") == ['a_new']
+    assert mc.storage.read_json("tests_tmp/o2/test.a") == ["a_new"]
 
     mc.storage.delete("tests_tmp")
 
 
 def test_create_no_name():
-    fn = mc.storage.write('test_data')
+    fn = mc.storage.write("test_data")
     assert (mc.storage.path / fn).exists()
-    assert mc.storage.read(fn) == 'test_data'
+    assert mc.storage.read(fn) == "test_data"
     mc.storage.delete(fn)

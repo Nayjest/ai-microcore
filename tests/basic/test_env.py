@@ -22,7 +22,7 @@ def test_reinit():
 
 
 def test_failed_reinit():
-    os.environ['MODEL'] = 'default-model'
+    os.environ["MODEL"] = "default-model"
     configure(LLM_API_KEY="old_key", MODEL="old_model")
     # Ensure we configured successfully
     assert env().config.MODEL == "old_model"
@@ -35,4 +35,4 @@ def test_failed_reinit():
 
     # Ensure we have default values but not the new ones or the old ones
     # after re-configuring with incorrect settings
-    assert env().config.MODEL == 'default-model'
+    assert env().config.MODEL == "default-model"
