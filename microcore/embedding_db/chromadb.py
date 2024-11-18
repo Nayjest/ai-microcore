@@ -1,9 +1,7 @@
 from dataclasses import dataclass
 import uuid
-from typing import Optional
 
 import chromadb
-from chromadb.api.models import Collection
 from chromadb.config import Settings
 from chromadb.errors import ChromaError
 from chromadb.utils import embedding_functions
@@ -130,7 +128,7 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
     def collection_exists(self, collection: str) -> bool:
         return self._get_collection(collection) is not None
 
-    def _get_collection(self, name: str, create: bool = False) -> Optional[Collection]:
+    def _get_collection(self, name: str, create: bool = False):
         if create:
             return self.client.get_or_create_collection(
                 name=name, embedding_function=self.embedding_function
