@@ -441,7 +441,7 @@ disable=raw-checker-failed,
         # added
         missing-module-docstring,
         missing-function-docstring,
-        too-many-positional-arguments
+        too-many-positional-arguments,
         missing-class-docstring,
         expression-not-assigned,
         invalid-name,
