@@ -45,6 +45,12 @@ class Storage:
             return Path(name)
         return self.path / name
 
+    def relative_path(self, name: str | Path) -> Path:
+        """
+        Returns the relative path of the file or directory within the storage path.
+        """
+        return Path(name).relative_to(self.path)
+
     def read(self, name: str | Path, encoding: str = None):
         name = str(name)
         encoding = encoding or self.default_encoding
