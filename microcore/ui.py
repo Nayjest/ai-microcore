@@ -14,11 +14,11 @@ def debug(msg):
 
 
 def error(*args, **kwargs):
-    print(*[Fore.RED + i for i in args], **kwargs)
+    print(*[Fore.RED + str(i) for i in args], **kwargs)
 
 
 def warning(*args, **kwargs):
-    print(*[Fore.YELLOW + i for i in args], **kwargs)
+    print(*[Fore.YELLOW + str(i) for i in args], **kwargs)
 
 
 def ask_yn(msg, default=False):
@@ -53,6 +53,16 @@ def ask_choose(msg, variants: list):
 
     item = variants[int(i)]
     return item
+
+
+def ask_non_empty(msg):
+    while True:
+        i = input(msg)
+        if i.strip():
+            break
+        else:
+            error("Empty input")
+    return i
 
 
 def magenta(msg):
