@@ -1,17 +1,17 @@
 from datetime import datetime
 
-from .message_types import Msg
 from .utils import run_parallel
 from .wrappers.llm_response_wrapper import LLMResponse
+from .types import TPrompt
 from ._env import env
 
 
-def llm(prompt: str | Msg | list[str] | list[Msg], **kwargs) -> str | LLMResponse:
+def llm(prompt: TPrompt, **kwargs) -> str | LLMResponse:
     """
     Request Large Language Model synchronously
 
     Args:
-        prompt (str | list[str]): Text to send to LLM
+        prompt (str | Msg | dict | list[str | Msg | dict]): Text to send to LLM
         **kwargs (dict): Parameters supported by the LLM API
 
             See parameters supported by the OpenAI:
@@ -43,20 +43,20 @@ def llm(prompt: str | Msg | list[str] | list[Msg], **kwargs) -> str | LLMRespons
     response = env().llm_function(prompt, **kwargs)
     try:
         response.gen_duration = (datetime.now() - start).total_seconds()
+        if not env().config.SAVE_MEMORY:
+            response.prompt = prompt
     except AttributeError:
         ...
     [h(response) for h in env().llm_after_handlers]
     return response
 
 
-async def allm(
-    prompt: str | Msg | list[str] | list[Msg], **kwargs
-) -> str | LLMResponse:
+async def allm(prompt: TPrompt, **kwargs) -> str | LLMResponse:
     """
     Request Large Language Model asynchronously
 
     Args:
-        prompt (str | list[str]): Text to send to LLM
+        prompt (str | Msg | dict | list[str | Msg | dict]): Text to send to LLM
         **kwargs (dict): Parameters supported by the LLM API
 
             See parameters supported by the OpenAI:
@@ -90,6 +90,8 @@ async def allm(
     response = await env().llm_async_function(prompt, **kwargs)
     try:
         response.gen_duration = (datetime.now() - start).total_seconds()
+        if not env().config.SAVE_MEMORY:
+            response.prompt = prompt
     except AttributeError:
         ...
     [h(response) for h in env().llm_after_handlers]
@@ -97,8 +99,13 @@ async def allm(
 
 
 async def llm_parallel(
-    prompts: list, max_concurrent_tasks: int = None, **kwargs
-) -> list[str] | list[LLMResponse]:
+    prompts: list[TPrompt], max_concurrent_tasks: int = None, **kwargs
+) -> list[str | LLMResponse]:
+    """
+    Execute multiple LLM requests in parallel
+
+    Returns (list[LLMResponse | str]): a list of responses in the same order as the prompts
+    """
     tasks = [allm(prompt, **kwargs) for prompt in prompts]
 
     if max_concurrent_tasks is None:

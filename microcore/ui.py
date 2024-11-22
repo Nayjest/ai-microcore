@@ -60,8 +60,7 @@ def ask_non_empty(msg):
         i = input(msg)
         if i.strip():
             break
-        else:
-            error("Empty input")
+        error("Empty input")
     return i
 
 

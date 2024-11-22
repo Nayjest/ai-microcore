@@ -1,15 +1,18 @@
 import os.path
 from dataclasses import dataclass, field, asdict, fields
 from importlib.util import find_spec
+from typing import TYPE_CHECKING
+
 import jinja2
 
+from .embedding_db import AbstractEmbeddingDB
 from .configuration import Config, ApiType, LLMConfigError
-from . import AbstractEmbeddingDB
 from .types import TplFunctionType, LLMAsyncFunctionType, LLMFunctionType
 from .templating.jinja2 import make_jinja2_env, make_tpl_function
 from .llm.openai_llm import make_llm_functions as make_openai_llm_functions
 from .llm.local_llm import make_llm_functions as make_local_llm_functions
-
+if TYPE_CHECKING:
+    from .wrappers.llm_response_wrapper import LLMResponse  # noqa: F401
 
 @dataclass
 class Env:
@@ -46,11 +49,10 @@ class Env:
 
     def init_llm(self):
         if self.config.LLM_API_TYPE == ApiType.NONE:
-
-            def not_configured(*args, **kwargs):
+            def not_configured(*args, **kwargs) -> "LLMResponse":
                 raise LLMConfigError("Language model is not configured")
 
-            async def a_not_configured(*args, **kwargs):
+            async def a_not_configured(*args, **kwargs) -> "LLMResponse":
                 raise LLMConfigError("Language model is not configured")
 
             self.llm_function, self.llm_async_function = (

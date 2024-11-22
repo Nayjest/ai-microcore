@@ -12,6 +12,7 @@ git diff main -- '*.py'> storage/feature.patch
 python app.py <full-path-to-patch-file>
 
 """
+
 import json
 import sys
 from pathlib import Path

@@ -1,11 +1,17 @@
-from typing import Callable, Any, Awaitable, Union
+from typing import TYPE_CHECKING, Callable, Any, Awaitable, Union, List
 from os import PathLike
 
+from .message_types import Msg
+if TYPE_CHECKING:
+    from .wrappers.prompt_wrapper import PromptWrapper  # noqa: F401
+
+TPrompt = Union[dict, Msg, str, 'PromptWrapper', List[Union[dict, Msg, str, 'PromptWrapper']]]
+"""Type for prompt argument in LLM requests"""
 TplFunctionType = Callable[[Union[PathLike[str], str], Any], str]
 """Function type for rendering prompt templates"""
-LLMFunctionType = Callable[[str, Any], str]
+LLMFunctionType = Callable[[TPrompt, Any], str]
 """Function type for requesting LLM synchronously"""
-LLMAsyncFunctionType = Callable[[str, Any], Awaitable[str]]
+LLMAsyncFunctionType = Callable[[TPrompt, Any], Awaitable[str]]
 """Function type for requesting LLM asynchronously"""
 
 

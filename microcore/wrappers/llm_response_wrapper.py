@@ -1,9 +1,17 @@
 from typing import Any
 
-from ..types import BadAIAnswer
+from ..types import BadAIAnswer, TPrompt
 from ..json_parsing import parse_json
 from ..utils import ExtendedString, ConvertableToMessage, extract_number
 from ..message_types import Role, AssistantMsg
+
+
+class DictFromLLMResponse(dict):
+    llm_response: "LLMResponse"
+
+    def from_llm_response(self, llm_response: "LLMResponse"):
+        self.llm_response = llm_response
+        return self
 
 
 class LLMResponse(ExtendedString, ConvertableToMessage):
@@ -20,11 +28,17 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
     - https://platform.openai.com/docs/api-reference/chat/object
     """
 
+    role: Role
+    content: str
+    prompt: TPrompt
+    gen_duration: float
+
     def __new__(cls, string: str, attrs: dict = None):
         attrs = {
             **(attrs or {}),
             "role": Role.ASSISTANT,
             "content": str(string),
+            "prompt": None,
             # generation duration in seconds (float), used in metrics
             "gen_duration": None,
         }
@@ -33,8 +47,12 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
 
     def parse_json(
         self, raise_errors: bool = True, required_fields: list[str] = None
-    ) -> list | dict | float | int | str:
-        return parse_json(self.content, raise_errors, required_fields)
+    ) -> list | dict | float | int | str | DictFromLLMResponse:
+        res = parse_json(self.content, raise_errors, required_fields)
+        if isinstance(res, dict):
+            res = DictFromLLMResponse(res)
+            res.llm_response = self
+        return res
 
     def parse_number(
         self,

@@ -212,6 +212,9 @@ def is_google_colab() -> bool:
 
 
 def get_vram_usage(as_string=True, color=Fore.GREEN):
+    """
+    Returns GPU VRAM usage as a string or a list of objects.
+    """
     @dataclass
     class _MemUsage:
         name: str

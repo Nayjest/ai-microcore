@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass, field, fields
+from enum import Enum
 from pathlib import Path
 from typing import Any, Union, Callable
 
@@ -31,9 +32,7 @@ def get_bool_from_env(env_var: str, default: bool | None = False) -> bool | None
 
 
 def get_object_from_env(env_var: str, dtype: type, default: Any = None):
-    val_from_env = os.getenv(  # pylint: disable=W1508
-        env_var, _MISSING
-    )
+    val_from_env = os.getenv(env_var, _MISSING)  # pylint: disable=W1508
     if isinstance(val_from_env, str):
         val_from_env = val_from_env.strip()
         if val_from_env:
@@ -56,7 +55,7 @@ def get_object_from_env(env_var: str, dtype: type, default: Any = None):
     return val_from_env
 
 
-class ApiType:
+class ApiType(str, Enum):
     """LLM API types"""
 
     OPEN_AI = "open_ai"
@@ -371,6 +370,12 @@ class Config(LLMConfig):
     """Path to the folder with generated voice files"""
 
     MAX_CONCURRENT_TASKS: int = from_env(default=None)
+
+    SAVE_MEMORY: bool = from_env(dtype=bool, default=False)
+    """
+    Some additional data will not be collected:
+      - LLMResponse objects will not contain the links to the prompt field
+    """
 
     def __post_init__(self):
         super().__post_init__()

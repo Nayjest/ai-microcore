@@ -117,7 +117,7 @@ def fix_json(s: str) -> str:
 
     try:
         # Python-style values instead of JSON (inside fields)
-        mapping = {"False": "false", "True":"true", "None": "null"}
+        mapping = {"False": "false", "True": "true", "None": "null"}
         for pythonic, jsonic in mapping.items():
             s = re.sub(rf"\"\:\s*{pythonic}(?=\s*[\,\}}])", f"\": {jsonic}", s)
         return json.dumps(json.loads(s), indent=4)

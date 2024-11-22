@@ -19,7 +19,7 @@ def setup_env(request):
     microcore.configure(
         USE_DOT_ENV=True,
         DOT_ENV_FILE=request.param,
-        LLM_DEFAULT_ARGS=dict(temperature=0.01)
+        LLM_DEFAULT_ARGS=dict(temperature=0.01),
     )
     yield
     os.environ.clear()

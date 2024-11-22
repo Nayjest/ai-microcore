@@ -1,9 +1,10 @@
 """ Message classes for OpenAI Chat API """
 
+from enum import Enum
 from dataclasses import dataclass, field
 
 
-class Role:
+class Role(str, Enum):
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
