@@ -44,7 +44,8 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
         cb = args.pop("callback")
         if cb:
             callbacks.append(cb)
-    args["stream"] = bool(callbacks)
+    if "stream" not in args:
+        args["stream"] = bool(callbacks)
     return args, {"callbacks": callbacks}
 
 
@@ -105,7 +106,10 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             return await _a_process_streamed_response(response, options["callbacks"])
 
         for cb in options["callbacks"]:
-            cb(response.content[0].text)
+            if asyncio.iscoroutinefunction(cb):
+                await cb(response.content[0].text)
+            else:
+                cb(response.content[0].text)
         return LLMResponse(response.content[0].text, response.__dict__)
 
     def llm(prompt, **kwargs):

@@ -11,6 +11,8 @@ init:
 	docker-compose up -d --build && $(DEXEC) bash
 sh:
 	$(DEXEC) bash
+start:
+	docker-compose start
 stop:
 	docker-compose stop
 cs:
