@@ -1,5 +1,5 @@
 import microcore as mc
-
+import pytest
 
 def test_storage_read_write():
     mc.storage.delete("tests_tmp")
@@ -139,3 +139,13 @@ def test_create_no_name():
     assert (mc.storage.path / fn).exists()
     assert mc.storage.read(fn) == "test_data"
     mc.storage.delete(fn)
+
+def test_read_default():
+    assert mc.storage.read("non_existing_file", default="default") == "default"
+    with pytest.raises(FileNotFoundError):
+        mc.storage.read_json("non_existing_file")
+
+def test_read_json_default():
+    assert mc.storage.read_json("non_existing_file", default={"default":"value"}) == {"default":"value"}
+    with pytest.raises(FileNotFoundError):
+        mc.storage.read_json("non_existing_file")

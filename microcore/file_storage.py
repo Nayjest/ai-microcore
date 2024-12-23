@@ -51,7 +51,7 @@ class Storage:
         """
         return Path(name).relative_to(self.path)
 
-    def read(self, name: str | Path, encoding: str = None):
+    def read(self, name: str | Path, encoding: str = None, default=_missing):
         name = str(name)
         encoding = encoding or self.default_encoding
         if not os.path.isabs(name) and not name.startswith("./"):
@@ -64,15 +64,20 @@ class Storage:
                 if not self.exists(f"{name}{ext}"):
                     ext = ""
             name = f"{self.path}/{name}{ext}"
-        if encoding is None:
-            with open(name, "rb") as f:
-                rawdata = f.read()
-            result = chardet.detect(rawdata)
-            encoding = result["encoding"]
-            return rawdata.decode(encoding)
+        try:
+            if encoding is None:
+                with open(name, "rb") as f:
+                    rawdata = f.read()
+                result = chardet.detect(rawdata)
+                encoding = result["encoding"]
+                return rawdata.decode(encoding)
 
-        with open(name, "r", encoding=encoding) as f:
-            return f.read()
+            with open(name, "r", encoding=encoding) as f:
+                return f.read()
+        except FileNotFoundError as e:
+            if default is not _missing:
+                return default
+            raise e
 
     def write_json(
         self,
@@ -85,11 +90,11 @@ class Storage:
         serialized_data = json.dumps(data, indent=4, ensure_ascii=ensure_ascii)
         return self.write(name, serialized_data, rewrite_existing, backup_existing)
 
-    def read_json(self, name: str | Path, default=None):
+    def read_json(self, name: str | Path, default=_missing):
         try:
             return json.loads(self.read(name))
         except FileNotFoundError as e:
-            if default is not None:
+            if default is not _missing:
                 return default
             raise e
 
