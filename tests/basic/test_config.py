@@ -6,6 +6,9 @@ from dataclasses import asdict
 
 
 def test_config(monkeypatch):
+    # avoid using .env file
+    monkeypatch.setenv("USE_DOT_ENV", "")
+
     monkeypatch.setenv("LLM_API_KEY", "123")
     monkeypatch.setenv("PROMPT_TEMPLATES_PATH", "mypath")
     assert Config().PROMPT_TEMPLATES_PATH == "mypath"
