@@ -21,7 +21,7 @@ def warning(*args, **kwargs):
     print(*[Fore.YELLOW + str(i) for i in args], **kwargs)
 
 
-def ask_yn(msg, default=False):
+def ask_yn(msg: str, default: bool = False) -> bool:
     try:
         input_val = input(msg + " (y/n) ").lower().strip()
         return (
@@ -34,17 +34,7 @@ def ask_yn(msg, default=False):
         return default
 
 
-def ask_non_empty(msg):
-    while True:
-        i = input(msg)
-        if i.strip():
-            break
-        else:
-            error("Empty input")
-    return i
-
-
-def ask_choose(msg, variants: list):
+def ask_choose(msg: str, variants: list):
     i = 0
     if isinstance(variants, list):
         for item in variants:
