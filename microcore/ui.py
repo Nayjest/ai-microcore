@@ -6,7 +6,7 @@ if not is_notebook():
 
 
 def info(*args, color=Fore.LIGHTYELLOW_EX, **kwargs):
-    print(*[color + i for i in args], **kwargs)
+    print(*[color + str(i) for i in args], **kwargs)
 
 
 def debug(msg):
@@ -32,6 +32,16 @@ def ask_yn(msg, default=False):
     except KeyboardInterrupt:
         warning("Interrupted, using default:", "Yes" if default else "No")
         return default
+
+
+def ask_non_empty(msg):
+    while True:
+        i = input(msg)
+        if i.strip():
+            break
+        else:
+            error("Empty input")
+    return i
 
 
 def ask_choose(msg, variants: list):
