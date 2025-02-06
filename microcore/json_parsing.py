@@ -42,7 +42,7 @@ def unwrap_json_substring(
         ...
 
     return (
-        input_string[start:end + 1]
+        input_string[start : end + 1]
         if brace
         else input_string if return_original_on_fail else ""
     )
@@ -143,8 +143,21 @@ def fix_json(s: str) -> str:
 def parse_json(
     input_string: str, raise_errors: bool = True, required_fields: list[str] = None
 ) -> list | dict | float | int | str:
+    """
+    Extract and parse JSON from AI-generated string.
+    Args:
+        input_string (str): String containing JSON.
+        raise_errors (bool, optional): If True, raises exception on error, otherwise returns False on error.
+        required_fields (list, optional): List of expected field names to validate the JSON object.
+    Returns:
+        list | dict | float | int | str: Parsed JSON data.
+    """
     assert isinstance(required_fields, list) or required_fields is None
     try:
+        if not input_string:  # empty string
+            raise BadAIJsonAnswer(
+                "Input string is empty. Cannot parse JSON from an empty string."
+            )
         s = unwrap_json_substring(input_string)
         try:
             res = json.loads(s)
@@ -152,12 +165,16 @@ def parse_json(
             res = json.loads(fix_json(s))
         if required_fields:
             if not isinstance(res, dict):
-                raise BadAIJsonAnswer("Not an object")
+                raise BadAIJsonAnswer(
+                    f"Expected a JSON object, but received: {type(res).__name__}"
+                )
             for field in required_fields:
                 if field not in res:
-                    raise BadAIJsonAnswer(f'Missing field "{field}"')
+                    raise BadAIJsonAnswer(
+                        f"Required field \"{field}\" is missing in the JSON object."
+                    )
         return res
-    except json.decoder.JSONDecodeError as e:
+    except (json.decoder.JSONDecodeError, BadAIJsonAnswer) as e:
         if raise_errors:
-            raise BadAIJsonAnswer() from e
+            raise BadAIJsonAnswer(str(e))
         return False
