@@ -1,28 +1,83 @@
 import json
 import re
+from enum import Enum
 
 from .types import BadAIJsonAnswer
 
-
-def unwrap_json_substring(
-    input_string: str, allow_in_text: bool = True, return_original_on_fail: bool = True
-) -> str:
-    input_string = str(input_string).strip()
+def safe_remove_outer_json_wrapper(input_string: str) -> str:
     if input_string.endswith("```"):
         if input_string.startswith("```json"):
             return input_string[7:-3].strip()
         if input_string.startswith("```"):
             return input_string[3:-3].strip()
+    return input_string
 
+def simple_json_format_check(input_string: str):
     for opener, close in [("{", "}"), ("[", "]"), ('"', '"')]:
         if input_string.startswith(opener) and input_string.endswith(close):
-            return input_string
+            return True
     if input_string.isdigit() or input_string in ["true", "false", "null"]:
+        return True
+    try:
+        float(input_string)
+        return True
+    except ValueError:
+        ...
+    return False
+
+class ExtractStrategy(str, Enum):
+    FIRST = "first"
+    LAST = "last"
+    OUTER = "outer"
+
+def extract_block(
+    input_string: str,
+    block_begin: str,
+    block_end: str,
+    include_wrapper: bool = False,
+    strategy: ExtractStrategy = ExtractStrategy.OUTER,
+) -> str | None:
+    """
+    Extracts a block of text between two markers from a string.
+    """
+    assert block_begin and block_end, "Block markers cannot be empty."
+    start = -1
+    begin_len = 1
+    if strategy in (ExtractStrategy.OUTER, ExtractStrategy.FIRST):
+        start = input_string.find(block_begin)
+        if start == -1:
+            return None
+        begin_len = len(block_begin)
+    if strategy in (ExtractStrategy.OUTER, ExtractStrategy.LAST):
+        end = input_string.rfind(block_end, start + begin_len)
+    else: # first
+        end = input_string.find(block_end, start + begin_len)
+    if end == -1:
+        return None
+    if strategy == ExtractStrategy.LAST:
+        start = input_string.rfind(block_begin, None, end)
+        if start == -1:
+            return None
+
+    start_capture = start if include_wrapper else start + len(block_begin)
+    end_capture = end + len(block_end) if include_wrapper else end
+
+    return input_string[start_capture:end_capture]
+
+def unwrap_json_substring(
+    input_string: str, allow_in_text: bool = True, return_original_on_fail: bool = True
+) -> str:
+    input_string = safe_remove_outer_json_wrapper(str(input_string).strip())
+    if simple_json_format_check(input_string):
         return input_string
 
     if not allow_in_text:
         return input_string if return_original_on_fail else ""
 
+    if (val := extract_block(input_string, '```json', '```', False)) is not None:
+        return val.strip()
+
+    # find outermost {} or []
     brace = None
     start = 0
     end = 0
@@ -47,11 +102,13 @@ def unwrap_json_substring(
         else input_string if return_original_on_fail else ""
     )
 
-
 # pylint: disable=too-many-return-statements
 def fix_json(s: str) -> str:
     """
-    Fix internal JSON content
+    Fix internal JSON content.
+    Note: this function should not be used for valid JSON strings.
+    Args:
+        s (str): AI-generated JSON string containing errors.
     """
 
     def between_lines(pattern):
@@ -147,7 +204,8 @@ def parse_json(
     Extract and parse JSON from AI-generated string.
     Args:
         input_string (str): String containing JSON.
-        raise_errors (bool, optional): If True, raises exception on error, otherwise returns False on error.
+        raise_errors (bool, optional):
+            If True, raises exception on error, otherwise returns False on error.
         required_fields (list, optional): List of expected field names to validate the JSON object.
     Returns:
         list | dict | float | int | str: Parsed JSON data.
@@ -176,5 +234,5 @@ def parse_json(
         return res
     except (json.decoder.JSONDecodeError, BadAIJsonAnswer) as e:
         if raise_errors:
-            raise BadAIJsonAnswer(str(e))
+            raise BadAIJsonAnswer(str(e)) from e
         return False

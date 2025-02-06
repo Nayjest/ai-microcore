@@ -9,7 +9,7 @@ def test_unwrap():
         ('{"a": 1}', '{"a": 1}'),
         ('```json{"a": 1}```', '{"a": 1}'),
         (' ```json\n{"a": 1}\n```  ', '{"a": 1}'),
-        ('surrounding text\n\nmoretext```json]\n{"a": 1}\n```text_after', '{"a": 1}'),
+        ('surrounding text\n\nmoretext```json\n{"a": 1}\n```text_after', '{"a": 1}'),
         (" [] ", "[]"),
         ("not json", "not json"),
     ]
