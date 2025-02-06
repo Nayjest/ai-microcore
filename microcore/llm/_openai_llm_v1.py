@@ -6,7 +6,7 @@ from .._prepare_llm_args import prepare_chat_messages, prepare_prompt
 from ..types import LLMAsyncFunctionType, LLMFunctionType, BadAIAnswer
 from ..wrappers.llm_response_wrapper import LLMResponse
 from ..utils import is_chat_model
-
+from .shared import make_remove_hidden_output
 OPENAI_V1_API = True
 
 
@@ -23,11 +23,28 @@ def _get_chunk_text(chunk, mode_chat_model: bool):
 
 
 async def _a_process_streamed_response(
-    response, callbacks: list[callable], chat_model_used: bool
+    response,
+    callbacks: list[callable],
+    chat_model_used: bool,
+    hidden_output_begin: str | None = None,
+    hidden_output_end: str | None = None,
 ):
     response_text: str = ""
+    hiding: bool = False
+    need_to_hide = hidden_output_begin and hidden_output_end
     async for chunk in response:
         if text_chunk := _get_chunk_text(chunk, chat_model_used):
+            if need_to_hide:
+                if text_chunk == hidden_output_begin:
+                    hiding = True
+                    continue
+                else:
+                    if hiding:
+                        if text_chunk == hidden_output_end:
+                            hiding = False
+                            text_chunk = ''
+                        else:
+                            continue
             response_text += text_chunk
             for cb in callbacks:
                 if asyncio.iscoroutinefunction(cb):
@@ -38,11 +55,28 @@ async def _a_process_streamed_response(
 
 
 def _process_streamed_response(
-    response, callbacks: list[callable], chat_model_used: bool
+    response,
+    callbacks: list[callable],
+    chat_model_used: bool,
+    hidden_output_begin: str | None = None,
+    hidden_output_end: str | None = None,
 ):
     response_text: str = ""
+    is_hiding: bool = False
+    need_to_hide = hidden_output_begin and hidden_output_end
     for chunk in response:
         if text_chunk := _get_chunk_text(chunk, chat_model_used):
+            if need_to_hide:
+                if text_chunk == hidden_output_begin:
+                    is_hiding = True
+                    continue
+                else:
+                    if is_hiding:
+                        if text_chunk == hidden_output_end:
+                            is_hiding = False
+                            text_chunk = ''
+                        else:
+                            continue
             response_text += text_chunk
             [cb(text_chunk) for cb in callbacks]
     return LLMResponse(response_text, {})
@@ -71,6 +105,8 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
 def check_for_errors(response):
     if hasattr(response, "object") and response.object == "error":
         raise BadAIAnswer(response.message)
+    if hasattr(response, 'error') and response.error:
+        raise BadAIAnswer(str(response.error))
 
 
 def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctionType]:
@@ -94,6 +130,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
 
     _connection = connection_type(**params)
     _async_connection = async_connection_type(**params)
+    remove_hidden_output: callable = make_remove_hidden_output(config)
 
     async def allm(prompt, **kwargs):
         args, options = _prepare_llm_arguments(config, kwargs)
@@ -104,15 +141,21 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             check_for_errors(response)
             if args["stream"]:
                 return await _a_process_streamed_response(
-                    response, options["callbacks"], chat_model_used=True
+                    response,
+                    options["callbacks"],
+                    chat_model_used=True,
+                    hidden_output_begin=config.HIDDEN_OUTPUT_BEGIN,
+                    hidden_output_end=config.HIDDEN_OUTPUT_END,
                 )
-
+            response_text = response.choices[0].message.content
+            if config.hiding_output():
+                response_text = remove_hidden_output(response_text)
             for cb in options["callbacks"]:
                 if asyncio.iscoroutinefunction(cb):
-                    await cb(response.choices[0].message.content)
+                    await cb(response_text)
                 else:
-                    cb(response.choices[0].message.content)
-            return LLMResponse(response.choices[0].message.content, response.__dict__)
+                    cb(response_text)
+            return LLMResponse(response_text, response.__dict__)
 
         response = await _async_connection.completions.create(
             prompt=prepare_prompt(prompt), **args
@@ -133,12 +176,19 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             check_for_errors(response)
             if args["stream"]:
                 return _process_streamed_response(
-                    response, options["callbacks"], chat_model_used=True
+                    response,
+                    options["callbacks"],
+                    chat_model_used=True,
+                    hidden_output_begin=config.HIDDEN_OUTPUT_BEGIN,
+                    hidden_output_end=config.HIDDEN_OUTPUT_END,
                 )
+            response_text = response.choices[0].message.content
 
+            if config.hiding_output():
+                response_text = remove_hidden_output(response_text)
             for cb in options["callbacks"]:
-                cb(response.choices[0].message.content)
-            return LLMResponse(response.choices[0].message.content, response.__dict__)
+                cb(response_text)
+            return LLMResponse(response_text, response.__dict__)
 
         # Else (if it is text completion model)
         response = _connection.completions.create(prompt=prepare_prompt(prompt), **args)

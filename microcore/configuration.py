@@ -192,6 +192,10 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
     INIT_PARAMS: dict = from_env(dtype=dict)
     """Custom initialization parameters for the model"""
 
+    HIDDEN_OUTPUT_BEGIN: str = from_env()
+    HIDDEN_OUTPUT_END: str = from_env()
+    """Remove <think>...</think> from LLM response for models like DeepSeek R1"""
+
     def __post_init__(self):
         super().__post_init__()
         self._init_llm_options()
@@ -199,6 +203,9 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
 
     def uses_local_model(self) -> bool:
         return ApiType.is_local(self.LLM_API_TYPE)
+
+    def hiding_output(self) -> bool:
+        return bool(self.HIDDEN_OUTPUT_BEGIN and self.HIDDEN_OUTPUT_END)
 
     def _init_llm_options(self):
         if self.INFERENCE_FUNC:
