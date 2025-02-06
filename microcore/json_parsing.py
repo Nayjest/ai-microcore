@@ -4,6 +4,7 @@ from enum import Enum
 
 from .types import BadAIJsonAnswer
 
+
 def safe_remove_outer_json_wrapper(input_string: str) -> str:
     if input_string.endswith("```"):
         if input_string.startswith("```json"):
@@ -11,6 +12,7 @@ def safe_remove_outer_json_wrapper(input_string: str) -> str:
         if input_string.startswith("```"):
             return input_string[3:-3].strip()
     return input_string
+
 
 def simple_json_format_check(input_string: str):
     for opener, close in [("{", "}"), ("[", "]"), ('"', '"')]:
@@ -25,10 +27,12 @@ def simple_json_format_check(input_string: str):
         ...
     return False
 
+
 class ExtractStrategy(str, Enum):
     FIRST = "first"
     LAST = "last"
     OUTER = "outer"
+
 
 def extract_block(
     input_string: str,
@@ -50,7 +54,7 @@ def extract_block(
         begin_len = len(block_begin)
     if strategy in (ExtractStrategy.OUTER, ExtractStrategy.LAST):
         end = input_string.rfind(block_end, start + begin_len)
-    else: # first
+    else:  # first
         end = input_string.find(block_end, start + begin_len)
     if end == -1:
         return None
@@ -63,6 +67,7 @@ def extract_block(
     end_capture = end + len(block_end) if include_wrapper else end
 
     return input_string[start_capture:end_capture]
+
 
 def unwrap_json_substring(
     input_string: str, allow_in_text: bool = True, return_original_on_fail: bool = True
@@ -101,6 +106,7 @@ def unwrap_json_substring(
         if brace
         else input_string if return_original_on_fail else ""
     )
+
 
 # pylint: disable=too-many-return-statements
 def fix_json(s: str) -> str:

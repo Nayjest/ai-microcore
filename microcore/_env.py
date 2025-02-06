@@ -14,6 +14,7 @@ from .llm.local_llm import make_llm_functions as make_local_llm_functions
 if TYPE_CHECKING:
     from .wrappers.llm_response_wrapper import LLMResponse  # noqa: F401
 
+
 @dataclass
 class Env:
     config: Config = field(default_factory=Config)
