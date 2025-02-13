@@ -21,14 +21,17 @@ def warning(*args, **kwargs):
     print(*[Fore.YELLOW + str(i) for i in args], **kwargs)
 
 
-def ask_yn(msg: str, default: bool = False) -> bool:
+def ask_yn(msg: str, default: bool | None = None) -> bool:
     try:
         input_val = input(msg + " (y/n) ").lower().strip()
-        return (
-            any(i in input_val for i in ["y", "si", "так", "да", "1", "+"])
-            if default
-            else not any(i in input_val for i in ["n", "0", "-", "н"])
-        )
+        if any(i in input_val for i in ["y", "si", "так", "да", "1", "+"]):
+            return True
+        if any(i in input_val for i in ["n", "0", "-", "н"]):
+            return False
+        if default is not None:
+            return default
+        warning("Please answer with y/n")
+        return ask_yn(msg, default)
     except KeyboardInterrupt:
         warning("Interrupted, using default:", "Yes" if default else "No")
         return default
