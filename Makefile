@@ -7,8 +7,14 @@ endif
 
 # ============== [ Container control ] ==============
 
+up:
+	docker-compose up -d
+
+build:
+	docker-compose up -d --build
+
 init:
-	docker-compose up -d --build && $(DEXEC) bash
+	make build && make sh
 sh:
 	$(DEXEC) bash
 start:
