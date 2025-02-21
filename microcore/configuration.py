@@ -196,10 +196,12 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
     HIDDEN_OUTPUT_END: str = from_env()
     """Remove <think>...</think> from LLM response for models like DeepSeek R1"""
 
+    VALIDATE_CONFIG: bool = from_env(dtype=bool, default=True)
+
     def __post_init__(self):
         super().__post_init__()
         self._init_llm_options()
-        self.validate()
+        self.VALIDATE_CONFIG and self.validate()
 
     def uses_local_model(self) -> bool:
         return ApiType.is_local(self.LLM_API_TYPE)
