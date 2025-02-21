@@ -132,7 +132,7 @@ class _OpenAIEnvVars:
     # Will be used as defaults for LLM
     # @todo: implement lib_defaults to take default values from openai lib if available
     OPENAI_API_TYPE: str = from_env(ApiType.OPEN_AI)
-    OPENAI_API_KEY: str = from_env()
+    OPENAI_API_KEY: str = from_env("")
     OPENAI_API_BASE: str = from_env("https://api.openai.com/v1")
     OPENAI_API_VERSION: str = from_env()
 
@@ -163,7 +163,7 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
     To use services that is not listed in `ApiType`,
     but provides OpenAPI interface, use `ApiType.OPEN_AI`"""
 
-    LLM_API_KEY: str = from_env()
+    LLM_API_KEY: str = from_env("")
     LLM_API_BASE: str = from_env()
     """Base URL for the LLM API, e.g. https://api.openai.com/v1"""
 
