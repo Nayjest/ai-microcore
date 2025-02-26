@@ -27,12 +27,18 @@ def test_fit_vector_search_to_tokens_min_docs():
     mc.texts.clear("test_collection")
     raw_items = [str(i) for i in range(10)]
     mc.texts.save_many("test_collection", raw_items)
-    res = mc.texts.search("test_collection", "qwe", n_results=10).fit_to_token_size(3, 4)
+    res = mc.texts.search("test_collection", "qwe", n_results=10).fit_to_token_size(
+        3, 4
+    )
     assert len(res) == 4
-    res = mc.texts.search("test_collection", "qwe", n_results=10).fit_to_token_size(5, 3)
+    res = mc.texts.search("test_collection", "qwe", n_results=10).fit_to_token_size(
+        5, 3
+    )
     assert len(res) == 5
 
 
 def test_num_tokens():
-    assert SearchResult("apple pineapple orange").num_tokens(encoding='cl100k_base') >= 3
-    assert SearchResult("Hi").num_tokens(for_model='gpt-4') <= 2
+    assert (
+        SearchResult("apple pineapple orange").num_tokens(encoding="cl100k_base") >= 3
+    )
+    assert SearchResult("Hi").num_tokens(for_model="gpt-4") <= 2

@@ -17,5 +17,7 @@ async def test_metrics(setup):
         time.sleep(0.5)
     assert m.requests_count == 4
     assert m.succ_requests_count == 4
-    assert m.gen_chars_count == len(("ok"+"completion:ok")*2), "Incorrect gen_chars_count"
+    assert m.gen_chars_count == len(
+        ("ok" + "completion:ok") * 2
+    ), "Incorrect gen_chars_count"
     assert 0.5 < m.exec_duration < 1

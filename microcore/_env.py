@@ -11,6 +11,7 @@ from .types import TplFunctionType, LLMAsyncFunctionType, LLMFunctionType
 from .templating.jinja2 import make_jinja2_env, make_tpl_function
 from .llm.openai_llm import make_llm_functions as make_openai_llm_functions
 from .llm.local_llm import make_llm_functions as make_local_llm_functions
+
 if TYPE_CHECKING:
     from .wrappers.llm_response_wrapper import LLMResponse  # noqa: F401
 
@@ -25,7 +26,9 @@ class Env:
     llm_before_handlers: list[callable] = field(default_factory=list)
     llm_after_handlers: list[callable] = field(default_factory=list)
     texts: AbstractEmbeddingDB = None
-    model: "transformers.PreTrainedModel" = field(default=None, init=False, repr=False)  # noqa
+    model: "transformers.PreTrainedModel" = field(
+        default=None, init=False, repr=False
+    )  # noqa
     tokenizer: "transformers.PreTrainedTokenizer" = field(  # noqa
         default=None, init=False, repr=False
     )
@@ -50,6 +53,7 @@ class Env:
 
     def init_llm(self):
         if self.config.LLM_API_TYPE == ApiType.NONE:
+
             def not_configured(*args, **kwargs) -> "LLMResponse":
                 raise LLMConfigError("Language model is not configured")
 

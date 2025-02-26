@@ -84,20 +84,17 @@ class ExtendedString(str):
         )
 
     def to_tokens(
-        self,
-        for_model: str = None,
-        encoding: str | tiktoken.Encoding = None
+        self, for_model: str = None, encoding: str | tiktoken.Encoding = None
     ) -> list[int]:
         """
         Converts string to list of tokens.
         """
         from .tokenizing import encode
+
         return encode(self, for_model=for_model, encoding=encoding)
 
     def num_tokens(
-        self,
-        for_model: str = None,
-        encoding: str | tiktoken.Encoding = None
+        self, for_model: str = None, encoding: str | tiktoken.Encoding = None
     ) -> int:
         """
         Calculates quantity of tokens in target string.
@@ -215,6 +212,7 @@ def get_vram_usage(as_string=True, color=Fore.GREEN):
     """
     Returns GPU VRAM usage as a string or a list of objects.
     """
+
     @dataclass
     class _MemUsage:
         name: str

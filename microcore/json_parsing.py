@@ -79,7 +79,7 @@ def unwrap_json_substring(
     if not allow_in_text:
         return input_string if return_original_on_fail else ""
 
-    if (val := extract_block(input_string, '```json', '```', False)) is not None:
+    if (val := extract_block(input_string, "```json", "```", False)) is not None:
         return val.strip()
 
     # find outermost {} or []
@@ -182,7 +182,7 @@ def fix_json(s: str) -> str:
         # Python-style values instead of JSON (inside fields)
         mapping = {"False": "false", "True": "true", "None": "null"}
         for pythonic, jsonic in mapping.items():
-            s = re.sub(rf"\"\:\s*{pythonic}(?=\s*[\,\}}])", f"\": {jsonic}", s)
+            s = re.sub(rf"\"\:\s*{pythonic}(?=\s*[\,\}}])", f'": {jsonic}', s)
         return json.dumps(json.loads(s), indent=4)
     except json.JSONDecodeError:
         ...
@@ -235,7 +235,7 @@ def parse_json(
             for field in required_fields:
                 if field not in res:
                     raise BadAIJsonAnswer(
-                        f"Required field \"{field}\" is missing in the JSON object."
+                        f'Required field "{field}" is missing in the JSON object.'
                     )
         return res
     except (json.decoder.JSONDecodeError, BadAIJsonAnswer) as e:

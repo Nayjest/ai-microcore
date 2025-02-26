@@ -7,6 +7,7 @@ from ..types import LLMAsyncFunctionType, LLMFunctionType, BadAIAnswer
 from ..wrappers.llm_response_wrapper import LLMResponse
 from ..utils import is_chat_model
 from .shared import make_remove_hidden_output
+
 OPENAI_V1_API = True
 
 
@@ -42,7 +43,7 @@ async def _a_process_streamed_response(
                     if hiding:
                         if text_chunk == hidden_output_end:
                             hiding = False
-                            text_chunk = ''
+                            text_chunk = ""
                         else:
                             continue
             response_text += text_chunk
@@ -74,7 +75,7 @@ def _process_streamed_response(
                     if is_hiding:
                         if text_chunk == hidden_output_end:
                             is_hiding = False
-                            text_chunk = ''
+                            text_chunk = ""
                         else:
                             continue
             response_text += text_chunk
@@ -105,7 +106,7 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
 def check_for_errors(response):
     if hasattr(response, "object") and response.object == "error":
         raise BadAIAnswer(response.message)
-    if hasattr(response, 'error') and response.error:
+    if hasattr(response, "error") and response.error:
         raise BadAIAnswer(str(response.error))
 
 

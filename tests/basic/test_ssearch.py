@@ -25,6 +25,39 @@ def test_similarity():
     assert 4 == len(results) and "catalog" == results[0]
 
 
+def test_get():
+    texts.clear("test_collection")
+    texts.save_many(
+        "test_collection",
+        [
+            "cat",
+            "dog",
+            "catalog",
+            "kit",
+        ],
+    )
+    results = texts.get("test_collection")
+    assert "cat" == results[0]
+    assert 4 == len(results)
+    results = texts.get("test_collection", limit=1, offset=1)
+    assert "dog" == results[0]
+    texts.save_many(
+        "test_collection",
+        [
+            ("1", {"field": "value_a"}),
+            ("2", {"field": "value_b"}),
+        ],
+    )
+    results = texts.get("test_collection", where={"field": "value_a"})
+    assert "1" == results[0]
+    results = texts.get("test_collection", where_document={"$contains": "ca"})
+    assert ["cat", "catalog"] == results
+    results = texts.get(
+        "test_collection", where_document={"$contains": "ca"}, limit=1, offset=1
+    )
+    assert ["catalog"] == results
+
+
 def test_metadata():
     texts.clear("test_collection")
     texts.save_many(

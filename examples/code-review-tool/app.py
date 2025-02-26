@@ -38,7 +38,7 @@ def split_diff_by_files(file_name: str) -> list[str]:
 
 
 diff_by_files = split_diff_by_files(diff_file_name)
-for diff_part in diff_by_files[skip_first_n: skip_first_n + max_files_to_review]:
+for diff_part in diff_by_files[skip_first_n : skip_first_n + max_files_to_review]:
     first_line = diff_part.split("\n")[0].replace("diff --git", "").strip()
 
     if len(first_line) == 0 or any(s in first_line for s in skip_files):

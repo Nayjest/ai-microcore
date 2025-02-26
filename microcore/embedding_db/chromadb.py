@@ -108,6 +108,39 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
             raise ValueError("Invalid `what` argument")
         self._get_collection(collection).delete(ids=ids, where=where)
 
+    def get(
+        self,
+        collection: str,
+        ids: list[str] | str = None,
+        limit: int = None,
+        offset: int = None,
+        where: dict = None,
+        **kwargs,
+    ) -> list[str | SearchResult] | str | SearchResult | None:
+        if not self.collection_exists(collection):
+            return SearchResults([]) if not isinstance(ids, str) else None
+
+        results = self._get_collection(collection).get(
+            ids=[ids] if isinstance(ids, str) else ids,
+            limit=limit,
+            offset=offset,
+            where=where,
+            **kwargs,
+        )
+        search_results = [
+            SearchResult(
+                results["documents"][i],
+                {
+                    "metadata": results["metadatas"][i] or {},
+                    "id": results["ids"][i],
+                },
+            )
+            for i in range(len(results["documents"]))
+        ]
+        if isinstance(ids, str):
+            return search_results[0] if search_results else None
+        return SearchResults(search_results)
+
     def get_all(self, collection: str) -> list[str | SearchResult]:
         if not self.collection_exists(collection):
             return SearchResults([])

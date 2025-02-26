@@ -83,6 +83,30 @@ class AbstractEmbeddingDB(ABC):
         """
         return self.search(*args, **kwargs)
 
+    @abstractmethod
+    def get(
+        self,
+        collection: str,
+        ids: list[str] | str = None,
+        limit: int = None,
+        offset: int = None,
+        where: dict = None,
+        **kwargs,
+    ) -> list[str | SearchResult] | str | SearchResult | None:
+        """
+        Get documents
+
+        Args:
+            collection (str): collection name
+            ids (list[str] | str): document id or list of document ids
+            limit (int): maximum number of documents to return
+            offset (int): number of documents to skip
+            where (dict): filter results by metadata
+
+        Returns:
+            List of documents or single document
+        """
+
     def find_all(
         self,
         collection: str,

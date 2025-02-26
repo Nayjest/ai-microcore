@@ -16,7 +16,7 @@ def inference(prompt: str, model, tokenizer, **kwargs):
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     outputs = model.generate(**inputs, **kwargs)
     outputs = [
-        tokenizer.decode(i[len(inputs[0]):], skip_special_tokens=skip_special_tokens)
+        tokenizer.decode(i[len(inputs[0]) :], skip_special_tokens=skip_special_tokens)
         for i in outputs
     ]
     return LLMResponse(outputs[0], dict(all=outputs))

@@ -82,6 +82,17 @@ class _EmbeddingDBProxy(AbstractEmbeddingDB):
     ) -> SearchResults | list[str | SearchResult]:
         return env().texts.find_all(collection, query, where, **kwargs)
 
+    def get(
+        self,
+        collection: str,
+        ids: list[str] | str = None,
+        limit: int = None,
+        offset: int = None,
+        where: dict = None,
+        **kwargs,
+    ) -> list[str | SearchResult] | str | SearchResult | None:
+        return env().texts.get(collection, ids, limit, offset, where, **kwargs)
+
     def save_many(self, collection: str, items: list[tuple[str, dict] | str]):
         return env().texts.save_many(collection, items)
 
@@ -150,4 +161,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "3.14.1"
+__version__ = "3.15.0"

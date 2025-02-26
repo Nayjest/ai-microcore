@@ -1,4 +1,4 @@
-""" Message classes for OpenAI Chat API """
+"""Message classes for OpenAI Chat API"""
 
 from enum import Enum
 from dataclasses import dataclass, field
