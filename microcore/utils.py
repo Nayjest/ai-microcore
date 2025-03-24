@@ -166,6 +166,15 @@ def list_files(
         target_directory = '/path/to/target'
         files = list_files(target_directory, exclude_patterns)
     """
+    def _is_file(file_path: Path):
+        if sys.version_info >= (3, 13):
+            return file_path.is_file(follow_symlinks=False)
+        else:
+            try:
+                return file_path.is_file()
+            except OSError:
+                return False
+
     exclude = exclude or []
     target = Path(target_dir or os.getcwd()).resolve()
     relative_to = Path(relative_to).resolve() if relative_to else None
@@ -179,7 +188,7 @@ def list_files(
         for p in (
             path.resolve() if absolute else path.relative_to(relative_to or target)
             for path in target.rglob("*")
-            if path.is_file(follow_symlinks=False)
+            if _is_file(path)
             and not any(
                 fnmatch(str(path.relative_to(target)), str(pattern))
                 for pattern in exclude
