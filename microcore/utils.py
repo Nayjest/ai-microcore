@@ -173,12 +173,13 @@ def list_files(
         raise ValueError(
             "list_files(): Cannot specify both 'absolute' and 'relative_to'. Choose one."
         )
+
     return [
         p.as_posix() if posix else p
         for p in (
             path.resolve() if absolute else path.relative_to(relative_to or target)
             for path in target.rglob("*")
-            if path.is_file()
+            if path.is_file(follow_symlinks=False)
             and not any(
                 fnmatch(str(path.relative_to(target)), str(pattern))
                 for pattern in exclude
