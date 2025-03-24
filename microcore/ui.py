@@ -67,37 +67,25 @@ def ask_non_empty(msg):
     return i
 
 
-def magenta(msg):
-    return f"{Fore.MAGENTA}{msg}{Fore.RESET}"
+class _ColorFunc(str):
+    """
+    Cli output coloring function
+    """
+    def __new__(cls, code):
+        obj = str.__new__(cls, code)
+        obj.code = code
+        return obj
 
+    def __call__(self, *args):
+        return f"{self.code}{''.join(args)}{Fore.RESET}"
 
-def yellow(msg):
-    return f"{Fore.YELLOW}{msg}{Fore.RESET}"
-
-
-def red(msg):
-    return f"{Fore.RED}{msg}{Fore.RESET}"
-
-
-def blue(msg):
-    return f"{Fore.BLUE}{msg}{Fore.RESET}"
-
-
-def green(msg):
-    return f"{Fore.GREEN}{msg}{Fore.RESET}"
-
-
-def cyan(msg):
-    return f"{Fore.CYAN}{msg}{Fore.RESET}"
-
-
-def white(msg):
-    return f"{Fore.WHITE}{msg}{Fore.RESET}"
-
-
-def gray(msg):
-    return f"\033[90m{msg}{Fore.RESET}"
-
-
-def black(msg):
-    return f"{Fore.BLACK}{msg}{Fore.RESET}"
+# Define colors
+red = _ColorFunc(Fore.RED)
+green = _ColorFunc(Fore.GREEN)
+blue = _ColorFunc(Fore.BLUE)
+cyan = _ColorFunc(Fore.CYAN)
+yellow = _ColorFunc(Fore.YELLOW)
+magenta = _ColorFunc(Fore.MAGENTA)
+white = _ColorFunc(Fore.WHITE)
+gray = _ColorFunc(Fore.LIGHTBLACK_EX)
+reset = _ColorFunc(Fore.RESET)

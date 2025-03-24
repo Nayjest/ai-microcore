@@ -6,5 +6,5 @@
     {%- if v.default != 'NOT_SET' %} = {{ v.default }}{%endif-%}
     {%- if not loop.last -%},{%- endif -%}
     {%- if v.comment %} # {{ v.comment }}{% endif -%}
-{%- endfor %}
-)
+{%- endfor -%}
+{%- if args %}{{ "\n" }}{% endif -%})

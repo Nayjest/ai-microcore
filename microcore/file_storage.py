@@ -5,6 +5,7 @@ File storage functions
 import fnmatch
 import json
 import os
+from dataclasses import dataclass, field
 import shutil
 from pathlib import Path
 import chardet
@@ -14,11 +15,14 @@ from .utils import file_link, list_files
 
 _missing = object()
 
-
+@dataclass
 class Storage:
+
+    custom_path: str = field(default="")
+
     @property
     def path(self) -> Path:
-        return Path(config().STORAGE_PATH)
+        return Path(str(self.custom_path) or config().STORAGE_PATH)
 
     @property
     def default_ext(self) -> str | None:
