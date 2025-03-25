@@ -77,7 +77,8 @@ class _ColorFunc(str):
         return obj
 
     def __call__(self, *args):
-        return f"{self.code}{''.join(args)}{Fore.RESET}"
+        return f"{self.code}{''.join([str(i) for i in args])}{Fore.RESET}"
+
 
 # Define colors
 red = _ColorFunc(Fore.RED)
