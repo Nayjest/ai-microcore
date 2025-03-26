@@ -2,6 +2,7 @@
 
 from enum import Enum
 from dataclasses import dataclass, field
+from typing import ClassVar
 
 
 class Role(str, Enum):
@@ -9,15 +10,19 @@ class Role(str, Enum):
     USER = "user"
     ASSISTANT = "assistant"
 
+    def __str__(self):
+        return self.value
+
 
 DEFAULT_MESSAGE_ROLE = Role.USER
 
 
 @dataclass
 class Msg:
-    dict_factory = dict
     role: str = field(default=DEFAULT_MESSAGE_ROLE)
     content: str = field(default="")
+
+    DICT_FACTORY: ClassVar = dict
 
     def __str__(self):
         return str(self.content)
@@ -49,9 +54,10 @@ class PartialMsg(AssistantMsg):
         is_partial = True
         """Custom dictionary class to handle additional properties"""
 
-    dict_factory = _PartialMsgDict
     placeholder = "<|placeholder|>"
     variants_splitter = "<|or|>"
+
+    DICT_FACTORY: ClassVar = _PartialMsgDict
 
     @staticmethod
     def split_prefix_and_suffixes(content: str):

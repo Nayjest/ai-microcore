@@ -22,7 +22,7 @@ def prepare_chat_messages(prompt: TPrompt) -> list[dict]:
             dict(role=DEFAULT_MESSAGE_ROLE, content=msg)
             if isinstance(msg, str)
             else (
-                asdict(msg, dict_factory=msg.dict_factory)
+                asdict(msg, dict_factory=msg.DICT_FACTORY)
                 if isinstance(msg, Msg)
                 else msg
             )
