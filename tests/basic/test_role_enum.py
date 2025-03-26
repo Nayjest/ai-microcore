@@ -14,3 +14,7 @@ def test___str__():
     assert str(Role.ASSISTANT) == "assistant"
     assert f"{Role.USER}" == "user"
     assert "%s" % Role.USER == "user"
+
+def test_in():
+    assert Role.USER in Role
+    assert "user" in Role

@@ -1,4 +1,4 @@
-# {{ description }}
+# {{ description or name.replace('_', ' ').capitalize() }}
 {{ name }}(
 {%- for name,v in args.items() -%}
 {{ "\n\t" }}{{ name }}

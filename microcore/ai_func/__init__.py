@@ -5,10 +5,19 @@ descr: Allows to describe python functions for LLM
 
 import ast
 import inspect
+from enum import Enum
 from typing import Dict, Any
 import docstring_parser
 from .. import tpl
 
+
+class AiFuncSyntax(str, Enum):
+    PYTHONIC: str = "pythonic"
+    JSON: str = "json"
+    DEFAULT: str = str(JSON)
+
+    def __str__(self):
+        return self.value
 
 def func_arg_comments(func):
     func_source = inspect.getsource(func)
@@ -60,7 +69,7 @@ def func_metadata(func) -> Dict[str, Any]:
     for name, val in metadata["args"].items():
         val["comment"] = arg_comments[name]
 
-        # Parse docstring
+    # Parse docstring
     parsed_docstring = docstring_parser.parse(inspect.getdoc(func))
 
     # Add descriptions from parsed docstring to parameters
@@ -71,6 +80,17 @@ def func_metadata(func) -> Dict[str, Any]:
     return metadata
 
 
-def describe_ai_func(func):
+def describe_ai_func(func: callable, syntax: AiFuncSyntax | str = None) -> str:
+    """
+    Renders function description for LLM
+    Args:
+        func: callable: function to describe
+        syntax: AiFuncSyntax | str: syntax to use for the description
+                - Use AiFuncSyntax enums to use standard templates (""json", "pythonic")
+                - Use custom template name to use custom template
+    Returns: str: rendered description, part of prompt
+    """
+    syntax = syntax or AiFuncSyntax.DEFAULT
+    tpl_file = f"ai-func.{syntax}.j2" if syntax in AiFuncSyntax else syntax
     metadata = func_metadata(func)
-    return tpl("python_ai_func.j2", **metadata)
+    return tpl(tpl_file, **metadata)
