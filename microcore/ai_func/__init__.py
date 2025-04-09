@@ -9,6 +9,7 @@ from enum import Enum
 from typing import Dict, Any
 import docstring_parser
 from .. import tpl
+from ..utils import dedent
 
 
 class AiFuncSyntax(str, Enum):
@@ -20,7 +21,7 @@ class AiFuncSyntax(str, Enum):
         return self.value
 
 def func_arg_comments(func):
-    func_source = inspect.getsource(func)
+    func_source = dedent(inspect.getsource(func))
     module = ast.parse(func_source)
     func_def = module.body[0]
 
