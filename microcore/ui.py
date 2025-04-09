@@ -2,7 +2,7 @@ from colorama import Fore, init
 from .utils import is_notebook
 
 if not is_notebook():
-    init(autoreset=True)
+    init(autoreset=True, strip=False)
 
 
 def info(*args, color=Fore.LIGHTYELLOW_EX, **kwargs):
