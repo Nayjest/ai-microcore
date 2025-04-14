@@ -5,7 +5,6 @@ import chromadb
 from chromadb.config import Settings
 from chromadb.errors import ChromaError
 from chromadb.utils import embedding_functions
-from chromadb.errors import InvalidCollectionException
 from ..configuration import Config
 from .. import SearchResult, SearchResults, AbstractEmbeddingDB
 
@@ -170,5 +169,5 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
             return self.client.get_collection(
                 name, embedding_function=self.embedding_function
             )
-        except (ValueError, InvalidCollectionException):
+        except (ValueError, ChromaError):
             return None
