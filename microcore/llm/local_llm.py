@@ -8,6 +8,7 @@ from .._prepare_llm_args import prepare_chat_messages, prepare_prompt
 from ..types import LLMAsyncFunctionType, LLMFunctionType
 from ..utils import resolve_callable
 from ..wrappers.llm_response_wrapper import LLMResponse
+from .shared import prepare_callbacks
 
 T = TypeVar("T")
 
@@ -35,11 +36,7 @@ class _sync_await:
 def _prepare_llm_arguments(config: Config, kwargs: dict):
     args = {**config.LLM_DEFAULT_ARGS, **kwargs}
     args.pop("model", None)
-    callbacks: list[callable] = args.pop("callbacks", [])
-    if "callback" in args:
-        cb = args.pop("callback")
-        if cb:
-            callbacks.append(cb)
+    callbacks = prepare_callbacks(config, args, set_stream=False)
     return args, {"callbacks": callbacks}
 
 

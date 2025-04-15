@@ -8,6 +8,7 @@ from .._prepare_llm_args import prepare_chat_messages
 from ..message_types import Role
 from ..types import LLMAsyncFunctionType, LLMFunctionType, BadAIAnswer
 from ..wrappers.llm_response_wrapper import LLMResponse
+from .shared import prepare_callbacks
 
 
 async def _a_process_streamed_response(response, callbacks: list[callable]):
@@ -45,11 +46,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
 
     def _prepare_chat(prompt, **kwargs):
         model_name = kwargs.pop("model", config.MODEL)
-        callbacks: list[callable] = kwargs.pop("callbacks", [])
-        if "callback" in kwargs:
-            cb = kwargs.pop("callback")
-            if cb:
-                callbacks.append(cb)
+        callbacks = prepare_callbacks(config, kwargs, set_stream=False)
         model = genai.GenerativeModel(
             model_name,
             generation_config=GenerationConfig(**kwargs),
