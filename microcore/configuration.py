@@ -369,6 +369,10 @@ class Config(LLMConfig):
 
     EMBEDDING_DB_ALLOW_DUPLICATES: bool = from_env(dtype=bool, default=False)
 
+    EMBEDDING_DB_HOST: str = from_env(default=None)
+
+    EMBEDDING_DB_PORT: str = from_env(default=None)
+
     DEFAULT_ENCODING: str = from_env("utf-8")
     """Used in file system operations, utf-8 by default"""
 
