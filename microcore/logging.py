@@ -41,6 +41,20 @@ def _format_request_log_str(prompt, **kwargs) -> str:
         )
         if out.endswith("\n"):
             out = out[:-1]
+    if LoggingConfig.STRIP_REQUEST_LINES:
+        start_lines, end_lines = LoggingConfig.STRIP_REQUEST_LINES
+        max_lines = start_lines + end_lines
+        lines = out.split("\n")
+        if len(lines) > max_lines:
+            out = "\n".join(
+                lines[:start_lines]
+                + [
+                    f"{LoggingConfig.INDENT}{Fore.YELLOW}"
+                    f"...(output was truncated)..."
+                    f"{LoggingConfig.PROMPT_COLOR}"
+                ]
+                + (lines[-end_lines:] if end_lines else [])
+            )
     return out
 
 
@@ -72,6 +86,7 @@ class LoggingConfig:
     OUTPUT_METHOD: callable = print
     REQUEST_FORMATTER: callable = _format_request_log_str
     RESPONSE_FORMATTER: callable = _format_response_log_str
+    STRIP_REQUEST_LINES: tuple[int, int] | None = [40, 15]
 
 
 def _log_request(prompt, **kwargs):
