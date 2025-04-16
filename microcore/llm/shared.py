@@ -21,4 +21,5 @@ def prepare_callbacks(config: Config, args, set_stream: bool = True) -> list[cal
             callbacks.append(cb)
     if set_stream and "stream" not in args:
         args["stream"] = bool(callbacks)
+
     return callbacks
