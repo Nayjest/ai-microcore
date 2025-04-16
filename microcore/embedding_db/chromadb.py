@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 import uuid
 
@@ -17,6 +18,11 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
 
     def __post_init__(self):
         if self.config.EMBEDDING_DB_HOST:
+            logging.info(
+                "Connecting to ChromaDB at %s:%s",
+                self.config.EMBEDDING_DB_HOST,
+                self.config.EMBEDDING_DB_PORT
+            )
             self.client = chromadb.HttpClient(
                 host=self.config.EMBEDDING_DB_HOST,
                 port=self.config.EMBEDDING_DB_PORT or 8000,

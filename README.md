@@ -107,6 +107,24 @@ See [transformers installation](https://huggingface.co/docs/transformers/install
     <br>💡 <small>Setting `USE_DOT_ENV` to `false` disables reading configuration files.</small>
 3.  OS environment variables have the lowest priority.
 
+### Vector Databases
+
+Vector database functions are available via `microcore.texts`.
+Default vector database is [Chroma](https://www.trychroma.com/).
+In order to use vector database functions, you need to install the `chromadb` package:
+```bash
+pip install chromadb
+```
+By default, MicroCore will use ChromaDB PersistentClient (if corresponding package is installed).
+Alternatively, you can run Chroma as separate service and configure MicroCore to use HttpClient:
+
+```python
+from microcore import configure
+configure(
+    EMBEDDING_DB_HOST = 'localhost',
+    EMBEDDING_DB_PORT = 8000,
+)
+```
 
 ## 🌟 Core Functions
 
