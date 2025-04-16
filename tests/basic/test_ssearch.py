@@ -146,9 +146,12 @@ def test_delete():
             ("5", {}),
         ],
     )
+
     assert 5 == texts.count(cid)
     texts.delete(cid, {"field": "value_a"})
     assert "3,4,5" == ",".join(sorted(texts.get_all(cid)))
+    # https://github.com/chroma-core/chroma/issues/4275#issuecomment-2807605563
+    assert "4" == texts.find_one(cid, "4")
     texts.delete(cid, texts.find_one(cid, "4").id)
     assert "3,5" == ",".join(sorted(texts.get_all(cid)))
     texts.save(cid, "6")

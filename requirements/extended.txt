@@ -1,5 +1,5 @@
 -r min.txt
-chromadb>=0.4.18,<0.6
+chromadb==1.0.0b
 anthropic>=0.19.1,<=0.25.8
 google-generativeai>=0.7.2,<1
 vertexai>=1.60.0,<2

@@ -1,5 +1,4 @@
 import logging
-import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
@@ -7,6 +6,8 @@ import tiktoken
 
 from ..utils import ExtendedString
 
+
+INT32_MAX = 2**31 - 1  # 2147483647
 
 class SearchResults(list):
     def fit_to_token_size(
@@ -115,7 +116,7 @@ class AbstractEmbeddingDB(ABC):
         **kwargs,
     ) -> SearchResults | list[str | SearchResult]:
         return self.search(
-            collection, query, n_results=sys.maxsize - 1, where=where, **kwargs
+            collection, query, n_results=INT32_MAX, where=where, **kwargs
         )
 
     @abstractmethod

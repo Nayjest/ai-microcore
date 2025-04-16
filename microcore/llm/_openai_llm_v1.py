@@ -6,7 +6,7 @@ from .._prepare_llm_args import prepare_chat_messages, prepare_prompt
 from ..types import LLMAsyncFunctionType, LLMFunctionType, BadAIAnswer
 from ..wrappers.llm_response_wrapper import LLMResponse
 from ..utils import is_chat_model
-from .shared import make_remove_hidden_output
+from .shared import make_remove_hidden_output, prepare_callbacks
 
 OPENAI_V1_API = True
 
@@ -93,13 +93,7 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
             else config.MODEL
         ),
     )
-    callbacks: list[callable] = args.pop("callbacks", [])
-    if "callback" in args:
-        cb = args.pop("callback")
-        if cb:
-            callbacks.append(cb)
-    if "stream" not in args:
-        args["stream"] = bool(callbacks)
+    callbacks = prepare_callbacks(config, args)
     return args, {"callbacks": callbacks}
 
 

@@ -195,6 +195,7 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
     HIDDEN_OUTPUT_BEGIN: str = from_env()
     HIDDEN_OUTPUT_END: str = from_env()
     """Remove <think>...</think> from LLM response for models like DeepSeek R1"""
+    CALLBACKS: list[Callable] = field(default_factory=list)
 
     VALIDATE_CONFIG: bool = from_env(dtype=bool, default=True)
 
@@ -367,6 +368,10 @@ class Config(LLMConfig):
     EMBEDDING_DB_FUNCTION: Any = from_env()
 
     EMBEDDING_DB_ALLOW_DUPLICATES: bool = from_env(dtype=bool, default=False)
+
+    EMBEDDING_DB_HOST: str = from_env(default=None)
+
+    EMBEDDING_DB_PORT: str = from_env(default=None)
 
     DEFAULT_ENCODING: str = from_env("utf-8")
     """Used in file system operations, utf-8 by default"""

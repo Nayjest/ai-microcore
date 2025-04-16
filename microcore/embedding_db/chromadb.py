@@ -16,10 +16,17 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
     client: chromadb.Client = None
 
     def __post_init__(self):
-        self.client = chromadb.PersistentClient(
-            path=f"{self.config.STORAGE_PATH}/{self.config.EMBEDDING_DB_FOLDER}",
-            settings=Settings(anonymized_telemetry=False),
-        )
+        if self.config.EMBEDDING_DB_HOST:
+            self.client = chromadb.HttpClient(
+                host=self.config.EMBEDDING_DB_HOST,
+                port=self.config.EMBEDDING_DB_PORT or 8000,
+                settings=Settings(anonymized_telemetry=False),
+            )
+        else:
+            self.client = chromadb.PersistentClient(
+                path=f"{self.config.STORAGE_PATH}/{self.config.EMBEDDING_DB_FOLDER}",
+                settings=Settings(anonymized_telemetry=False),
+            )
         self.embedding_function = (
             self.config.EMBEDDING_DB_FUNCTION
             or embedding_functions.DefaultEmbeddingFunction()
