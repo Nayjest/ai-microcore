@@ -369,3 +369,93 @@ def resolve_callable(
     except (ImportError, AttributeError, AssertionError, ValueError) as e:
         raise ValueError(f"Can't resolve callable by name '{fn}', {e}") from e
     return fn
+
+
+def levenshtein(a: str, b: str) -> int:
+    """Compute the Levenshtein edit distance between two strings.
+
+    The **Levenshtein distance** is the minimum number of single‑character
+    edits (insertions, deletions, or substitutions) required to transform one
+    string into the other.
+
+    This implementation uses the classic Wagner–Fischer dynamic‑programming
+    algorithm and stores only a single row of the DP matrix at any time,
+    reducing memory usage to be linear in the length of the shorter string.
+
+    Args:
+        a (str): First input string.
+        b (str): Second input string.
+
+    Returns:
+        int: Non‑negative integer representing the edit distance. A value of
+        ``0`` means the strings are identical.
+
+    Complexity:
+        * **Time** ``O(ab)``
+        * **Space** ``O(min(a, b))``
+
+    Examples:
+        >>> levenshtein("kitten", "sitting")
+        3
+        >>> levenshtein("graph", "giraffe")
+        4
+    """
+    if a == b:
+        return 0
+    # Ensure a is the shorter string to reduce memory
+    if len(a) > len(b):
+        a, b = b, a
+    previous = list(range(len(a) + 1))
+    for i, ch_b in enumerate(b, start=1):
+        current = [i]
+        for j, ch_a in enumerate(a, start=1):
+            cost = 0 if ch_a == ch_b else 1
+            current.append(
+                min(
+                    current[-1] + 1,       # insertion
+                    previous[j] + 1,       # deletion
+                    previous[j - 1] + cost # substitution
+                )
+            )
+        previous = current
+    return previous[-1]
+
+
+def most_similar(
+    needle: str,
+    haystack: list[str],
+    distance_func: callable = levenshtein,
+    case_sensitive: bool = False,
+) -> tuple[str, int]:
+    """
+    Find the most similar string from a list of strings using the
+    specified distance function.
+
+    Args:
+        needle (str): The word to compare against.
+        haystack (list[str]): A list of words to compare with.
+        distance_func (callable): The distance function to use for comparison.
+            Defaults to levenshtein.
+        case_sensitive (bool): If True, the comparison is case-sensitive.
+
+    Returns:
+        tuple[str, int]: A tuple containing the most similar word and its distance
+            from the given word.
+
+    Raises:
+        ValueError: If haystack is empty.
+    """
+    if not haystack:
+        raise ValueError("Haystack cannot be empty")
+
+    min_dist = float('inf')
+    most_similar_word = None
+    a = needle if case_sensitive else needle.lower()
+    for word in haystack:
+        b = word if case_sensitive else word.lower()
+        dist = distance_func(a, b)
+        if dist < min_dist:
+            min_dist = dist
+            most_similar_word = word
+
+    return most_similar_word, min_dist

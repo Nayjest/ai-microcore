@@ -20,6 +20,9 @@ class Storage:
 
     custom_path: str = field(default="")
 
+    def __call__(self, custom_path: str):
+        return Storage(custom_path)
+
     @property
     def path(self) -> Path:
         return Path(str(self.custom_path) or config().STORAGE_PATH)
