@@ -9,6 +9,7 @@ from ..utils import ExtendedString
 
 INT32_MAX = 2**31 - 1  # 2147483647
 
+
 class SearchResults(list):
     def fit_to_token_size(
         self,

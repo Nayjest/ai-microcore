@@ -13,6 +13,7 @@ def make_remove_hidden_output(config: Config) -> callable:
 
     return remove_hidden_output
 
+
 def prepare_callbacks(config: Config, args, set_stream: bool = True) -> list[callable]:
     callbacks = args.pop("callbacks", []) or [] + config.CALLBACKS or []
     if "callback" in args:

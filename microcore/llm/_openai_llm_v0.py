@@ -9,6 +9,7 @@ from ..wrappers.llm_response_wrapper import LLMResponse
 from ..utils import is_chat_model
 from .shared import prepare_callbacks
 
+
 def _get_chunk_text(chunk, mode_chat_model: bool):
     # Azure API gives first chunk with empty choices
     choice = chunk.choices[0] if len(chunk.choices) else {}

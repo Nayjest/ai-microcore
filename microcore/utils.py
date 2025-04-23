@@ -412,9 +412,9 @@ def levenshtein(a: str, b: str) -> int:
             cost = 0 if ch_a == ch_b else 1
             current.append(
                 min(
-                    current[-1] + 1,       # insertion
-                    previous[j] + 1,       # deletion
-                    previous[j - 1] + cost # substitution
+                    current[-1] + 1,        # insertion
+                    previous[j] + 1,        # deletion
+                    previous[j - 1] + cost  # substitution
                 )
             )
         previous = current

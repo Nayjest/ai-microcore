@@ -9,6 +9,7 @@ from ..types import LLMAsyncFunctionType, LLMFunctionType
 from ..wrappers.llm_response_wrapper import LLMResponse
 from .shared import prepare_callbacks
 
+
 def _get_chunk_text(chunk):
     return isinstance(chunk, ContentBlockDeltaEvent) and chunk.delta.text or ""
 
@@ -36,8 +37,15 @@ def _process_streamed_response(response, callbacks: list[callable]):
 
 
 def _prepare_llm_arguments(config: Config, kwargs: dict):
-    args = {"max_tokens": 1024, **config.LLM_DEFAULT_ARGS, **kwargs}
+    args = {**config.LLM_DEFAULT_ARGS, **kwargs}
     args["model"] = args.get("model", config.MODEL)
+    if "max_tokens" not in args:
+        if "claude-3-5-sonnet" in args["model"]:
+            args["max_tokens"] = 8192
+        elif "claude-3-7-sonnet" in args["model"]:
+            args["max_tokens"] = 16384
+        else:
+            args["max_tokens"] = 4096
     args.pop("seed", None)  # Not supported by Anthropic
     callbacks = prepare_callbacks(config, args)
     return args, {"callbacks": callbacks}

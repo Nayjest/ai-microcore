@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 import jinja2
 
 from .embedding_db import AbstractEmbeddingDB
-from .configuration import Config, ApiType, LLMConfigError
+from .configuration import Config, ApiType, LLMConfigError, EmbeddingDbType
 from .types import TplFunctionType, LLMAsyncFunctionType, LLMFunctionType
 from .templating.jinja2 import make_jinja2_env, make_tpl_function
 from .llm.openai_llm import make_llm_functions as make_openai_llm_functions
@@ -134,7 +134,10 @@ class Env:
             )
 
     def init_similarity_search(self):
-        if find_spec("chromadb") is not None:
+        if (
+            self.config.EMBEDDING_DB_TYPE == EmbeddingDbType.CHROMA
+            and find_spec("chromadb") is not None
+        ):
             from .embedding_db.chromadb import ChromaEmbeddingDB
 
             self.texts = ChromaEmbeddingDB(self.config)
