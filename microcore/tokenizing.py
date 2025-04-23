@@ -5,7 +5,8 @@ import requests.exceptions
 from ._env import env
 
 
-class CantLoadTikTokenEncoding(RuntimeError): ...
+class CantLoadTikTokenEncoding(RuntimeError):
+    ...
 
 
 def _resolve_tiktoken_encoding(

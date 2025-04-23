@@ -20,6 +20,7 @@ class AiFuncSyntax(str, Enum):
     def __str__(self):
         return self.value
 
+
 def func_arg_comments(func):
     func_source = dedent(inspect.getsource(func))
     module = ast.parse(func_source)

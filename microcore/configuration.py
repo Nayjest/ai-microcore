@@ -78,6 +78,17 @@ class ApiType(str, Enum):
     def is_local(api_type: str) -> bool:
         return api_type in (ApiType.FUNCTION, ApiType.TRANSFORMERS, ApiType.NONE)
 
+    def __str__(self):
+        return self.value
+
+
+class EmbeddingDbType(str, Enum):
+    CHROMA = "chroma"
+    NONE = ""
+
+    def __str__(self):
+        return self.value
+
 
 _default_dotenv_loaded = False
 
@@ -372,6 +383,8 @@ class Config(LLMConfig):
     EMBEDDING_DB_HOST: str = from_env(default=None)
 
     EMBEDDING_DB_PORT: str = from_env(default=None)
+
+    EMBEDDING_DB_TYPE: str = from_env(EmbeddingDbType.CHROMA)
 
     DEFAULT_ENCODING: str = from_env("utf-8")
     """Used in file system operations, utf-8 by default"""
