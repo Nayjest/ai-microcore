@@ -5,6 +5,7 @@ from .message_types import Msg
 
 if TYPE_CHECKING:
     from .wrappers.prompt_wrapper import PromptWrapper  # noqa: F401
+    from .wrappers.llm_response_wrapper import LLMResponse  # noqa: F401
 
 TPrompt = Union[
     dict, Msg, str, "PromptWrapper", List[Union[dict, Msg, str, "PromptWrapper"]]
@@ -12,9 +13,9 @@ TPrompt = Union[
 """Type for prompt argument in LLM requests"""
 TplFunctionType = Callable[[Union[PathLike[str], str], Any], str]
 """Function type for rendering prompt templates"""
-LLMFunctionType = Callable[[TPrompt, Any], str]
+LLMFunctionType = Callable[[TPrompt, Any], "LLMResponse"]
 """Function type for requesting LLM synchronously"""
-LLMAsyncFunctionType = Callable[[TPrompt, Any], Awaitable[str]]
+LLMAsyncFunctionType = Callable[[TPrompt, Any], Awaitable["LLMResponse"]]
 """Function type for requesting LLM asynchronously"""
 
 
