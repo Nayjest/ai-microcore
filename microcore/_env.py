@@ -14,6 +14,7 @@ from .llm.local_llm import make_llm_functions as make_local_llm_functions
 
 if TYPE_CHECKING:
     from .wrappers.llm_response_wrapper import LLMResponse  # noqa: F401
+    from transformers import PreTrainedModel, PreTrainedTokenizer  # noqa: F401
 
 
 @dataclass
@@ -26,10 +27,10 @@ class Env:
     llm_before_handlers: list[callable] = field(default_factory=list)
     llm_after_handlers: list[callable] = field(default_factory=list)
     texts: AbstractEmbeddingDB = None
-    model: "transformers.PreTrainedModel" = field(
+    model: "PreTrainedModel" = field(
         default=None, init=False, repr=False
     )  # noqa
-    tokenizer: "transformers.PreTrainedTokenizer" = field(  # noqa
+    tokenizer: "PreTrainedTokenizer" = field(  # noqa
         default=None, init=False, repr=False
     )
 
