@@ -9,6 +9,7 @@ and separate business logic from implementation details.
 
 import os
 import microcore.ui  # noqa
+import microcore.tokenizing  # noqa
 from .embedding_db import SearchResult, AbstractEmbeddingDB, SearchResults
 from .file_storage import storage
 from ._env import configure, env, config
@@ -161,4 +162,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "4.0.0-dev6"
+__version__ = "4.0.0-dev7"
