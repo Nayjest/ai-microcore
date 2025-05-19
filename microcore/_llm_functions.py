@@ -56,7 +56,7 @@ def llm(
             tries -= 1
             response = env().llm_function(prompt, **kwargs)
             break
-        except Exception as e:
+        except Exception as e:  # pylint: disable=W0718
             if tries == 0:
                 raise e
             logging.error(f"LLM error: {e}")
@@ -134,7 +134,7 @@ async def allm(
             tries -= 1
             response = await env().llm_async_function(prompt, **kwargs)
             break
-        except Exception as e:
+        except Exception as e:  # pylint: disable=W0718
             if tries == 0:
                 raise e
             logging.error(f"LLM error: {e}")
@@ -151,7 +151,7 @@ async def allm(
         try:
             parsing_params = parse_json if isinstance(parse_json, dict) else {}
             return response.parse_json(**parsing_params)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=W0718
             if tries > 0:
                 logging.error(f"LLM error: {e}")
                 logging.info(f"Retrying... {tries} retries left")

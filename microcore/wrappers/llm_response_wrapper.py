@@ -58,7 +58,7 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
                     validator(res)
                 except Exception as e:
                     raise BadAIAnswer(f"Language model response validation failed: {e}") from None
-        except Exception as e:
+        except Exception as e:  # pylint: disable=W0718
             if hasattr(self, "_retry_callback"):
                 res = self._retry_callback()
                 if isinstance(res, DictFromLLMResponse):
