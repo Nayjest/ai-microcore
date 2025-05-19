@@ -1,4 +1,3 @@
-from . import *  # noqa
 import pytest
 from microcore import LLMConfigError, llm, allm, configure, ApiType
 

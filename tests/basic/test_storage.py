@@ -16,7 +16,7 @@ def test_storage_write_existing():
     filename2 = mc.storage.write("tests_tmp/test_b", "new content")
     assert mc.storage.read(filename) == "new content"
     assert filename2 == filename
-    assert mc.storage.read(f"tests_tmp/test_b_1") == "old content"
+    assert mc.storage.read("tests_tmp/test_b_1") == "old content"
     filename3 = mc.storage.write(
         "tests_tmp/test_b", "content 3", rewrite_existing=False
     )

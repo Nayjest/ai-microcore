@@ -1,5 +1,6 @@
 from microcore.utils import levenshtein
 
+
 def test_levenshtein():
     assert levenshtein("", "") == 0
     assert levenshtein("word", "") == 4

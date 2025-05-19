@@ -1,4 +1,6 @@
-from . import *  # noqa
+from . import setup
+import pytest
+import microcore as mc
 
 
 def test_to_json(setup):
@@ -10,6 +12,7 @@ def test_to_json(setup):
     mc.llm('{"field1":"value1"}').parse_json(required_fields=["field1"])
     with pytest.raises(mc.BadAIJsonAnswer):
         mc.llm('{"field1":"value1"}').parse_json(required_fields=["field2"])
+
 
 def test_to_json_and_validate(setup):
     def validator(data: dict):

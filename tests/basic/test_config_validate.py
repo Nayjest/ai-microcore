@@ -1,6 +1,8 @@
 import os
-from . import *  # noqa
 import asyncio
+import pytest
+
+import microcore as mc
 
 
 def test_valid():  # noqa
