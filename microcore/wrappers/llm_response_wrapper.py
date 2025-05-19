@@ -46,9 +46,27 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
         return obj
 
     def parse_json(
-        self, raise_errors: bool = True, required_fields: list[str] = None
+        self,
+        raise_errors: bool = True,
+        required_fields: list[str] = None,
+        validator: callable = None,
     ) -> list | dict | float | int | str | DictFromLLMResponse:
-        res = parse_json(self.content, raise_errors, required_fields)
+        try:
+            res = parse_json(self.content, True, required_fields)
+            if validator:
+                try:
+                    validator(res)
+                except Exception as e:
+                    raise BadAIAnswer(f"Language model response validation failed: {e}") from None
+        except Exception as e:
+            if hasattr(self, "_retry_callback"):
+                res = self._retry_callback()
+                if isinstance(res, DictFromLLMResponse):
+                    return res
+                return res.parse_json(raise_errors, required_fields, validator)
+            if raise_errors:
+                raise e
+            res = False
         if isinstance(res, dict):
             res = DictFromLLMResponse(res)
             res.llm_response = self
