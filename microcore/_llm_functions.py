@@ -170,7 +170,7 @@ async def llm_parallel(
     tasks = [allm(prompt, **kwargs) for prompt in prompts]
 
     if max_concurrent_tasks is None:
-        max_concurrent_tasks = int(env().config.MAX_CONCURRENT_TASKS)
+        max_concurrent_tasks = int(env().config.MAX_CONCURRENT_TASKS or 0)
     if not max_concurrent_tasks:
         max_concurrent_tasks = len(tasks)
 
