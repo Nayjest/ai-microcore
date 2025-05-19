@@ -23,7 +23,7 @@ class TTSArgs:
         return asdict(self)
 
 
-async def text_to_speech(
+async def text_to_speech(  # pylint: disable=R0914
     text: str,
     out_file: str = None,
     voice: str = "D38z5RcWu1voky8WS1ja",
