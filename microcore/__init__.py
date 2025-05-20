@@ -15,7 +15,7 @@ from .file_storage import storage
 from ._env import configure, env, config
 from .logging import use_logging
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg, PartialMsg
-from .configuration import ApiType, LLMConfigError, Config
+from .configuration import ApiType, LLMConfigError, Config, EmbeddingDbType
 from .types import BadAIJsonAnswer, BadAIAnswer
 from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
@@ -141,6 +141,7 @@ __all__ = [
     "AssistantMsg",
     "PartialMsg",
     "ApiType",
+    "EmbeddingDbType",
     "BadAIJsonAnswer",
     "BadAIAnswer",
     "LLMConfigError",
@@ -164,4 +165,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "4.0.0-dev10"
+__version__ = "4.0.0-dev11"
