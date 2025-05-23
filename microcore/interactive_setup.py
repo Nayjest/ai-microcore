@@ -37,11 +37,13 @@ def interactive_setup(
     if extras:
         if isinstance(extras, list):
             extras = {
-                i: str(i)
+                i: (
+                    str(i)
                     .replace('_', ' ')
                     .capitalize()
                     .replace('Llm', 'LLM')
                     .replace('Api', 'API')
+                )
                 for i in extras
             }
         for field, title in extras.items():
