@@ -175,3 +175,13 @@ def test_find_all():
         ],
     )
     assert 3 == len(texts.find_all(cid, "", {"field": "value_a"}))
+
+
+def test_clear_non_existing():
+    # should not raise error
+    texts.clear("non-existing-collection")
+
+
+def test_delete_non_existing():
+    # should not raise error
+    texts.delete("non-existing-collection2", "non-existing-id")

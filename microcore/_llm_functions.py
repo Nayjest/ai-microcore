@@ -1,17 +1,27 @@
+import logging
 from datetime import datetime
 
 from .utils import run_parallel
-from .wrappers.llm_response_wrapper import LLMResponse
+from .wrappers.llm_response_wrapper import LLMResponse, DictFromLLMResponse
 from .types import TPrompt
 from ._env import env
 
 
-def llm(prompt: TPrompt, **kwargs) -> str | LLMResponse:
+def llm(
+    prompt: TPrompt,
+    retries: int = 0,
+    parse_json: bool | dict = False,
+    **kwargs
+) -> str | LLMResponse:
     """
     Request Large Language Model synchronously
 
     Args:
         prompt (str | Msg | dict | list[str | Msg | dict]): Text to send to LLM
+        retries (int): Number of retries in case of error
+        parse_json (bool|dict):
+            If True, parses response as JSON,
+            alternatively non-empty dict can be used as parse_json arguments
         **kwargs (dict): Parameters supported by the LLM API
 
             See parameters supported by the OpenAI:
@@ -40,7 +50,18 @@ def llm(prompt: TPrompt, **kwargs) -> str | LLMResponse:
     """
     [h(prompt, **kwargs) for h in env().llm_before_handlers]
     start = datetime.now()
-    response = env().llm_function(prompt, **kwargs)
+    tries = retries + 1
+    while tries > 0:
+        try:
+            tries -= 1
+            response = env().llm_function(prompt, **kwargs)
+            break
+        except Exception as e:  # pylint: disable=W0718
+            if tries == 0:
+                raise e
+            logging.error(f"LLM error: {e}")
+            logging.info(f"Retrying... {tries} retries left")
+            continue
     try:
         response.gen_duration = (datetime.now() - start).total_seconds()
         if not env().config.SAVE_MEMORY:
@@ -48,15 +69,35 @@ def llm(prompt: TPrompt, **kwargs) -> str | LLMResponse:
     except AttributeError:
         ...
     [h(response) for h in env().llm_after_handlers]
+    if tries > 0:
+        retry_params = dict(**kwargs)
+        retry_params["retries"] = tries - 1
+        setattr(
+            response,
+            "_retry_callback",
+            lambda: llm(prompt, **retry_params)
+        )
+    if parse_json:
+        parsing_params = parse_json if isinstance(parse_json, dict) else {}
+        return response.parse_json(**parsing_params)
     return response
 
 
-async def allm(prompt: TPrompt, **kwargs) -> str | LLMResponse:
+async def allm(
+    prompt: TPrompt,
+    retries: int = 0,
+    parse_json: bool | dict = False,
+    **kwargs
+) -> str | LLMResponse | DictFromLLMResponse:
     """
     Request Large Language Model asynchronously
 
     Args:
         prompt (str | Msg | dict | list[str | Msg | dict]): Text to send to LLM
+        retries (int): Number of retries in case of error
+        parse_json (bool|dict):
+            If True, parses response as JSON,
+            alternatively non-empty dict can be used as parse_json arguments
         **kwargs (dict): Parameters supported by the LLM API
 
             See parameters supported by the OpenAI:
@@ -87,7 +128,18 @@ async def allm(prompt: TPrompt, **kwargs) -> str | LLMResponse:
     """
     [h(prompt, **kwargs) for h in env().llm_before_handlers]
     start = datetime.now()
-    response = await env().llm_async_function(prompt, **kwargs)
+    tries = retries + 1
+    while tries > 0:
+        try:
+            tries -= 1
+            response = await env().llm_async_function(prompt, **kwargs)
+            break
+        except Exception as e:  # pylint: disable=W0718
+            if tries == 0:
+                raise e
+            logging.error(f"LLM error: {e}")
+            logging.info(f"Retrying... {tries} retries left")
+            continue
     try:
         response.gen_duration = (datetime.now() - start).total_seconds()
         if not env().config.SAVE_MEMORY:
@@ -95,6 +147,15 @@ async def allm(prompt: TPrompt, **kwargs) -> str | LLMResponse:
     except AttributeError:
         ...
     [h(response) for h in env().llm_after_handlers]
+    if parse_json:
+        try:
+            parsing_params = parse_json if isinstance(parse_json, dict) else {}
+            return response.parse_json(**parsing_params)
+        except Exception as e:  # pylint: disable=W0718
+            if tries > 0:
+                logging.error(f"LLM error: {e}")
+                logging.info(f"Retrying... {tries} retries left")
+                return await allm(prompt, retries=tries - 1, parse_json=parse_json, **kwargs)
     return response
 
 
@@ -109,7 +170,7 @@ async def llm_parallel(
     tasks = [allm(prompt, **kwargs) for prompt in prompts]
 
     if max_concurrent_tasks is None:
-        max_concurrent_tasks = int(env().config.MAX_CONCURRENT_TASKS)
+        max_concurrent_tasks = int(env().config.MAX_CONCURRENT_TASKS or 0)
     if not max_concurrent_tasks:
         max_concurrent_tasks = len(tasks)
 

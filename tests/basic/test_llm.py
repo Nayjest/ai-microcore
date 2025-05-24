@@ -40,3 +40,28 @@ async def test_llm_no_streaming(setup):
     t = ""
     mc.llm("ok", model="gpt-4", stream=False, callbacks=[afn, fn])
     assert t == "okok"
+
+
+def test_llm_with_parsing_json_and_retries(setup):
+    t = ""
+
+    def fn(text):
+        nonlocal t
+        t += text
+
+    def afn(text):
+        nonlocal t
+        t += text
+
+    with pytest.raises(mc.BadAIJsonAnswer):
+        mc.llm('{a=1-2}', retries=2, stream=False, callbacks=[fn, afn]).parse_json()
+    assert t == '{a=1-2}' * 3 * 2
+
+    t = ""
+    with pytest.raises(mc.BadAIJsonAnswer):
+        mc.llm('{a=1-2}', retries=3, parse_json=True, callback=afn, stream=False)
+    assert t == '{a=1-2}' * 4
+
+    assert mc.llm('{a=1-2}').parse_json(raise_errors=False) is False
+
+    assert mc.llm('{a=1-2}', retries=2).parse_json(raise_errors=False) is False

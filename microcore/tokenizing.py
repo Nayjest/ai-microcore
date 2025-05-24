@@ -68,7 +68,7 @@ def fit_to_token_size(
     encoding = _resolve_tiktoken_encoding(for_model, encoding)
     tot_size = 0
     for i, doc in enumerate(docs):
-        tot_size += num_tokens_from_string(doc, encoding=encoding)
+        tot_size += num_tokens_from_string(str(doc), encoding=encoding)
         if min_documents and i < min_documents:
             continue
         if tot_size > max_tokens:

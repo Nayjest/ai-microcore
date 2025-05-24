@@ -9,18 +9,20 @@ and separate business logic from implementation details.
 
 import os
 import microcore.ui  # noqa
+import microcore.tokenizing  # noqa
 from .embedding_db import SearchResult, AbstractEmbeddingDB, SearchResults
 from .file_storage import storage
 from ._env import configure, env, config
 from .logging import use_logging
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg, PartialMsg
-from .configuration import ApiType, LLMConfigError, Config
+from .configuration import ApiType, LLMConfigError, Config, EmbeddingDbType
 from .types import BadAIJsonAnswer, BadAIAnswer
 from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
 from ._llm_functions import llm, allm, llm_parallel
 from .utils import parse, dedent
 from .metrics import Metrics
+from .interactive_setup import interactive_setup
 
 
 def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
@@ -139,6 +141,7 @@ __all__ = [
     "AssistantMsg",
     "PartialMsg",
     "ApiType",
+    "EmbeddingDbType",
     "BadAIJsonAnswer",
     "BadAIAnswer",
     "LLMConfigError",
@@ -158,7 +161,8 @@ __all__ = [
     "types",
     "ui",
     "Metrics",
+    "interactive_setup"
     # "wrappers",
 ]
 
-__version__ = "4.0.0-dev4"
+__version__ = "4.0.0-dev11"

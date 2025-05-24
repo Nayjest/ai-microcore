@@ -1,4 +1,6 @@
-from . import *  # noqa
+from . import setup
+import pytest
+import microcore as mc
 
 
 @pytest.mark.asyncio
