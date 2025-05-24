@@ -404,7 +404,7 @@ class Config(LLMConfig):
       - LLMResponse objects will not contain the links to the prompt field
     """
 
-    AI_SYNTAX_FUNCTION_NAME_FILED: str = from_env(default="call")
+    AI_SYNTAX_FUNCTION_NAME_FIELD: str = from_env(default="call")
 
     JINJA2_GLOBALS: dict = from_env(dtype=dict)
 

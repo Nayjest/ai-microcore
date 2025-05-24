@@ -178,6 +178,7 @@ __all__ = [
     "types",
     "ui",
     "mcp",
+    "mcp_server",
     "tokenizing",
     "Metrics",
     # "wrappers",

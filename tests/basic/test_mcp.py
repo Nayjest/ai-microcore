@@ -63,7 +63,7 @@ def test_tool():
     assert tool.args["arg"].required is True
 
     serialized = str(tool)
-    assert mc.config().AI_SYNTAX_FUNCTION_NAME_FILED in serialized
+    assert mc.config().AI_SYNTAX_FUNCTION_NAME_FIELD in serialized
     assert tool.name in serialized
     assert tool.description in serialized
     assert tool.args["arg"].name in serialized

@@ -136,15 +136,15 @@ class MCPConnection:
             try:
                 params = params.parse_json(
                     raise_errors=True,
-                    required_fields=[env().config.AI_SYNTAX_FUNCTION_NAME_FILED],
+                    required_fields=[env().config.AI_SYNTAX_FUNCTION_NAME_FIELD],
                 )
             except BadAIJsonAnswer as e:
                 raise WrongMcpUsage(str(e)) from e
         params = dict(params)
-        name = params.pop(env().config.AI_SYNTAX_FUNCTION_NAME_FILED)
+        name = params.pop(env().config.AI_SYNTAX_FUNCTION_NAME_FIELD)
         if not name:
             raise WrongMcpUsage(
-                f"Tool name should be passed in {env().config.AI_SYNTAX_FUNCTION_NAME_FILED} field"
+                f"Tool name should be passed in {env().config.AI_SYNTAX_FUNCTION_NAME_FIELD} field"
             )
         logging.info(f"Calling MCP tool {ui.green(name)} with {params}...")
         result = await self.session.call_tool(name, params)
