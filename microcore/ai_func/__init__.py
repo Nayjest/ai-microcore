@@ -11,6 +11,7 @@ import docstring_parser
 from ..utils import dedent
 from .._env import env
 
+
 class AiFuncSyntax(str, Enum):
     PYTHONIC: str = "pythonic"
     JSON: str = "json"

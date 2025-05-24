@@ -1,13 +1,12 @@
 from typing import Any
 from typing import TYPE_CHECKING
 
-from ..types import BadAIAnswer, TPrompt, BadAIJsonAnswer
+from ..types import BadAIAnswer, TPrompt
 from ..utils import ExtendedString, ConvertableToMessage, extract_number
 from ..message_types import Role, AssistantMsg
 
 if TYPE_CHECKING:
-    from ..mcp import MCPConnection, WrongMcpUsage
-    from mcp.types import CallToolResult
+    from ..mcp import MCPConnection
 
 
 class DictFromLLMResponse(dict):
@@ -19,6 +18,7 @@ class DictFromLLMResponse(dict):
 
     async def to_mcp(self, mcp: "MCPConnection"):
         return await mcp.exec(self)
+
 
 class LLMResponse(ExtendedString, ConvertableToMessage):
     """
@@ -92,4 +92,3 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
 
     async def to_mcp(self, mcp: "MCPConnection"):
         return await mcp.exec(self)
-

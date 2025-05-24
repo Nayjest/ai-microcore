@@ -64,7 +64,6 @@ class MCPConnection:
 
         # That's a bit of a hack for closing the async context managers
         async def lifecycle():
-            nonlocal con
             try:
                 logging.info(f"Connecting to MCP {url}...")
                 context_manager = streamablehttp_client(url)
@@ -80,7 +79,6 @@ class MCPConnection:
                 opened_event.set()
                 await del_event.wait()
             finally:
-                logging.info(f"TRIGGER FINALLY")
                 await con.close()
 
         asyncio.create_task(lifecycle())
@@ -160,8 +158,14 @@ class Tool:
         name: str = field()
         description: str = field(default="")
         type: str = field(default="string")
-        required: bool = False
-        default: any = ""
+        required: bool = field(default=...)
+        default: any = field(default=...)
+
+        def __post_init__(self):
+            if self.required is ...:
+                self.required = self.default is ...
+            if self.default is ...:
+                self.default = None
 
     name: str = field()
     description: str = field(default="")

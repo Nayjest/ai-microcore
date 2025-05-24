@@ -120,7 +120,8 @@ class _EmbeddingDBProxy(AbstractEmbeddingDB):
 texts = _EmbeddingDBProxy()
 """Embedding database, see `microcore.embedding_db.AbstractEmbeddingDB`"""
 
-def mcp_server(name: str) -> mcp.MCPServer:
+
+def mcp_server(name: str) -> mcp.MCPServer:  # noqa
     """
     Returns MCP server by name from the registry.
 
@@ -133,7 +134,8 @@ def mcp_server(name: str) -> mcp.MCPServer:
     Raises:
         ValueError: If the server with the given name is not found in the registry.
     """
-    return mcp.server(name)
+    return mcp.server(name)  # noqa
+
 
 __all__ = [
     "llm",
@@ -156,6 +158,7 @@ __all__ = [
     "AssistantMsg",
     "PartialMsg",
     "ApiType",
+    "EmbeddingDbType",
     "BadAIJsonAnswer",
     "BadAIAnswer",
     "LLMConfigError",

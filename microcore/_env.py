@@ -61,7 +61,6 @@ class Env:
             self._mcp_registry = MCPRegistry(self.config.MCP_SERVERS)
         return self._mcp_registry
 
-
     def init_llm(self):
         if self.config.LLM_API_TYPE == ApiType.NONE:
 

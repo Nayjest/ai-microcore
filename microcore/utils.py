@@ -115,7 +115,6 @@ class ExtendedString(str):
             return False
 
 
-
 class DataclassEncoder(json.JSONEncoder):
     """@private"""
 
