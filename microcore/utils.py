@@ -16,8 +16,9 @@ import tiktoken
 from colorama import Fore
 
 from .configuration import Config
-from .types import BadAIAnswer
+from .types import BadAIAnswer, BadAIJsonAnswer
 from .message_types import UserMsg, SysMsg, AssistantMsg
+from .json_parsing import parse_json
 
 
 def is_chat_model(model: str, config: Config = None) -> bool:
@@ -100,6 +101,18 @@ class ExtendedString(str):
         Calculates quantity of tokens in target string.
         """
         return len(self.to_tokens(for_model=for_model, encoding=encoding))
+
+    def parse_json(
+        self, raise_errors: bool = True, required_fields: list[str] = None
+    ) -> list | dict | float | int | str:
+        return parse_json(self, raise_errors, required_fields)
+
+    def contains_valid_json(self) -> bool:
+        try:
+            self.parse_json(raise_errors=True)
+            return True
+        except BadAIJsonAnswer:
+            return False
 
 
 class DataclassEncoder(json.JSONEncoder):

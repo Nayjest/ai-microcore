@@ -1,6 +1,6 @@
 # {{ description or name.replace('_', ' ').capitalize() }}
 {
-  "call": "{{ name }}"{% if args %}{{ "," }}{% endif %}
+  "{{ config.AI_SYNTAX_FUNCTION_NAME_FIELD }}": "{{ name }}"{% if args %}{{ "," }}{% endif %}
 {%- for k,v in args.items() %}
   "{{ k }}":
     {%- if v.type %} <{{ v.type }}>{% endif -%}

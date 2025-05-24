@@ -10,7 +10,7 @@
 # AI MicroCore: A Minimalistic Foundation for AI Applications
 
 **MicroCore** is a collection of python adapters for Large Language Models
-and Semantic Search APIs allowing to 
+and Vector Databases / Semantic Search APIs allowing to 
 communicate with these services in a convenient way, make them easily switchable 
 and separate business logic from the implementation details.
 
@@ -19,6 +19,10 @@ which allows you to keep your application as simple as possible and try various 
 without need to change your application code.
 
 You even can switch between text completion and chat completion models only using configuration.
+
+Thanks to LLM-agnostic MCP integration,
+**MicroCore** connects MCP tools to any language models easily,
+whether through API providers that do not support MCP, or through inference using pytorch or arbitrary python functions.
 
 The basic example of usage is as follows:
 
@@ -262,7 +266,6 @@ import microcore.ai_modules
 ### Features:
 
 *   Automatically registers template folders of AI modules in Jinja2 environment
-
 
 ## 🛠️ Contributing
 
