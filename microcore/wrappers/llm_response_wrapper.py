@@ -1,9 +1,13 @@
 from typing import Any
+from typing import TYPE_CHECKING
 
-from ..types import BadAIAnswer, TPrompt
-from ..json_parsing import parse_json
+from ..types import BadAIAnswer, TPrompt, BadAIJsonAnswer
 from ..utils import ExtendedString, ConvertableToMessage, extract_number
 from ..message_types import Role, AssistantMsg
+
+if TYPE_CHECKING:
+    from ..mcp import MCPConnection, WrongMcpUsage
+    from mcp.types import CallToolResult
 
 
 class DictFromLLMResponse(dict):
@@ -13,6 +17,8 @@ class DictFromLLMResponse(dict):
         self.llm_response = llm_response
         return self
 
+    async def to_mcp(self, mcp: "MCPConnection"):
+        return await mcp.exec(self)
 
 class LLMResponse(ExtendedString, ConvertableToMessage):
     """
@@ -52,7 +58,7 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
         validator: callable = None,
     ) -> list | dict | float | int | str | DictFromLLMResponse:
         try:
-            res = parse_json(self.content, True, required_fields)
+            res = ExtendedString.parse_json(self, True, required_fields)
             if validator:
                 try:
                     validator(res)
@@ -83,3 +89,7 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
 
     def as_message(self) -> AssistantMsg:
         return self.as_assistant
+
+    async def to_mcp(self, mcp: "MCPConnection"):
+        return await mcp.exec(self)
+

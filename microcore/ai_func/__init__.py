@@ -8,9 +8,8 @@ import inspect
 from enum import Enum
 from typing import Dict, Any
 import docstring_parser
-from .. import tpl
 from ..utils import dedent
-
+from .._env import env
 
 class AiFuncSyntax(str, Enum):
     PYTHONIC: str = "pythonic"
@@ -95,4 +94,4 @@ def describe_ai_func(func: callable, syntax: AiFuncSyntax | str = None) -> str:
     syntax = syntax or AiFuncSyntax.DEFAULT
     tpl_file = f"ai-func.{syntax}.j2" if syntax in AiFuncSyntax else syntax
     metadata = func_metadata(func)
-    return tpl(tpl_file, **metadata)
+    return env().tpl_function(tpl_file, **metadata)

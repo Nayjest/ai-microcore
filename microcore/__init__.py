@@ -8,8 +8,6 @@ and separate business logic from implementation details.
 """
 
 import os
-import microcore.ui  # noqa
-import microcore.tokenizing  # noqa
 from .embedding_db import SearchResult, AbstractEmbeddingDB, SearchResults
 from .file_storage import storage
 from ._env import configure, env, config
@@ -22,7 +20,9 @@ from .wrappers.llm_response_wrapper import LLMResponse
 from ._llm_functions import llm, allm, llm_parallel
 from .utils import parse, dedent
 from .metrics import Metrics
-from .interactive_setup import interactive_setup
+import microcore.mcp  # noqa
+import microcore.ui  # noqa
+import microcore.tokenizing  # noqa
 
 
 def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
@@ -120,6 +120,21 @@ class _EmbeddingDBProxy(AbstractEmbeddingDB):
 texts = _EmbeddingDBProxy()
 """Embedding database, see `microcore.embedding_db.AbstractEmbeddingDB`"""
 
+def mcp_server(name: str) -> mcp.MCPServer:
+    """
+    Returns MCP server by name from the registry.
+
+    Args:
+        name (str): The name of the MCP server.
+
+    Returns:
+        MCPServer: The MCP server instance.
+
+    Raises:
+        ValueError: If the server with the given name is not found in the registry.
+    """
+    return mcp.server(name)
+
 __all__ = [
     "llm",
     "allm",
@@ -141,7 +156,6 @@ __all__ = [
     "AssistantMsg",
     "PartialMsg",
     "ApiType",
-    "EmbeddingDbType",
     "BadAIJsonAnswer",
     "BadAIAnswer",
     "LLMConfigError",
@@ -160,9 +174,9 @@ __all__ = [
     "Config",
     "types",
     "ui",
+    "mcp",
     "Metrics",
-    "interactive_setup"
     # "wrappers",
 ]
 
-__version__ = "4.0.0-dev11"
+__version__ = "4.0.0-dev12"

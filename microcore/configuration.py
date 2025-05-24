@@ -404,6 +404,12 @@ class Config(LLMConfig):
       - LLMResponse objects will not contain the links to the prompt field
     """
 
+    AI_SYNTAX_FUNCTION_NAME_FILED: str = from_env(default="call")
+
+    JINJA2_GLOBALS: dict = from_env(dtype=dict)
+
+    MCP_SERVERS: list = from_env(dtype=list)
+
     def __post_init__(self):
         super().__post_init__()
         if self.TEXT_TO_SPEECH_PATH is None:

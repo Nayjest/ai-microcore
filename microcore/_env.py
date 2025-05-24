@@ -15,6 +15,7 @@ from .llm.local_llm import make_llm_functions as make_local_llm_functions
 if TYPE_CHECKING:
     from .wrappers.llm_response_wrapper import LLMResponse  # noqa: F401
     from transformers import PreTrainedModel, PreTrainedTokenizer  # noqa: F401
+    from .mcp import MCPRegistry
 
 
 @dataclass
@@ -33,6 +34,7 @@ class Env:
     tokenizer: "PreTrainedTokenizer" = field(  # noqa
         default=None, init=False, repr=False
     )
+    _mcp_registry: "MCPRegistry" = field(init=False, default=None)
 
     def __post_init__(self):
         global _env
@@ -51,6 +53,14 @@ class Env:
     def init_templating(self):
         self.jinja_env = make_jinja2_env(self)
         self.tpl_function = make_tpl_function(self)
+
+    @property
+    def mcp_registry(self):
+        if self._mcp_registry is None:
+            from .mcp import MCPRegistry
+            self._mcp_registry = MCPRegistry(self.config.MCP_SERVERS)
+        return self._mcp_registry
+
 
     def init_llm(self):
         if self.config.LLM_API_TYPE == ApiType.NONE:

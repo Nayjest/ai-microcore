@@ -1,15 +1,25 @@
 import os
+from pathlib import Path
+
 import jinja2
 from ..types import TplFunctionType
 
 
 def make_jinja2_env(env) -> jinja2.Environment:
-    return jinja2.Environment(
+    j2 = jinja2.Environment(
         autoescape=env.config.JINJA2_AUTO_ESCAPE,
-        loader=jinja2.ChoiceLoader(
-            [jinja2.FileSystemLoader(env.config.PROMPT_TEMPLATES_PATH)]
-        ),
+        loader=jinja2.ChoiceLoader([
+            jinja2.FileSystemLoader(env.config.PROMPT_TEMPLATES_PATH),
+            jinja2.FileSystemLoader(Path(__file__).parent.parent / "ai_func"),
+        ]),
     )
+    j2.globals.update(
+        env=env,
+        config=env.config,
+        os=os,
+        **env.config.JINJA2_GLOBALS,
+    )
+    return j2
 
 
 def make_tpl_function(env) -> TplFunctionType:
