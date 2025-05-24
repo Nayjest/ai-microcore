@@ -1,12 +1,11 @@
 import asyncio
 import logging
 from typing import Optional
+from dataclasses import dataclass, field
 
 from mcp.client.streamable_http import streamablehttp_client
 from mcp import ClientSession, types
-from dataclasses import dataclass, field
 
-import microcore.ai_modules  # noqa
 from .utils import ExtendedString
 from .ai_func import AiFuncSyntax
 from . import ui
@@ -67,7 +66,11 @@ class MCPConnection:
             try:
                 logging.info(f"Connecting to MCP {url}...")
                 context_manager = streamablehttp_client(url)
-                read_stream, write_stream, connection = await context_manager.__aenter__()
+                (
+                    read_stream,
+                    write_stream,
+                    connection
+                ) = await context_manager.__aenter__()  # pylint: disable=E1101
                 con.url = url
                 con.read_stream = read_stream
                 con.write_stream = write_stream
@@ -105,7 +108,7 @@ class MCPConnection:
     async def init_session(self):
         logging.info(f"Initializing MCP session ({self.url})")
         self.session = ClientSession(self.read_stream, self.write_stream)
-        await self.session.__aenter__()
+        await self.session.__aenter__()  # pylint: disable=unnecessary-dunder-call
         await self.session.initialize()
         return self.session
 
@@ -136,7 +139,7 @@ class MCPConnection:
                     required_fields=[env().config.AI_SYNTAX_FUNCTION_NAME_FILED],
                 )
             except BadAIJsonAnswer as e:
-                raise WrongMcpUsage(str(e))
+                raise WrongMcpUsage(str(e)) from e
         params = dict(params)
         name = params.pop(env().config.AI_SYNTAX_FUNCTION_NAME_FILED)
         if not name:
@@ -172,7 +175,7 @@ class Tool:
     args: dict[str, Arg | dict] = field(default_factory=dict)
 
     def __post_init__(self):
-        for key in self.args.keys():
+        for key in self.args.keys():  # pylint: disable=C0201, C0206
             if isinstance(self.args[key], dict):
                 self.args[key] = Tool.Arg(**self.args[key])
 
@@ -243,8 +246,8 @@ class MCPServer:
 class MCPRegistry(dict[str, MCPServer]):
     def __init__(self, server_configs: list[dict]):
         super().__init__()
-        for server in server_configs:
-            self[server["name"]] = MCPServer(**server)
+        for server_config in server_configs:
+            self[server_config["name"]] = MCPServer(**server_config)
 
     def get(self, server_name: str) -> MCPServer:
         if server_name not in self:
@@ -257,8 +260,8 @@ class MCPRegistry(dict[str, MCPServer]):
         fetch_tools: bool = True,
         use_cache: bool = True,
     ) -> MCPConnection:
-        server = self.get(server_name)
-        return await server.connect(fetch_tools=fetch_tools, use_cache=use_cache)
+        mcp_server = self.get(server_name)
+        return await mcp_server.connect(fetch_tools=fetch_tools, use_cache=use_cache)
 
 
 def server(name: str) -> MCPServer:

@@ -8,6 +8,9 @@ and separate business logic from implementation details.
 """
 
 import os
+from . import mcp
+from . import ui
+from . import tokenizing
 from .embedding_db import SearchResult, AbstractEmbeddingDB, SearchResults
 from .file_storage import storage
 from ._env import configure, env, config
@@ -20,9 +23,6 @@ from .wrappers.llm_response_wrapper import LLMResponse
 from ._llm_functions import llm, allm, llm_parallel
 from .utils import parse, dedent
 from .metrics import Metrics
-import microcore.mcp  # noqa
-import microcore.ui  # noqa
-import microcore.tokenizing  # noqa
 
 
 def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
@@ -121,7 +121,7 @@ texts = _EmbeddingDBProxy()
 """Embedding database, see `microcore.embedding_db.AbstractEmbeddingDB`"""
 
 
-def mcp_server(name: str) -> mcp.MCPServer:  # noqa
+def mcp_server(name: str) -> mcp.MCPServer:  # noqa, pylint-disable=E0602
     """
     Returns MCP server by name from the registry.
 
@@ -134,7 +134,7 @@ def mcp_server(name: str) -> mcp.MCPServer:  # noqa
     Raises:
         ValueError: If the server with the given name is not found in the registry.
     """
-    return mcp.server(name)  # noqa
+    return mcp.server(name)  # noqa, pylint-disable=E0602
 
 
 __all__ = [
@@ -178,6 +178,7 @@ __all__ = [
     "types",
     "ui",
     "mcp",
+    "tokenizing",
     "Metrics",
     # "wrappers",
 ]
