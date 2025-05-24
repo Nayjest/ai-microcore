@@ -16,7 +16,6 @@ def make_jinja2_env(env) -> jinja2.Environment:
     j2.globals.update(
         env=env,
         config=env.config,
-        os=os,
         **env.config.JINJA2_GLOBALS,
     )
     return j2

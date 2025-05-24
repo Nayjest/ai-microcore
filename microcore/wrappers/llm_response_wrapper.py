@@ -58,7 +58,7 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
         validator: callable = None,
     ) -> list | dict | float | int | str | DictFromLLMResponse:
         try:
-            res = ExtendedString.parse_json(self, True, required_fields)
+            res = super().parse_json(raise_errors=True, required_fields=required_fields)
             if validator:
                 try:
                     validator(res)

@@ -33,7 +33,7 @@ class ToolsCache:
     @staticmethod
     def write(mcp_url: str, tools: "Tools"):
         logging.info(f"Storing MCP tools cache for {ui.green(mcp_url)}...")
-        cached_tools = storage.read_json("mcp/tools.json", default={})
+        cached_tools = storage.read_json(ToolsCache.FILE, default={})
         cached_tools[mcp_url] = tools
         storage.write_json(ToolsCache.FILE, cached_tools)
 
