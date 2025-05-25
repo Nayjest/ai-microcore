@@ -416,7 +416,11 @@ class Config(LLMConfig):
         try:
             super().__post_init__()
         except LLMConfigError as e:
-            if self.INTERACTIVE_SETUP and not os.path.isfile(self.DOT_ENV_FILE):
+            if (
+                self.INTERACTIVE_SETUP
+                and self.DOT_ENV_FILE
+                and not os.path.exists(self.DOT_ENV_FILE)
+            ):
                 from .interactive_setup import interactive_setup
                 config = interactive_setup(self.DOT_ENV_FILE)
                 self.__dict__.update(config.__dict__)
