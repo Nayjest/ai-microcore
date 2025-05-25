@@ -1,3 +1,5 @@
+import os
+
 from .configuration import EmbeddingDbType, ApiType, Config
 from .ui import ask_choose, ask_non_empty, ask_yn, error, yellow
 from ._env import configure
@@ -72,6 +74,9 @@ def interactive_setup(
     config_body = ''.join(f"{k}={v}\n" for k, v in raw_config.items())
     print(f"Configuration:\n{yellow(config_body)}")
     if ask_yn("Save configuration to file?"):
+        dir_path = os.path.dirname(file_path)
+        if dir_path:
+            os.makedirs(dir_path, exist_ok=True)
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(config_body)
         print(f"Saved to {file_link(file_path)}")
