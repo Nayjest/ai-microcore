@@ -1,4 +1,4 @@
-from .configuration import EmbeddingDbType, ApiType
+from .configuration import EmbeddingDbType, ApiType, Config
 from .ui import ask_choose, ask_non_empty, ask_yn, error, yellow
 from ._env import configure
 from ._llm_functions import llm
@@ -9,7 +9,7 @@ def interactive_setup(
     file_path: str,
     defaults: dict = None,
     extras: dict | list = None,
-):
+) -> Config | None:
     """
     Interactive setup for LLM API configuration.
     Prompts user for configuration details such as API type, key, model name,
@@ -50,7 +50,7 @@ def interactive_setup(
             if field not in raw_config:
                 raw_config[field] = ask_non_empty(f"{title}: ")
     try:
-        configure(
+        config = configure(
             **{
                 **dict(
                     USE_DOT_ENV=False,
@@ -66,12 +66,13 @@ def interactive_setup(
     except Exception as e:  # pylint: disable=W0718
         error(f"Error testing LLM API: {e}")
         if ask_yn("Restart configuring?"):
-            interactive_setup(file_path, defaults, extras)
-        return
+            return interactive_setup(file_path, defaults, extras)
+        return None
 
     config_body = ''.join(f"{k}={v}\n" for k, v in raw_config.items())
     print(f"Configuration:\n{yellow(config_body)}")
     if ask_yn("Save configuration to file?"):
-        print(f"Saved to {file_link(file_path)}")
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(config_body)
+        print(f"Saved to {file_link(file_path)}")
+    return config
