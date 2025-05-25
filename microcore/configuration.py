@@ -410,7 +410,17 @@ class Config(LLMConfig):
 
     MCP_SERVERS: list = from_env(dtype=list)
 
+    INTERACTIVE_SETUP: bool = field(default=False)
+
     def __post_init__(self):
-        super().__post_init__()
+        try:
+            super().__post_init__()
+        except LLMConfigError as e:
+            if self.INTERACTIVE_SETUP and not os.path.isfile(self.DOT_ENV_FILE):
+                from .interactive_setup import interactive_setup
+                config = interactive_setup(self.DOT_ENV_FILE)
+                self.__dict__.update(config.__dict__)
+            else:
+                raise e
         if self.TEXT_TO_SPEECH_PATH is None:
             self.TEXT_TO_SPEECH_PATH = Path(self.STORAGE_PATH) / "voicing"
