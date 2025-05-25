@@ -72,7 +72,7 @@ def interactive_setup(
     config_body = ''.join(f"{k}={v}\n" for k, v in raw_config.items())
     print(f"Configuration:\n{yellow(config_body)}")
     if ask_yn("Save configuration to file?"):
-        print(f"Saved to {file_link(file_path)}")
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(config_body)
+        print(f"Saved to {file_link(file_path)}")
     return config
