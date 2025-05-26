@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from mcp.client.streamable_http import streamablehttp_client
 from mcp import ClientSession, types
 
-from .utils import ExtendedString
+from .utils import ExtendedString, ConvertableToMessage
 from .ai_func import AiFuncSyntax
 from . import ui
 from .types import BadAIAnswer, BadAIJsonAnswer
@@ -36,6 +36,10 @@ class ToolsCache:
         cached_tools = storage.read_json(ToolsCache.FILE, default={})
         cached_tools[mcp_url] = tools
         storage.write_json(ToolsCache.FILE, cached_tools)
+
+
+class MCPAnswer(ExtendedString, ConvertableToMessage):
+    ...
 
 
 @dataclass
@@ -150,7 +154,7 @@ class MCPConnection:
         result = await self.session.call_tool(name, params)
         content = result.content
         if content and len(content) == 1 and content[0].type == "text":
-            return ExtendedString(content[0].text, result.__dict__)
+            return MCPAnswer(content[0].text, result.__dict__)
         return result
 
 
@@ -231,9 +235,18 @@ class Tools(dict[str, Tool]):
 
 @dataclass
 class MCPServer:
-    name: str
     url: str
+    name: str = field(default="")
     tools: Tools = field(default_factory=Tools)
+
+    @staticmethod
+    def name_from_url(url: str) -> str:
+        """Domain name from URL."""
+        return url.split("//")[-1].split("/")[0]
+
+    def __post_init__(self):
+        if not self.name:
+            self.name = MCPServer.name_from_url(self.url)
 
     async def connect(
         self,
@@ -244,9 +257,14 @@ class MCPServer:
 
 
 class MCPRegistry(dict[str, MCPServer]):
-    def __init__(self, server_configs: list[dict]):
+    def __init__(self, server_configs: list[dict|str]):
         super().__init__()
         for server_config in server_configs:
+            if isinstance(server_config, str):
+                server_config = {
+                    "name":MCPServer.name_from_url(server_config),
+                    "url": server_config
+                }
             self[server_config["name"]] = MCPServer(**server_config)
 
     def get(self, server_name: str) -> MCPServer:
