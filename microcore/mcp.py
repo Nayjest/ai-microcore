@@ -50,8 +50,9 @@ class MCPConnection:
     connection: any = None
     context_manager: any = None
     session: ClientSession = field(default=None, init=False)
-    del_event: asyncio.Event = field(default=None, init=False)
     tools: Optional["Tools"] = field(default=None, init=False)
+    _lifecycle_task: asyncio.Task = field(default=None, init=False)
+    _del_event: asyncio.Event = field(default=None, init=False)
 
     @staticmethod
     async def init(
@@ -63,7 +64,7 @@ class MCPConnection:
         del_event = asyncio.Event()
         opened_event = asyncio.Event()
         con: MCPConnection = MCPConnection()
-        con.del_event = del_event
+        con._del_event = del_event  # pylint: disable=W0212
 
         # That's a bit of a hack for closing the async context managers
         async def lifecycle():
@@ -84,15 +85,23 @@ class MCPConnection:
                 if fetch_tools:
                     await con.fetch_tools(use_cache=use_cache)
                 opened_event.set()
-                await del_event.wait()
-            finally:
-                await con.close()
 
-        asyncio.create_task(lifecycle())
+            finally:
+                await del_event.wait()
+                await con._close()  # pylint: disable=W0212
+
+        con._lifecycle_task = asyncio.create_task(lifecycle())  # pylint: disable=W0212
         await opened_event.wait()
         return con
 
     async def close(self):
+        self._del_event.set()
+        if self._lifecycle_task:
+            await self._lifecycle_task
+        else:
+            logging.error(f"Trying to close MCP connection that is not opened ({self.url})")
+
+    async def _close(self):
         logging.info(f"Closing MCP session ({self.url})...")
         try:
             if self.session:
@@ -133,7 +142,7 @@ class MCPConnection:
         return self.tools
 
     def __del__(self):
-        self.del_event.set()
+        self._del_event.set()
 
     async def exec(self, params: dict | LLMResponse):
         if isinstance(params, LLMResponse):
@@ -257,12 +266,12 @@ class MCPServer:
 
 
 class MCPRegistry(dict[str, MCPServer]):
-    def __init__(self, server_configs: list[dict|str]):
+    def __init__(self, server_configs: list[dict | str]):
         super().__init__()
         for server_config in server_configs:
             if isinstance(server_config, str):
                 server_config = {
-                    "name":MCPServer.name_from_url(server_config),
+                    "name": MCPServer.name_from_url(server_config),
                     "url": server_config
                 }
             self[server_config["name"]] = MCPServer(**server_config)

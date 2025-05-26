@@ -37,7 +37,7 @@ def test_mcp_from_env():
 
 
 def test_create_server():
-    server = mc.mcp.MCPServer("test_server", "http://localhost:8000")
+    server = mc.mcp.MCPServer(url="http://localhost:8000", name="test_server")
     assert server.name == "test_server"
     assert server.url == "http://localhost:8000"
     assert len(server.tools) == 0
@@ -69,3 +69,16 @@ def test_tool():
     assert tool.args["arg"].name in serialized
     assert tool.args["arg"].description in serialized
     assert tool.args["arg"].type in serialized
+
+@pytest.mark.asyncio
+async def test_mcp_time():
+    mc.configure(MCP_SERVERS=['https://time.mcp.inevitable.fyi/mcp'], VALIDATE_CONFIG=False)
+    mcp: mc.mcp.MCPConnection = await mc.mcp_server("time.mcp.inevitable.fyi").connect()
+    assert "get_current_time" in mcp.tools
+    res = (await mcp.exec(dict(
+            call="get_current_time",
+            timezone="UTC",
+    ))).parse_json()
+    assert "datetime" in res
+    assert res["timezone"] == "UTC"
+    await mcp.close()
