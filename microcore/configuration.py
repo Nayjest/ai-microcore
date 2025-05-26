@@ -111,8 +111,12 @@ class BaseConfig:
             self.USE_DOT_ENV = get_bool_from_env("USE_DOT_ENV", True)
 
         if self.USE_DOT_ENV:
-            if self.DOT_ENV_FILE or not _default_dotenv_loaded:
-                dotenv.load_dotenv(override=True, dotenv_path=self.DOT_ENV_FILE)
+            if self.DOT_ENV_FILE and not _default_dotenv_loaded:
+                dotenv.load_dotenv(
+                    override=True,
+                    dotenv_path=Path(self.DOT_ENV_FILE).expanduser()
+                    if "~" in self.DOT_ENV_FILE else self.DOT_ENV_FILE
+                )
             if not self.DOT_ENV_FILE:
                 _default_dotenv_loaded = True
 
@@ -411,6 +415,7 @@ class Config(LLMConfig):
     MCP_SERVERS: list = from_env(dtype=list)
 
     INTERACTIVE_SETUP: bool = field(default=False)
+    """Whether to run interactive setup if configuration is not valid."""
 
     def __post_init__(self):
         try:
