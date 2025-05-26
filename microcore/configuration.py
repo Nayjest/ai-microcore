@@ -111,11 +111,13 @@ class BaseConfig:
             self.USE_DOT_ENV = get_bool_from_env("USE_DOT_ENV", True)
 
         if self.USE_DOT_ENV:
-            if self.DOT_ENV_FILE and not _default_dotenv_loaded:
+            if self.DOT_ENV_FILE or not _default_dotenv_loaded:
+                fp = self.DOT_ENV_FILE
+                if fp and "~" in fp:
+                    fp = Path(fp).expanduser()
                 dotenv.load_dotenv(
                     override=True,
-                    dotenv_path=Path(self.DOT_ENV_FILE).expanduser()
-                    if "~" in self.DOT_ENV_FILE else self.DOT_ENV_FILE
+                    dotenv_path=fp
                 )
             if not self.DOT_ENV_FILE:
                 _default_dotenv_loaded = True
