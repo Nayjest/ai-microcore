@@ -6,7 +6,7 @@ from ..utils import ExtendedString, ConvertableToMessage, extract_number
 from ..message_types import Role, AssistantMsg
 
 if TYPE_CHECKING:
-    from ..mcp import MCPConnection
+    from ..mcp import MCPConnection, MCPAnswer
 
 
 class DictFromLLMResponse(dict):
@@ -90,5 +90,12 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
     def as_message(self) -> AssistantMsg:
         return self.as_assistant
 
-    async def to_mcp(self, mcp: "MCPConnection"):
+    async def to_mcp(self, mcp: "MCPConnection") -> "MCPAnswer":
         return await mcp.exec(self)
+
+    def is_tool_call(self):
+        from .._env import env
+        return self.parse_json(
+            raise_errors=False,
+            required_fields=[env().config.AI_SYNTAX_FUNCTION_NAME_FIELD],
+        ) is not False
