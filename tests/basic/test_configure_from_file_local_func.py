@@ -1,4 +1,5 @@
 import pytest
+from pathlib import Path
 from microcore import LLMConfigError, llm, allm, configure, ApiType
 
 
@@ -25,3 +26,8 @@ async def test_configure_from_file():
     assert llm("123456") == "12345"
     assert await allm("ok") == "ok"
     assert await allm("123456") == "12345"
+
+
+def test_configure_from_path():
+    c = configure(DOT_ENV_FILE=Path("tests/basic/config/custom_func.ini"))
+    assert c.LLM_API_TYPE == ApiType.FUNCTION
