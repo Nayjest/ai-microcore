@@ -1,6 +1,7 @@
 import os
 import microcore as mc
 import pytest
+from microcore.mcp import ToolsCache
 
 servers_cfg = [
     {"name": "mcp1", "url": "http://localhost:8000"},
@@ -102,3 +103,7 @@ async def test_mcp_update_tools_cache():
     await mcp.fetch_tools()
     mcp.update_tools_cache()
     await mcp.close()
+    assert mcp.tools == mc.mcp.server('test2').get_tools_cache()
+    assert len(mcp.tools) >= 1
+    ToolsCache.clear()
+    assert mc.mcp.server('test2').get_tools_cache() is None

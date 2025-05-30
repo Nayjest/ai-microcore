@@ -37,6 +37,11 @@ class ToolsCache:
         cached_tools[mcp_url] = tools
         storage.write_json(ToolsCache.FILE, cached_tools)
 
+    @staticmethod
+    def clear():
+        logging.info("Clearing MCP tools cache...")
+        storage.delete(ToolsCache.FILE)
+
 
 class MCPAnswer(ExtendedString, ConvertableToMessage):
     ...
