@@ -64,7 +64,7 @@ class MCPConnection:
         url: str,
         fetch_tools: bool = True,
         use_cache: bool = True,
-        connect_timeout: int = 5,
+        connect_timeout: float = 7,
     ) -> "MCPConnection":
 
         del_event = asyncio.Event()
@@ -280,7 +280,7 @@ class MCPServer:
         self,
         fetch_tools: bool = True,
         use_cache: bool = True,
-        connect_timeout: int = 5,
+        connect_timeout: float = 7,
     ) -> MCPConnection:
         return await MCPConnection.init(
             self.url,
@@ -312,7 +312,7 @@ class MCPRegistry(dict[str, MCPServer]):
     async def precache_tools(
         self,
         raise_errors: bool = False,
-        connect_timeout: int = 5,
+        connect_timeout: int = 7,
     ):
         async def precache_server_tools(server_name):
             try:
