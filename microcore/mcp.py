@@ -316,19 +316,14 @@ class MCPRegistry(dict[str, MCPServer]):
                     use_cache=False,
                     connect_timeout=connect_timeout,
                 )
-            except Exception as e:  # pylint: disable=W0718
-                logging.error("Failed to precache tools for MCP server %s: %s", server_name, e)
-                if raise_errors:
-                    raise
-                return
-            try:
                 conn.update_tools_cache()
             except Exception as e:  # pylint: disable=W0718
                 logging.error("Failed to precache tools for MCP server %s: %s", server_name, e)
                 if raise_errors:
                     raise
             finally:
-                await conn.close()
+                if "conn" in locals():
+                    await conn.close()
 
         await asyncio.gather(*[precache_server_tools(srv) for srv in self.keys()])
 
