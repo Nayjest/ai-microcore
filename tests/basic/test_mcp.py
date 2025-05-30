@@ -88,7 +88,7 @@ async def test_mcp_time():
 @pytest.mark.asyncio
 async def test_mcp_precache():
     mc.configure(MCP_SERVERS=['https://time.mcp.inevitable.fyi/mcp'], VALIDATE_CONFIG=False)
-    await mc.mcp.precache_tools()
+    await mc.env().mcp_registry.precache_tools()
     assert len(mc.mcp_server("time.mcp.inevitable.fyi").get_tools_cache()) >= 1
 
 
