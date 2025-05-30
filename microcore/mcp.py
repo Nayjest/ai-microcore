@@ -295,8 +295,10 @@ class MCPRegistry(dict[str, MCPServer]):
                 fetch_tools=True,
                 use_cache=False
             )
-            conn.update_tools_cache()
-            await conn.close()
+            try:
+                conn.update_tools_cache()
+            finally:
+                await conn.close()
 
         await asyncio.gather(*[precache_server_tools(srv) for srv in self.keys()])
 

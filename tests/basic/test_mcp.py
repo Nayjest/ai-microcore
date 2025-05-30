@@ -93,7 +93,7 @@ async def test_mcp_precache():
 
 
 @pytest.mark.asyncio
-async def test_mcp_precache():
+async def test_mcp_update_tools_cache():
     mc.configure(MCP_SERVERS=[dict(
         name='test2',
         url='https://time.mcp.inevitable.fyi/mcp'
