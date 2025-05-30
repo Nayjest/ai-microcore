@@ -59,6 +59,7 @@ class MCPConnection:
         url: str,
         fetch_tools: bool = True,
         use_cache: bool = True,
+        connect_timeout: int = 5,
     ) -> "MCPConnection":
 
         del_event = asyncio.Event()
@@ -91,7 +92,15 @@ class MCPConnection:
                 await con._close()  # pylint: disable=W0212
 
         con._lifecycle_task = asyncio.create_task(lifecycle())  # pylint: disable=W0212
-        await opened_event.wait()
+        try:
+            await asyncio.wait_for(opened_event.wait(), timeout=connect_timeout)
+        except Exception as e:
+            logging.warning(f"Failed to connect to MCP {url}: {e}")
+            try:
+                await con._close()  # pylint: disable=W0212
+            except:  # noqa: E722 # pylint: disable=W0702
+                pass
+            raise
         return con
 
     async def close(self):
@@ -266,8 +275,14 @@ class MCPServer:
         self,
         fetch_tools: bool = True,
         use_cache: bool = True,
+        connect_timeout: int = 5,
     ) -> MCPConnection:
-        return await MCPConnection.init(self.url, fetch_tools=fetch_tools, use_cache=use_cache)
+        return await MCPConnection.init(
+            self.url,
+            fetch_tools=fetch_tools,
+            use_cache=use_cache,
+            connect_timeout=connect_timeout,
+        )
 
     def get_tools_cache(self) -> Tools | None:
         return ToolsCache.read(self.url)
@@ -289,14 +304,29 @@ class MCPRegistry(dict[str, MCPServer]):
             raise ValueError(f"MCP server '{server_name}' not found in registry")
         return self[server_name]
 
-    async def precache_tools(self):
+    async def precache_tools(
+        self,
+        raise_errors: bool = False,
+        connect_timeout: int = 5,
+    ):
         async def precache_server_tools(server_name):
-            conn = await self.get(server_name).connect(
-                fetch_tools=True,
-                use_cache=False
-            )
+            try:
+                conn = await self.get(server_name).connect(
+                    fetch_tools=True,
+                    use_cache=False,
+                    connect_timeout=connect_timeout,
+                )
+            except Exception as e:  # pylint: disable=W0718
+                logging.error("Failed to precache tools for MCP server %s: %s", server_name, e)
+                if raise_errors:
+                    raise
+                return
             try:
                 conn.update_tools_cache()
+            except Exception as e:  # pylint: disable=W0718
+                logging.error("Failed to precache tools for MCP server %s: %s", server_name, e)
+                if raise_errors:
+                    raise
             finally:
                 await conn.close()
 
