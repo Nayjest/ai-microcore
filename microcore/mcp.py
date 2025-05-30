@@ -269,7 +269,7 @@ class MCPServer:
     ) -> MCPConnection:
         return await MCPConnection.init(self.url, fetch_tools=fetch_tools, use_cache=use_cache)
 
-    async def get_tools_cache(self) -> Tools | None:
+    def get_tools_cache(self) -> Tools | None:
         return ToolsCache.read(self.url)
 
 

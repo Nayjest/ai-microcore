@@ -100,4 +100,5 @@ async def test_mcp_update_tools_cache():
     )], VALIDATE_CONFIG=False)
     mcp = await mc.mcp.server('test2').connect(fetch_tools=False)
     await mcp.fetch_tools()
-    await mcp.update_tools_cache()
+    mcp.update_tools_cache()
+    await mcp.close()
