@@ -291,15 +291,14 @@ class MCPRegistry(dict[str, MCPServer]):
 
     async def precache_tools(self):
         async def precache_server_tools(server_name):
-            conn = await mc.mcp.server(name).connect(
+            conn = await self.get(server_name).connect(
                 fetch_tools=True,
                 use_cache=False
             )
             conn.update_tools_cache()
             await conn.close()
 
-        await asyncio.gather(*[precache_server_tools(srv) for srv in mc.env().mcp_registry.keys()])
-
+        await asyncio.gather(*[precache_server_tools(srv) for srv in self.keys()])
 
     async def connect_to(
         self,

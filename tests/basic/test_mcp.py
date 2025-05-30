@@ -48,7 +48,7 @@ def test_tool():
     tool = mc.mcp.Tool(
         name="test_tool",
         description="A test tool",
-        args = {
+        args={
             "arg": {
                 "name": "arg",
                 "type": "string",
@@ -70,15 +70,34 @@ def test_tool():
     assert tool.args["arg"].description in serialized
     assert tool.args["arg"].type in serialized
 
+
 @pytest.mark.asyncio
 async def test_mcp_time():
     mc.configure(MCP_SERVERS=['https://time.mcp.inevitable.fyi/mcp'], VALIDATE_CONFIG=False)
     mcp: mc.mcp.MCPConnection = await mc.mcp_server("time.mcp.inevitable.fyi").connect()
     assert "get_current_time" in mcp.tools
     res = (await mcp.exec(dict(
-            call="get_current_time",
-            timezone="UTC",
+        call="get_current_time",
+        timezone="UTC",
     ))).parse_json()
     assert "datetime" in res
     assert res["timezone"] == "UTC"
     await mcp.close()
+
+
+@pytest.mark.asyncio
+async def test_mcp_precache():
+    mc.configure(MCP_SERVERS=['https://time.mcp.inevitable.fyi/mcp'], VALIDATE_CONFIG=False)
+    await mc.mcp.precache_tools()
+    assert len(mc.mcp_server("time.mcp.inevitable.fyi").get_tools_cache()) >= 1
+
+
+@pytest.mark.asyncio
+async def test_mcp_precache():
+    mc.configure(MCP_SERVERS=[dict(
+        name='test2',
+        url='https://time.mcp.inevitable.fyi/mcp'
+    )], VALIDATE_CONFIG=False)
+    mcp = await mc.mcp.server('test').connect(fetch_tools=False)
+    await mcp.fetch_tools()
+    await mcp.update_tools_cache()
