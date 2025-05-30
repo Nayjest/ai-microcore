@@ -98,6 +98,6 @@ async def test_mcp_precache():
         name='test2',
         url='https://time.mcp.inevitable.fyi/mcp'
     )], VALIDATE_CONFIG=False)
-    mcp = await mc.mcp.server('test').connect(fetch_tools=False)
+    mcp = await mc.mcp.server('test2').connect(fetch_tools=False)
     await mcp.fetch_tools()
     await mcp.update_tools_cache()
