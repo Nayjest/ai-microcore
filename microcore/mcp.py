@@ -315,6 +315,7 @@ class MCPRegistry(dict[str, MCPServer]):
         connect_timeout: int = 7,
     ):
         async def precache_server_tools(server_name):
+            conn = None
             try:
                 conn = await self.get(server_name).connect(
                     fetch_tools=True,
@@ -327,7 +328,7 @@ class MCPRegistry(dict[str, MCPServer]):
                 if raise_errors:
                     raise
             finally:
-                if "conn" in locals():
+                if conn is not None:
                     await conn.close()
 
         await asyncio.gather(*[precache_server_tools(srv) for srv in self.keys()])
