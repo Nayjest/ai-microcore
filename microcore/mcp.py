@@ -138,8 +138,13 @@ class MCPConnection:
         mcp_tools = await self.session.list_tools()
         self.tools = Tools.from_list([Tool.from_mcp(tool) for tool in mcp_tools.tools])
         if use_cache:
-            ToolsCache.write(self.url, self.tools)
+            self.update_tools_cache()
         return self.tools
+
+    def update_tools_cache(self):
+        if self.tools is None:
+            raise RuntimeError("Tools are not fetched yet. Call fetch_tools() first.")
+        ToolsCache.write(self.url, self.tools)
 
     def __del__(self):
         self._del_event.set()
@@ -264,6 +269,9 @@ class MCPServer:
     ) -> MCPConnection:
         return await MCPConnection.init(self.url, fetch_tools=fetch_tools, use_cache=use_cache)
 
+    async def get_tools_cache(self) -> Tools | None:
+        return ToolsCache.read(self.url)
+
 
 class MCPRegistry(dict[str, MCPServer]):
     def __init__(self, server_configs: list[dict | str]):
@@ -280,6 +288,18 @@ class MCPRegistry(dict[str, MCPServer]):
         if server_name not in self:
             raise ValueError(f"MCP server '{server_name}' not found in registry")
         return self[server_name]
+
+    async def precache_tools(self):
+        async def precache_server_tools(server_name):
+            conn = await mc.mcp.server(name).connect(
+                fetch_tools=True,
+                use_cache=False
+            )
+            conn.update_tools_cache()
+            await conn.close()
+
+        await asyncio.gather(*[precache_server_tools(srv) for srv in mc.env().mcp_registry.keys()])
+
 
     async def connect_to(
         self,
