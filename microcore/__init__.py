@@ -23,6 +23,7 @@ from .wrappers.llm_response_wrapper import LLMResponse
 from ._llm_functions import llm, allm, llm_parallel
 from .utils import parse, dedent
 from .metrics import Metrics
+from .interactive_setup import interactive_setup
 
 
 def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
@@ -181,6 +182,7 @@ __all__ = [
     "mcp_server",
     "tokenizing",
     "Metrics",
+    "interactive_setup",
     # "wrappers",
 ]
 
