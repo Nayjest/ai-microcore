@@ -14,18 +14,21 @@ TRANSPORTS = [
 ]
 @pytest.fixture(scope="session", params=TRANSPORTS)
 def server(request):
-    port = 5000 + TRANSPORTS.index(request.param)  # Unique port per transport
-    cmd = [sys.executable, "ping_server.py", "--port", str(port), "--transport", request.param]
-    logging.info(f"Starting MCP server with transport: {request.param} on port {port}: {mc.ui.yellow(' '.join(cmd))}")
-    process = None
-    process = subprocess.Popen(
-        cmd,
-        cwd=Path(__file__).parent / "mcp_servers", stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    sleep(1)
-    yield {"process": process, "port": port, "transport": request.param}
-    process.terminate()
-    process.wait()
+    try:
+        port = 5000 + TRANSPORTS.index(request.param)  # Unique port per transport
+        cmd = [sys.executable, "ping_server.py", "--port", str(port), "--transport", request.param]
+        logging.info(f"Starting MCP server with transport: {request.param} on port {port}: {mc.ui.yellow(' '.join(cmd))}")
+        process = None
+        process = subprocess.Popen(
+            cmd,
+            cwd=Path(__file__).parent / "mcp_servers", stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        sleep(1)
+        yield {"process": process, "port": port, "transport": request.param}
+    finally:
+        if process:
+            process.terminate()
+            process.wait()
 
 
 @pytest.mark.asyncio

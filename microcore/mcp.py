@@ -301,13 +301,13 @@ class MCPServer:
     @staticmethod
     def _try_sse_or_streamable_http(url) -> McpTransport:
         if url.endswith("/"):
-            test_see_url = f"{url}sse"
+            test_sse_url = f"{url}sse"
         else:
-            test_see_url = f"{url}/sse"
+            test_sse_url = f"{url}/sse"
         try:
-            response = requests.request(method="HEAD", url=f"{url}/sse", timeout=5)
+            response = requests.request(method="HEAD", url=test_sse_url, timeout=5)
             if response.status_code == 200:
-                return McpTransport.SSE, test_see_url
+                return McpTransport.SSE, test_sse_url
         except requests.RequestException:
             # not a SSE endpoint or not reachable
             pass
