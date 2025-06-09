@@ -1,10 +1,10 @@
 import asyncio
 import logging
-import requests
 from typing import Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
+import requests
 from mcp.client.streamable_http import streamablehttp_client
 from mcp.client.sse import sse_client
 from mcp import ClientSession, types
@@ -103,7 +103,6 @@ class MCPConnection:
                         read_stream,
                         write_stream
                     ) = await context_manager.__aenter__()  # pylint: disable=E1101
-                    connection = None
                 else:
                     raise ValueError(f"Unsupported transport type: {transport}")
                 con.url = url
@@ -309,7 +308,8 @@ class MCPServer:
             response = requests.request(method="HEAD", url=f"{url}/sse", timeout=5)
             if response.status_code == 200:
                 return McpTransport.SSE, test_see_url
-        except requests.RequestException as e:
+        except requests.RequestException:
+            # not a SSE endpoint or not reachable
             pass
         return McpTransport.STREAMABLE_HTTP, f"{url}/mcp"
 
@@ -317,9 +317,9 @@ class MCPServer:
     def _guess_transport_type_by_url(url: str) -> Optional[McpTransport]:
         if url.startswith("ws://") or url.startswith("wss://"):
             return McpTransport.WS
-        elif url.endswith("/mcp"):
+        if url.endswith("/mcp"):
             return McpTransport.STREAMABLE_HTTP
-        elif url.endswith("/sse"):
+        if url.endswith("/sse"):
             return McpTransport.SSE
         return None
 
