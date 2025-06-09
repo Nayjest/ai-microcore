@@ -14,6 +14,7 @@ TRANSPORTS = [
 ]
 @pytest.fixture(scope="session", params=TRANSPORTS)
 def server(request):
+    process = None
     try:
         port = 5000 + TRANSPORTS.index(request.param)  # Unique port per transport
         cmd = [sys.executable, "ping_server.py", "--port", str(port), "--transport", request.param]

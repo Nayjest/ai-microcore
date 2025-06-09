@@ -299,7 +299,7 @@ class MCPServer:
     transport: McpTransport = field(default=None)
 
     @staticmethod
-    def _try_sse_or_streamable_http(url) -> McpTransport:
+    def _try_sse_or_streamable_http(url) -> tuple[McpTransport, str]:
         if url.endswith("/"):
             test_sse_url = f"{url}sse"
         else:
