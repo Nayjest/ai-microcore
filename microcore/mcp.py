@@ -1,9 +1,12 @@
 import asyncio
 import logging
+import requests
 from typing import Optional
 from dataclasses import dataclass, field
+from enum import Enum
 
 from mcp.client.streamable_http import streamablehttp_client
+from mcp.client.sse import sse_client
 from mcp import ClientSession, types
 
 from .utils import ExtendedString, ConvertableToMessage
@@ -47,12 +50,22 @@ class MCPAnswer(ExtendedString, ConvertableToMessage):
     ...
 
 
+class McpTransport(str, Enum):
+    SSE: str = "sse"
+    STREAMABLE_HTTP: str = "streamable_http"
+    WS: str = "ws"
+    STDIO: str = "stdio"
+
+    def __str__(self):
+        return self.value
+
+
 @dataclass
 class MCPConnection:
     url: str = None
+    transport: McpTransport = field(default=McpTransport.STREAMABLE_HTTP)
     read_stream: any = None
     write_stream: any = None
-    connection: any = None
     context_manager: any = None
     session: ClientSession = field(default=None, init=False)
     tools: Optional["Tools"] = field(default=None, init=False)
@@ -62,6 +75,7 @@ class MCPConnection:
     @staticmethod
     async def init(
         url: str,
+        transport: McpTransport,
         fetch_tools: bool = True,
         use_cache: bool = True,
         connect_timeout: float = 10,
@@ -75,17 +89,27 @@ class MCPConnection:
         # That's a bit of a hack for closing the async context managers
         async def lifecycle():
             try:
-                logging.info(f"Connecting to MCP {url}...")
-                context_manager = streamablehttp_client(url)
-                (
-                    read_stream,
-                    write_stream,
-                    connection
-                ) = await context_manager.__aenter__()  # pylint: disable=E1101
+                logging.info(f"Connecting to {transport} MCP {url}...")
+                if transport == McpTransport.STREAMABLE_HTTP:
+                    context_manager = streamablehttp_client(url)
+                    (
+                        read_stream,
+                        write_stream,
+                        _
+                    ) = await context_manager.__aenter__()  # pylint: disable=E1101
+                elif transport == McpTransport.SSE:
+                    context_manager = sse_client(url)
+                    (
+                        read_stream,
+                        write_stream
+                    ) = await context_manager.__aenter__()  # pylint: disable=E1101
+                    connection = None
+                else:
+                    raise ValueError(f"Unsupported transport type: {transport}")
                 con.url = url
+                con.transport = transport
                 con.read_stream = read_stream
                 con.write_stream = write_stream
-                con.connection = connection
                 con.context_manager = context_manager
                 await con.init_session()
                 if fetch_tools:
@@ -162,6 +186,13 @@ class MCPConnection:
 
     def __del__(self):
         self._del_event.set()
+
+    async def call(self, name: str, **kwargs):
+        assert env().config.AI_SYNTAX_FUNCTION_NAME_FIELD not in kwargs
+        params = dict(kwargs)
+        params[env().config.AI_SYNTAX_FUNCTION_NAME_FIELD] = name
+        return await self.exec(params)
+
 
     async def exec(self, params: dict | LLMResponse):
         if isinstance(params, LLMResponse):
@@ -266,6 +297,31 @@ class MCPServer:
     url: str
     name: str = field(default="")
     tools: Tools = field(default_factory=Tools)
+    transport: McpTransport = field(default=None)
+
+    @staticmethod
+    def _try_sse_or_streamable_http(url) -> McpTransport:
+        if url.endswith("/"):
+            test_see_url = f"{url}sse"
+        else:
+            test_see_url = f"{url}/sse"
+        try:
+            response = requests.request(method="HEAD", url=f"{url}/sse", timeout=5)
+            if response.status_code == 200:
+                return McpTransport.SSE, test_see_url
+        except requests.RequestException as e:
+            pass
+        return McpTransport.STREAMABLE_HTTP, f"{url}/mcp"
+
+    @staticmethod
+    def _guess_transport_type_by_url(url: str) -> Optional[McpTransport]:
+        if url.startswith("ws://") or url.startswith("wss://"):
+            return McpTransport.WS
+        elif url.endswith("/mcp"):
+            return McpTransport.STREAMABLE_HTTP
+        elif url.endswith("/sse"):
+            return McpTransport.SSE
+        return None
 
     @staticmethod
     def name_from_url(url: str) -> str:
@@ -275,6 +331,8 @@ class MCPServer:
     def __post_init__(self):
         if not self.name:
             self.name = MCPServer.name_from_url(self.url)
+        if not self.transport:
+            self.transport = self._guess_transport_type_by_url(self.url)
 
     async def connect(
         self,
@@ -282,8 +340,13 @@ class MCPServer:
         use_cache: bool = True,
         connect_timeout: float = 10,
     ) -> MCPConnection:
+        if self.transport:
+            transport, url = self.transport, self.url
+        else:
+            transport, url = self._try_sse_or_streamable_http(self.url)
         return await MCPConnection.init(
-            self.url,
+            url=url,
+            transport=transport,
             fetch_tools=fetch_tools,
             use_cache=use_cache,
             connect_timeout=connect_timeout,
