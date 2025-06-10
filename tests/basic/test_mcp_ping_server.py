@@ -17,7 +17,7 @@ def server(request):
     process = None
     try:
         port = 5000 + TRANSPORTS.index(request.param)  # Unique port per transport
-        cmd = ["python", "ping_server.py", "--port", str(port), "--transport", request.param]
+        cmd = [sys.executable, "ping_server.py", "--port", str(port), "--transport", request.param]
         logging.info(f"Starting MCP server with transport: {request.param} on port {port}: {mc.ui.yellow(' '.join(cmd))}")
         process = None
         process = subprocess.Popen(
