@@ -30,7 +30,6 @@ def server(request):
     finally:
         if process:
             process.terminate()
-            process.wait()
             stdout, stderr = process.communicate()
             if stdout:
                 logging.info(f"Server stdout: {stdout.decode()}")
@@ -53,6 +52,5 @@ async def test_mcp_ping(server):
     logging.info("Ping...")
     assert await mcp.call("ping", message="1") == "pong 1"
     assert await mcp.exec(dict(call="ping", message="2")) == "pong 2"
-    # intentionally commented out to ensure autoclose
-    # await mcp.close()
+    await mcp.close()
 

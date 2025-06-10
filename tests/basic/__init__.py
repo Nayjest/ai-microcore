@@ -7,6 +7,7 @@ import microcore as mc
 
 @pytest.fixture()
 def setup(request, mocker):
+    saved_env = os.environ.copy()
     os.environ.clear()
     mock_openai_chat(mocker)
     mc.configure(
@@ -16,6 +17,8 @@ def setup(request, mocker):
         LLM_API_KEY="123",
     )
     yield
+    os.environ.clear()
+    os.environ.update(saved_env)
 
 
 def mock_openai_chat(mocker):
