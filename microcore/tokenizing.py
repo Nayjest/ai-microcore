@@ -25,6 +25,8 @@ def _resolve_tiktoken_encoding(
         )
     if for_model:
         try:
+            if for_model.startswith("gpt-4.1") or for_model.startswith("gpt-4.5"):
+                return tiktoken.get_encoding("o200k_base")
             return tiktoken.encoding_for_model(for_model)
         except (KeyError, requests.exceptions.ConnectionError):
             logging.warning(
