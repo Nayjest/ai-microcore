@@ -17,7 +17,7 @@ def server(request):
     process = None
     try:
         port = 5000 + TRANSPORTS.index(request.param)  # Unique port per transport
-        executable = sys.executable if os.getenv("GITHUB_ACTIONS") == "true" else "python"
+        executable = "python"
         cmd = [executable, "ping_server.py", "--port", str(port), "--transport", request.param]
         logging.info(f"Starting MCP server with transport: {request.param} on port {port}: {mc.ui.yellow(' '.join(cmd))}")
         process = None
