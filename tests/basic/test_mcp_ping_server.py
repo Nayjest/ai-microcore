@@ -1,6 +1,4 @@
-import sys
 import logging
-import os
 import pytest
 from pathlib import Path
 import subprocess
@@ -25,7 +23,7 @@ def server(request):
             cmd,
             cwd=(Path(__file__).parent / "mcp_servers").resolve(), stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
-        sleep(1)
+        sleep(2)
         yield {"process": process, "port": port, "transport": request.param}
     finally:
         if process:
