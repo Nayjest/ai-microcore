@@ -41,6 +41,8 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
+        git fetch origin
+        git checkout ${{ github.head_ref }}
         git add coverage.svg
         git commit -m "Update coverage badge [skip ci]" || echo "No changes to commit"
         git push
