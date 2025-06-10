@@ -30,6 +30,11 @@ def server(request):
         if process:
             process.terminate()
             process.wait()
+            stdout, stderr = process.communicate()
+            if stdout:
+                logging.info(f"Server stdout: {stdout.decode()}")
+            if stderr:
+                logging.error(f"Server stderr: {stderr.decode()}")
 
 
 @pytest.mark.asyncio
