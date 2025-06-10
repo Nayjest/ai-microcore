@@ -17,12 +17,12 @@ def server(request):
     process = None
     try:
         port = 5000 + TRANSPORTS.index(request.param)  # Unique port per transport
-        cmd = [sys.executable, "ping_server.py", "--port", str(port), "--transport", request.param]
+        cmd = ["python", "ping_server.py", "--port", str(port), "--transport", request.param]
         logging.info(f"Starting MCP server with transport: {request.param} on port {port}: {mc.ui.yellow(' '.join(cmd))}")
         process = None
         process = subprocess.Popen(
             cmd,
-            cwd=Path(__file__).parent / "mcp_servers", stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            cwd=(Path(__file__).parent / "mcp_servers").resolve(), stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         sleep(1)
         yield {"process": process, "port": port, "transport": request.param}
