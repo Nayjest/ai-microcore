@@ -17,19 +17,24 @@ def server(request):
     process = None
     try:
         port = 5000 + TRANSPORTS.index(request.param)  # Unique port per transport
-        cmd = [sys.executable, "ping_server.py", "--port", str(port), "--transport", request.param]
+        executable = "python"
+        cmd = [executable, "ping_server.py", "--port", str(port), "--transport", request.param]
         logging.info(f"Starting MCP server with transport: {request.param} on port {port}: {mc.ui.yellow(' '.join(cmd))}")
         process = None
         process = subprocess.Popen(
             cmd,
-            cwd=Path(__file__).parent / "mcp_servers", stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            cwd=(Path(__file__).parent / "mcp_servers").resolve(), stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         sleep(1)
         yield {"process": process, "port": port, "transport": request.param}
     finally:
         if process:
             process.terminate()
-            process.wait()
+            stdout, stderr = process.communicate()
+            if stdout:
+                logging.info(f"Server stdout: {stdout.decode()}")
+            if stderr:
+                logging.error(f"Server stderr: {stderr.decode()}")
 
 
 @pytest.mark.asyncio
@@ -47,6 +52,5 @@ async def test_mcp_ping(server):
     logging.info("Ping...")
     assert await mcp.call("ping", message="1") == "pong 1"
     assert await mcp.exec(dict(call="ping", message="2")) == "pong 2"
-    # intentionally commented out to ensure autoclose
-    # await mcp.close()
+    await mcp.close()
 
