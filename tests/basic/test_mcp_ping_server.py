@@ -30,6 +30,7 @@ def server(request):
     finally:
         if process:
             process.terminate()
+            process.wait()
             stdout, stderr = process.communicate()
             if stdout:
                 logging.info(f"Server stdout: {stdout.decode()}")
