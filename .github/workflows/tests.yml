@@ -33,7 +33,7 @@ jobs:
         python -m pip install -r requirements/tests.txt        
     - name: Test with pytest
       run: |
-        pytest --cov=./ --cov-report=xml
+        pytest --cov=microcore --cov-report=xml
     - name: Generate coverage badge
       if: matrix.python-version == '3.13'  # Run badge generation only once
       uses: tj-actions/coverage-badge-py@v2
