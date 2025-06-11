@@ -76,8 +76,7 @@ class MCPConnection:
         use_cache: bool = True,
         connect_timeout: float = 10,
     ) -> "MCPConnection":
-        con: MCPConnection = MCPConnection()
-        con.transport = transport
+        con: MCPConnection = MCPConnection(url=url, transport=transport)
         con._client = Client(url, timeout=connect_timeout)  # pylint: disable=W0212
         await con._client.__aenter__()  # pylint: disable=E1101,W0212,C2801
         if fetch_tools:
