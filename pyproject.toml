@@ -27,6 +27,7 @@ dependencies = [
     "chardet~=5.2.0",
     "tiktoken>=0.7.0,<1.0",
     "mcp~=1.9.1",
+    "fastmcp~=2.8.0",
     "docstring_parser~=0.16.0",
 ]
 requires-python = ">=3.10"
