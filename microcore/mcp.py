@@ -1,13 +1,14 @@
 import asyncio
 import logging
+import datetime
 from typing import Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
 import requests
-from mcp.client.streamable_http import streamablehttp_client
-from mcp.client.sse import sse_client
-from mcp import ClientSession, types
+from fastmcp import Client
+from fastmcp.client.progress import ProgressHandler
+import mcp.types
 
 from .utils import ExtendedString, ConvertableToMessage
 from .ai_func import AiFuncSyntax
@@ -64,13 +65,8 @@ class McpTransport(str, Enum):
 class MCPConnection:
     url: str = None
     transport: McpTransport = field(default=McpTransport.STREAMABLE_HTTP)
-    read_stream: any = None
-    write_stream: any = None
-    context_manager: any = None
-    session: ClientSession = field(default=None, init=False)
     tools: Optional["Tools"] = field(default=None, init=False)
-    _lifecycle_task: asyncio.Task = field(default=None, init=False)
-    _del_event: asyncio.Event = field(default=None, init=False)
+    _client: Client | None = field(default=None, init=False)
 
     @staticmethod
     async def init(
@@ -80,87 +76,20 @@ class MCPConnection:
         use_cache: bool = True,
         connect_timeout: float = 10,
     ) -> "MCPConnection":
-
-        del_event = asyncio.Event()
-        opened_event = asyncio.Event()
         con: MCPConnection = MCPConnection()
-        con._del_event = del_event  # pylint: disable=W0212
-
-        # That's a bit of a hack for closing the async context managers
-        async def lifecycle():
-            try:
-                logging.info(f"Connecting to {transport} MCP {url}...")
-                if transport == McpTransport.STREAMABLE_HTTP:
-                    context_manager = streamablehttp_client(url)
-                    (
-                        read_stream,
-                        write_stream,
-                        _
-                    ) = await context_manager.__aenter__()  # pylint: disable=E1101
-                elif transport == McpTransport.SSE:
-                    context_manager = sse_client(url)
-                    (
-                        read_stream,
-                        write_stream
-                    ) = await context_manager.__aenter__()  # pylint: disable=E1101
-                else:
-                    raise ValueError(f"Unsupported transport type: {transport}")
-                con.url = url
-                con.transport = transport
-                con.read_stream = read_stream
-                con.write_stream = write_stream
-                con.context_manager = context_manager
-                await con.init_session()
-                if fetch_tools:
-                    await con.fetch_tools(use_cache=use_cache)
-                opened_event.set()
-
-            finally:
-                await del_event.wait()
-                await con._close()  # pylint: disable=W0212
-
-        con._lifecycle_task = asyncio.create_task(lifecycle())  # pylint: disable=W0212
-        try:
-            await asyncio.wait_for(opened_event.wait(), timeout=connect_timeout)
-        except Exception as e:
-            logging.warning(f"Failed to connect to MCP {url}: {e}")
-            try:
-                await con._close()  # pylint: disable=W0212
-            except:  # noqa: E722 # pylint: disable=W0702
-                pass
-            raise
+        con.transport = transport
+        con._client = Client(url, timeout=connect_timeout)  # pylint: disable=W0212
+        await con._client.__aenter__()  # pylint: disable=E1101,W0212,C2801
+        if fetch_tools:
+            await con.fetch_tools(use_cache=use_cache)
         return con
 
     async def close(self):
-        self._del_event.set()
-        if self._lifecycle_task:
-            await self._lifecycle_task
+        if self._client:
+            await self._client.__aexit__(None, None, None)
+            self._client = None
         else:
             logging.error(f"Trying to close MCP connection that is not opened ({self.url})")
-
-    async def _close(self):
-        logging.info(f"Closing MCP session ({self.url})...")
-        try:
-            if self.session:
-                await self.session.__aexit__(None, None, None)
-                del self.session
-                self.session = None
-        finally:
-            logging.info(f"Closing MCP connection ({self.url})...")
-            try:
-                if self.context_manager:
-                    await self.context_manager.__aexit__(None, None, None)
-                    del self.context_manager
-                    self.context_manager = None
-            finally:
-                logging.info(f"Closed CTX ({self.url})")
-
-    async def init_session(self):
-        logging.info(f"Initializing MCP session ({self.url})")
-        self.session = ClientSession(self.read_stream, self.write_stream)
-        await self.session.__aenter__()  # pylint: disable=unnecessary-dunder-call
-        await self.session.initialize()
-        return self.session
 
     async def fetch_tools(self, use_cache: bool = True) -> "Tools":
         if self.tools is not None:
@@ -172,8 +101,8 @@ class MCPConnection:
             return self.tools
 
         logging.info("Fetching tools from MCP %s", ui.green(self.url))
-        mcp_tools = await self.session.list_tools()
-        self.tools = Tools.from_list([Tool.from_mcp(tool) for tool in mcp_tools.tools])
+        mcp_tools = await self._client.list_tools()
+        self.tools = Tools.from_list([Tool.from_mcp(tool) for tool in mcp_tools])
         if use_cache:
             self.update_tools_cache()
         return self.tools
@@ -183,17 +112,24 @@ class MCPConnection:
             raise RuntimeError("Tools are not fetched yet. Call fetch_tools() first.")
         ToolsCache.write(self.url, self.tools)
 
-    def __del__(self):
-        self._del_event.set()
-
-    async def call(self, name: str, **kwargs):
+    async def call(
+        self,
+        name: str,
+        timeout: datetime.timedelta | float | int | None = None,
+        progress_handler: ProgressHandler | None = None,
+        **kwargs
+    ):
         assert env().config.AI_SYNTAX_FUNCTION_NAME_FIELD not in kwargs
         params = dict(kwargs)
         params[env().config.AI_SYNTAX_FUNCTION_NAME_FIELD] = name
-        return await self.exec(params)
+        return await self.exec(params, timeout=timeout, progress_handler=progress_handler)
 
-
-    async def exec(self, params: dict | LLMResponse):
+    async def exec(
+        self,
+        params: dict | LLMResponse,
+        timeout: datetime.timedelta | float | int | None = None,
+        progress_handler: ProgressHandler | None = None,
+    ):
         if isinstance(params, LLMResponse):
             try:
                 params = params.parse_json(
@@ -209,11 +145,15 @@ class MCPConnection:
                 f"Tool name should be passed in {env().config.AI_SYNTAX_FUNCTION_NAME_FIELD} field"
             )
         logging.info(f"Calling MCP tool {ui.green(name)} with {params}...")
-        result = await self.session.call_tool(name, params)
-        content = result.content
+        content = await self._client.call_tool(
+            name=name,
+            arguments=params,
+            timeout=timeout,
+            progress_handler=progress_handler
+        )
         if content and len(content) == 1 and content[0].type == "text":
-            return MCPAnswer(content[0].text, result.__dict__)
-        return result
+            return MCPAnswer(content[0].text, dict(response=content))
+        return content
 
 
 @dataclass
@@ -242,7 +182,7 @@ class Tool:
                 self.args[key] = Tool.Arg(**self.args[key])
 
     @staticmethod
-    def from_mcp(tool: types.Tool) -> "Tool":
+    def from_mcp(tool: mcp.types.Tool) -> "Tool":
         t = Tool(
             name=tool.name,
             description=tool.description,

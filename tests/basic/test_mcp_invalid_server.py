@@ -1,6 +1,4 @@
-import asyncio
 import logging
-import os
 import microcore as mc
 import pytest
 
@@ -15,6 +13,5 @@ async def test_bad_mcp():
         MCP_SERVERS=servers_cfg,
     )
     await mc.env().mcp_registry.precache_tools(connect_timeout=0.1)
-    with pytest.raises(asyncio.TimeoutError) as exc_info:
+    with pytest.raises(Exception):
         await mc.env().mcp_registry.precache_tools(raise_errors=True, connect_timeout=0.1)
-    logging.info("OK")
