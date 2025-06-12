@@ -2,7 +2,7 @@
     <a href="https://github.com/Nayjest/ai-microcore/releases" target="_blank"><img src="https://img.shields.io/github/v/release/Nayjest/ai-microcore.svg" alt="Release Notes"></a>
     <a href="https://app.codacy.com/gh/Nayjest/ai-microcore/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade" target="_blank"><img src="https://app.codacy.com/project/badge/Grade/441d03416bc048828c649129530dcbc3" alt="Code Quality"></a>
     <a href="https://github.com/Nayjest/ai-microcore/actions/workflows/pylint.yml" target="_blank"><img src="https://github.com/Nayjest/ai-microcore/actions/workflows/pylint.yml/badge.svg" alt="Pylint"></a>
-    <img src="coverage.svg" alt="Code Coverage">
+    <img src="https://github.com/Nayjest/ai-microcore/blob/main/coverage.svg" alt="Code Coverage">
     <a href="https://github.com/Nayjest/ai-microcore/actions/workflows/tests.yml" target="_blank"><img src="https://github.com/Nayjest/ai-microcore/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
     <a href="https://github.com/Nayjest/ai-microcore/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/static/v1?label=license&message=MIT&color=d08aff" alt="License"></a>
 </p>
