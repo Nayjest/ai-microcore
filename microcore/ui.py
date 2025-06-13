@@ -54,7 +54,7 @@ def ask_choose(msg: str, variants: list):
             continue
         break
 
-    item = variants[int(i)]
+    item = variants[i]
     return item
 
 
