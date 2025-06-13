@@ -31,11 +31,13 @@ def interactive_setup(
             list(i.value for i in ApiType if not ApiType.is_local(i)),
         )
     if "LLM_API_KEY" not in raw_config:
-        raw_config["LLM_API_KEY"] = ask_non_empty("API Key: ")
+        raw_config["LLM_API_KEY"] = ask_non_empty("API Key: ").strip()
     if "MODEL" not in raw_config:
-        raw_config["MODEL"] = ask_non_empty("Model Name: ")
+        raw_config["MODEL"] = ask_non_empty("Model Name: ").strip()
     if "LLM_API_BASE" not in raw_config:
-        raw_config["LLM_API_BASE"] = input("API Base URL (may be empty for some API types): ")
+        raw_config["LLM_API_BASE"] = input(
+            "API Base URL (may be empty for some API types): "
+        ).strip()
     if extras:
         if isinstance(extras, list):
             extras = {
@@ -50,7 +52,7 @@ def interactive_setup(
             }
         for field, title in extras.items():
             if field not in raw_config:
-                raw_config[field] = ask_non_empty(f"{title}: ")
+                raw_config[field] = ask_non_empty(f"{title}: ").strip()
     try:
         config = configure(
             **{
