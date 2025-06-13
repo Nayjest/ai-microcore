@@ -36,9 +36,9 @@ while user_msg := input('Enter message: '):
 
 ## 🔗 Links
 
- -   [API Reference](https://ai-microcore.github.io/api-reference/)
- -   [PyPi Package](https://pypi.org/project/ai-microcore/)
- -   [GitHub Repository](https://github.com/Nayjest/ai-microcore)
+ - [API Reference](https://ai-microcore.github.io/api-reference/)
+ - [PyPi Package](https://pypi.org/project/ai-microcore/)
+ - [GitHub Repository](https://github.com/Nayjest/ai-microcore)
 
 
 ## 💻 Installation
