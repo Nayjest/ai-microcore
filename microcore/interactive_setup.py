@@ -35,7 +35,9 @@ def interactive_setup(
     if "MODEL" not in raw_config:
         raw_config["MODEL"] = ask_non_empty("Model Name: ").strip()
     if "LLM_API_BASE" not in raw_config:
-        raw_config["LLM_API_BASE"] = input("API Base URL (may be empty for some API types): ").strip()
+        raw_config["LLM_API_BASE"] = input(
+            "API Base URL (may be empty for some API types): "
+        ).strip()
     if extras:
         if isinstance(extras, list):
             extras = {
