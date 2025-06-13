@@ -44,7 +44,7 @@ def ask_choose(msg: str, variants: list):
             i += 1
             print(f"\t{Fore.MAGENTA}{i}:{Fore.RESET}\t{item}")
     while True:
-        i = input(f"{msg} {Fore.MAGENTA}[1-{len(variants)}]{Fore.RESET}: ")
+        i = input(f"{msg} {Fore.MAGENTA}[1-{len(variants)}]{Fore.RESET}: ").strip()
         if not i.isdigit():
             error("Not a number")
             continue
