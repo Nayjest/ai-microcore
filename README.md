@@ -112,8 +112,10 @@ See [transformers installation](https://huggingface.co/docs/transformers/install
 ### Vector Databases
 
 Vector database functions are available via `microcore.texts`.
+
+#### ChromaDB
 Default vector database is [Chroma](https://www.trychroma.com/).
-In order to use vector database functions, you need to install the `chromadb` package:
+In order to use vector database functions with ChromaDB, you need to install the `chromadb` package:
 ```bash
 pip install chromadb
 ```
@@ -127,6 +129,25 @@ configure(
     EMBEDDING_DB_PORT = 8000,
 )
 ```
+#### Qdrant
+In order to use vector database functions with Qdrant, you need to install the `qdrant-client` package:
+```bash
+pip install qdrant-client
+```
+Configuration example
+```python
+from microcore import configure
+from sentence_transformers import SentenceTransformer
+
+configure(
+    EMBEDDING_DB_TYPE=mc.EmbeddingDbType.QDRANT,
+    EMBEDDING_DB_HOST="localhost",
+    EMBEDDING_DB_PORT="6333",
+    EMBEDDING_DB_SIZE=384,  # dimentions quantity in used SentenceTransformer model
+    EMBEDDING_DB_FUNCTION=SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2"),
+)
+```
+
 
 ## 🌟 Core Functions
 
