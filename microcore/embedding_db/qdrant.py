@@ -154,6 +154,7 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
         return 0
 
     def delete(self, collection: str, what: str | list[str] | dict):
+        # pylint: disable=R0801, duplicate-code
         if not self.collection_exists(collection):
             return
 
