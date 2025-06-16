@@ -67,21 +67,55 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
         )
 
     @classmethod
-    def _convert_where(cls, where: dict | None, kwargs=None) -> Filter | None:
+    def _convert_where(  # pylint: disable=too-many-branches
+        cls,
+        where: dict | None,
+        kwargs=None
+    ) -> Filter | None:
+        where_doc = kwargs and kwargs.get("where_document", {}).get("$contains", None)
+        if isinstance(where, Filter):
+            if where_doc:
+                raise ValueError(
+                    "Cannot use `where_document` with Filter object passed as `where` argument. "
+                    "Please use a dictionary instead."
+                )
+            return where
+
         conditions = []
+        _and = True
+        if where:
+            if "$or" in where:
+                _and = False
+                for i in where["$or"]:
+                    for k, v in i.items():
+                        conditions.append(FieldCondition(key=k, match=MatchValue(value=v)))
+            elif "$and" in where:
+                _and = True
+                for i in where["$and"]:
+                    for k, v in i.items():
+                        conditions.append(FieldCondition(key=k, match=MatchValue(value=v)))
+            else:
+                for k, v in where.items():
+                    conditions.append(FieldCondition(key=k, match=MatchValue(value=v)))
+
         # ChromaDB format
-        if kwargs and "where_document" in kwargs and kwargs["where_document"]:
+        if where_doc:
+            if not _and:
+                raise ValueError(
+                    "Cannot use `where_document` with `$or` condition. "
+                )
             conditions.append(
                 FieldCondition(
                     key="_text",
                     match=MatchText(text=kwargs["where_document"]["$contains"])
                 )
             )
-        if where:
-            for k, v in where.items():
-                conditions.append(FieldCondition(key=k, match=MatchValue(value=v)))
 
-        return Filter(must=conditions) if conditions else None
+        if not conditions:
+            return None
+        if _and:
+            return Filter(must=conditions)
+        return Filter(should=conditions)
 
     def search(
         self,
