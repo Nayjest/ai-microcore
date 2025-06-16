@@ -151,6 +151,17 @@ class Env:
             from .embedding_db.chromadb import ChromaEmbeddingDB
 
             self.texts = ChromaEmbeddingDB(self.config)
+            return
+
+        if self.config.EMBEDDING_DB_TYPE == EmbeddingDbType.QDRANT:
+            if find_spec("qdrant_client") is None:
+                raise ModuleNotFoundError(
+                    "To use Qdrant, install the `qdrant-client` package. "
+                    "Run `pip install qdrant-client`."
+                )
+            from .embedding_db.qdrant import QdrantEmbeddingDB
+            self.texts = QdrantEmbeddingDB(self.config)
+            return
 
 
 @dataclass
