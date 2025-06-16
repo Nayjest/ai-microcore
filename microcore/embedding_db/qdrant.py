@@ -99,7 +99,7 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
                         conditions.append(FieldCondition(key=k, match=MatchValue(value=v)))
             elif "$and" in where:
                 _and = True
-                for i in where["$or"]:
+                for i in where["$and"]:
                     for k, v in i.items():
                         conditions.append(FieldCondition(key=k, match=MatchValue(value=v)))
             else:
