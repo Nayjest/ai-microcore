@@ -154,17 +154,14 @@ class Env:
             return
 
         if self.config.EMBEDDING_DB_TYPE == EmbeddingDbType.QDRANT:
-            try:
-                from .embedding_db.qdrant import QdrantEmbeddingDB
-
-                self.texts = QdrantEmbeddingDB(self.config)
-                return
-            except ModuleNotFoundError as e:
+            if find_spec("qdrant_client") is None:
                 raise ModuleNotFoundError(
                     "To use Qdrant, install the `qdrant-client` package. "
                     "Run `pip install qdrant-client`."
-                ) from e
-
+                )
+            from .embedding_db.qdrant import QdrantEmbeddingDB
+            self.texts = QdrantEmbeddingDB(self.config)
+            return
 
 
 @dataclass
