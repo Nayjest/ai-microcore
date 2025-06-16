@@ -151,6 +151,13 @@ class Env:
             from .embedding_db.chromadb import ChromaEmbeddingDB
 
             self.texts = ChromaEmbeddingDB(self.config)
+            return
+
+        if self.config.EMBEDDING_DB_TYPE == EmbeddingDbType.QDRANT:
+            from .embedding_db.qdrant import QdrantEmbeddingDB
+
+            self.texts = QdrantEmbeddingDB(self.config)
+            return
 
 
 @dataclass

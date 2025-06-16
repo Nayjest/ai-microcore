@@ -84,6 +84,7 @@ class ApiType(str, Enum):
 
 class EmbeddingDbType(str, Enum):
     CHROMA = "chroma"
+    QDRANT = "qdrant"
     NONE = ""
 
     def __str__(self):
@@ -392,6 +393,9 @@ class Config(LLMConfig):
 
     EMBEDDING_DB_TYPE: str = from_env(EmbeddingDbType.CHROMA)
 
+    EMBEDDING_DB_SIZE: int = from_env(default=0)
+    """Used with Qdrant"""
+
     DEFAULT_ENCODING: str = from_env("utf-8")
     """Used in file system operations, utf-8 by default"""
 
@@ -435,3 +439,19 @@ class Config(LLMConfig):
                 raise e
         if self.TEXT_TO_SPEECH_PATH is None:
             self.TEXT_TO_SPEECH_PATH = Path(self.STORAGE_PATH) / "voicing"
+
+    def validate(self):
+        super().validate()
+        if self.EMBEDDING_DB_TYPE == EmbeddingDbType.QDRANT:
+            if not self.EMBEDDING_DB_SIZE:
+                raise LLMConfigError(
+                    "EMBEDDING_DB_SIZE is required configuration parameter for Qdrant"
+                )
+            if not self.EMBEDDING_DB_HOST:
+                raise LLMConfigError(
+                    "EMBEDDING_DB_HOST is required configuration parameter for Qdrant"
+                )
+            if not self.EMBEDDING_DB_FUNCTION:
+                raise LLMConfigError(
+                    "EMBEDDING_DB_FUNCTION is required configuration parameter for Qdrant"
+                )

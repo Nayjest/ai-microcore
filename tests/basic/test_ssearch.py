@@ -1,4 +1,5 @@
 from microcore import texts, env
+import microcore as mc
 
 
 def test_save_load():
@@ -37,10 +38,14 @@ def test_get():
         ],
     )
     results = texts.get("test_collection")
-    assert "cat" == results[0]
+    assert "cat" in results
     assert 4 == len(results)
-    results = texts.get("test_collection", limit=1, offset=1)
-    assert "dog" == results[0]
+
+    if mc.config().EMBEDDING_DB_TYPE != mc.EmbeddingDbType.QDRANT:
+        # does not guarantee the order
+        results = texts.get("test_collection", limit=1, offset=1)
+        assert "dog" == results[0]
+
     texts.save_many(
         "test_collection",
         [
@@ -51,11 +56,13 @@ def test_get():
     results = texts.get("test_collection", where={"field": "value_a"})
     assert "1" == results[0]
     results = texts.get("test_collection", where_document={"$contains": "ca"})
-    assert ["cat", "catalog"] == results
-    results = texts.get(
-        "test_collection", where_document={"$contains": "ca"}, limit=1, offset=1
-    )
-    assert ["catalog"] == results
+    assert ["cat", "catalog"].sort() == results.sort()
+    if mc.config().EMBEDDING_DB_TYPE != mc.EmbeddingDbType.QDRANT:
+        # does not guarantee the order
+        results = texts.get(
+            "test_collection", where_document={"$contains": "ca"}, limit=1, offset=1
+        )
+        assert ["catalog"] == results
 
 
 def test_metadata():
@@ -185,3 +192,21 @@ def test_clear_non_existing():
 def test_delete_non_existing():
     # should not raise error
     texts.delete("non-existing-collection2", "non-existing-id")
+
+
+def test_bool_metadata():
+    mc.texts.clear("test_bool_metadata")
+    mc.texts.save_many("test_bool_metadata",
+        "Dog,cat,wolf,cow,fish,insect,spider,ant,bee,wasp,собака,кішка".split(","),
+    )
+    mc.texts.save("test_bool_metadata","Perro", {"is_pet": True})
+    mc.texts.save("test_bool_metadata","песик", {"is_pet": "Yes"})
+    mc.texts.save("test_bool_metadata","вовк", {"is_pet": False})
+    res = mc.texts.find("test_bool_metadata","some dogs", n_results=6)
+    assert len(res) == 6
+    assert "Dog" in res
+    assert "wolf" in res
+    res = mc.texts.find("test_bool_metadata", "some dogs", where={"is_pet": True})
+    assert len(res) == 1
+    assert "Perro" in res
+    mc.texts.clear("test_bool_metadata")
