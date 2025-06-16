@@ -67,7 +67,11 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
         )
 
     @classmethod
-    def _convert_where(cls, where: dict | None, kwargs=None) -> Filter | None:
+    def _convert_where(  # pylint:disable: too-many-branches
+        cls,
+        where: dict | None,
+        kwargs=None
+    ) -> Filter | None:
         if isinstance(where, Filter):
             if kwargs and "where_document" in kwargs and kwargs["where_document"]:
                 raise ValueError(
@@ -106,8 +110,7 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
             return None
         if _and:
             return Filter(must=conditions)
-        else:
-            return Filter(should=conditions)
+        return Filter(should=conditions)
 
     def search(
         self,
