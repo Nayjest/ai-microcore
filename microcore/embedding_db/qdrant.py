@@ -76,7 +76,6 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
                 )
             return where
 
-
         conditions = []
         # ChromaDB format
         if kwargs and "where_document" in kwargs and kwargs["where_document"]:
@@ -87,19 +86,16 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
                 )
             )
         _and = True
-        _is_sublist = False
         if where:
 
             if "$or" in where:
-                d:list = where["$or"]
                 _and = False
-                _is_sublist = True
+                for i in where["$or"]:
+                    for k, v in i.items():
+                        conditions.append(FieldCondition(key=k, match=MatchValue(value=v)))
             elif "$and" in where:
-                d:list = where["$and"]
                 _and = True
-                _is_sublist = True
-            if _is_sublist:
-                for i in d:
+                for i in where["$or"]:
                     for k, v in i.items():
                         conditions.append(FieldCondition(key=k, match=MatchValue(value=v)))
             else:

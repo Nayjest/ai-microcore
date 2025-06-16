@@ -1,5 +1,3 @@
-import os
-
 from microcore import texts, env
 import microcore as mc
 
