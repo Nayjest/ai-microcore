@@ -56,7 +56,7 @@ def test_get():
     results = texts.get("test_collection", where={"field": "value_a"})
     assert "1" == results[0]
     results = texts.get("test_collection", where_document={"$contains": "ca"})
-    assert ["cat", "catalog"].sort() == results.sort()
+    assert sorted(["cat", "catalog"]) == sorted(results)
     if mc.config().EMBEDDING_DB_TYPE != mc.EmbeddingDbType.QDRANT:
         # does not guarantee the order
         results = texts.get(
