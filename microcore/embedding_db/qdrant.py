@@ -72,8 +72,9 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
         where: dict | None,
         kwargs=None
     ) -> Filter | None:
+        where_doc = kwargs and kwargs.get("where_document", {}).get("$contains", None)
         if isinstance(where, Filter):
-            if kwargs and "where_document" in kwargs and kwargs["where_document"]:
+            if where_doc:
                 raise ValueError(
                     "Cannot use `where_document` with Filter object passed as `where` argument. "
                     "Please use a dictionary instead."
@@ -81,17 +82,8 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
             return where
 
         conditions = []
-        # ChromaDB format
-        if kwargs and "where_document" in kwargs and kwargs["where_document"]:
-            conditions.append(
-                FieldCondition(
-                    key="_text",
-                    match=MatchText(text=kwargs["where_document"]["$contains"])
-                )
-            )
         _and = True
         if where:
-
             if "$or" in where:
                 _and = False
                 for i in where["$or"]:
@@ -105,6 +97,19 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
             else:
                 for k, v in where.items():
                     conditions.append(FieldCondition(key=k, match=MatchValue(value=v)))
+
+        # ChromaDB format
+        if where_doc:
+            if not _and:
+                raise ValueError(
+                    "Cannot use `where_document` with `$or` condition. "
+                )
+            conditions.append(
+                FieldCondition(
+                    key="_text",
+                    match=MatchText(text=kwargs["where_document"]["$contains"])
+                )
+            )
 
         if not conditions:
             return None
