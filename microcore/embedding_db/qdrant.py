@@ -67,7 +67,7 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
         )
 
     @classmethod
-    def _convert_where(  # pylint:disable: too-many-branches
+    def _convert_where(  # pylint: disable=too-many-branches
         cls,
         where: dict | None,
         kwargs=None
