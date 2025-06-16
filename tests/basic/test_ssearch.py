@@ -1,6 +1,19 @@
+import os
+
 from microcore import texts, env
 import microcore as mc
 
+USE_QDRANT = False
+if USE_QDRANT:
+    from sentence_transformers import SentenceTransformer
+    mc.configure(
+        LLM_API_TYPE=mc.ApiType.NONE,
+        EMBEDDING_DB_TYPE=mc.EmbeddingDbType.QDRANT,
+        EMBEDDING_DB_HOST="localhost",
+        EMBEDDING_DB_PORT="6333",
+        EMBEDDING_DB_SIZE=384,  # dimensions quantity in used SentenceTransformer model
+        EMBEDDING_DB_FUNCTION=SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2"),
+    )
 
 def test_save_load():
     texts.clear("test_collection")
@@ -210,3 +223,16 @@ def test_bool_metadata():
     assert len(res) == 1
     assert "Perro" in res
     mc.texts.clear("test_bool_metadata")
+
+def test_or_filter():
+    cid = "test_collection"
+    texts.clear(cid)
+    for i in range(20):
+        texts.save(cid, f"<{i}>", {"value": str(i), "value2": str(i)})
+    items = texts.search(cid, "", where={"$or": [{"value": "1"}, {"value": "2"}]})
+    assert len(items) == 2
+    assert "<1>" in items
+    assert "<2>" in items
+    items = texts.get(cid, where={"$and": [{"value": "3"}, {"value2": "3"}]})
+    assert len(items) == 1
+    assert "<3>" == items[0]

@@ -68,6 +68,15 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
 
     @classmethod
     def _convert_where(cls, where: dict | None, kwargs=None) -> Filter | None:
+        if isinstance(where, Filter):
+            if kwargs and "where_document" in kwargs and kwargs["where_document"]:
+                raise ValueError(
+                    "Cannot use `where_document` with Filter object passed as `where` argument. "
+                    "Please use a dictionary instead."
+                )
+            return where
+
+
         conditions = []
         # ChromaDB format
         if kwargs and "where_document" in kwargs and kwargs["where_document"]:
@@ -77,11 +86,32 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
                     match=MatchText(text=kwargs["where_document"]["$contains"])
                 )
             )
+        _and = True
+        _is_sublist = False
         if where:
-            for k, v in where.items():
-                conditions.append(FieldCondition(key=k, match=MatchValue(value=v)))
 
-        return Filter(must=conditions) if conditions else None
+            if "$or" in where:
+                d:list = where["$or"]
+                _and = False
+                _is_sublist = True
+            elif "$and" in where:
+                d:list = where["$and"]
+                _and = True
+                _is_sublist = True
+            if _is_sublist:
+                for i in d:
+                    for k, v in i.items():
+                        conditions.append(FieldCondition(key=k, match=MatchValue(value=v)))
+            else:
+                for k, v in where.items():
+                    conditions.append(FieldCondition(key=k, match=MatchValue(value=v)))
+
+        if not conditions:
+            return None
+        if _and:
+            return Filter(must=conditions)
+        else:
+            return Filter(should=conditions)
 
     def search(
         self,
