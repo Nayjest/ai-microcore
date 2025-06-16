@@ -127,6 +127,7 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
                 new_id = str(uuid.UUID(hashlib.md5(text.encode()).hexdigest()))
                 if new_id in ids:
                     continue
+                ids.add(new_id)
             else:
                 new_id = str(uuid.uuid4())
             point_structs.append(
