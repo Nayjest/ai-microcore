@@ -100,7 +100,7 @@ def _log_response(out):
 def use_logging():
     """Turns on logging of LLM requests and responses to console."""
     if not is_notebook():
-        init(autoreset=True, strip=False)
+        init(strip=False)
     if _log_request not in env().llm_before_handlers:
         env().llm_before_handlers.append(_log_request)
     if _log_response not in env().llm_after_handlers:
