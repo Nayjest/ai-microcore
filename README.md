@@ -136,11 +136,11 @@ pip install qdrant-client
 ```
 Configuration example
 ```python
-from microcore import configure
+from microcore import configure, EmbeddingDbType
 from sentence_transformers import SentenceTransformer
 
 configure(
-    EMBEDDING_DB_TYPE=mc.EmbeddingDbType.QDRANT,
+    EMBEDDING_DB_TYPE=EmbeddingDbType.QDRANT,
     EMBEDDING_DB_HOST="localhost",
     EMBEDDING_DB_PORT="6333",
     EMBEDDING_DB_SIZE=384,  # dimentions quantity in used SentenceTransformer model
