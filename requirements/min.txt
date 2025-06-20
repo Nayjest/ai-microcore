@@ -9,3 +9,4 @@ tiktoken>=0.7.0,<1.0
 mcp~=1.9.2
 docstring_parser~=0.16.0
 fastmcp~=2.8.0
+httpx~=0.28.1

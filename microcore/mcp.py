@@ -5,6 +5,7 @@ from typing import Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
+import httpx
 import requests
 from fastmcp import Client
 from fastmcp.client.progress import ProgressHandler
@@ -21,6 +22,16 @@ from .file_storage import storage
 
 class WrongMcpUsage(BadAIAnswer):
     ...
+
+
+class HeaderAuth(httpx.Auth):
+    def __init__(self, header_name, header_value):
+        self.header_name = header_name
+        self.header_value = header_value
+
+    def auth_flow(self, request):
+        request.headers[self.header_name] = self.header_value
+        yield request
 
 
 class ToolsCache:
@@ -75,9 +86,14 @@ class MCPConnection:
         fetch_tools: bool = True,
         use_cache: bool = True,
         connect_timeout: float = 10,
+        auth: httpx.Auth = None,
     ) -> "MCPConnection":
         con: MCPConnection = MCPConnection(url=url, transport=transport)
-        con._client = Client(url, timeout=connect_timeout)  # pylint: disable=W0212
+        con._client = Client(
+            url,
+            timeout=connect_timeout,
+            auth=auth,
+        )  # pylint: disable=W0212
         await con._client.__aenter__()  # pylint: disable=E1101,W0212,C2801
         if fetch_tools:
             await con.fetch_tools(use_cache=use_cache)
@@ -236,6 +252,7 @@ class MCPServer:
     name: str = field(default="")
     tools: Tools = field(default_factory=Tools)
     transport: McpTransport = field(default=None)
+    auth: httpx.Auth | dict | None = field(default=None)
 
     @staticmethod
     def _try_sse_or_streamable_http(url) -> tuple[McpTransport, str]:
@@ -272,6 +289,12 @@ class MCPServer:
             self.name = MCPServer.name_from_url(self.url)
         if not self.transport:
             self.transport = self._guess_transport_type_by_url(self.url)
+        if self.auth and isinstance(self.auth, dict) and len(self.auth)==1:
+            header_name, header_value = next(iter(self.auth.items()))
+            self.auth = HeaderAuth(
+                header_name=header_name,
+                header_value=header_value
+            )
 
     async def connect(
         self,
@@ -289,6 +312,7 @@ class MCPServer:
             fetch_tools=fetch_tools,
             use_cache=use_cache,
             connect_timeout=connect_timeout,
+            auth=self.auth
         )
 
     def get_tools_cache(self) -> Tools | None:
