@@ -289,7 +289,7 @@ class MCPServer:
             self.name = MCPServer.name_from_url(self.url)
         if not self.transport:
             self.transport = self._guess_transport_type_by_url(self.url)
-        if self.auth and isinstance(self.auth, dict) and len(self.auth)==1:
+        if self.auth and isinstance(self.auth, dict) and len(self.auth) == 1:
             header_name, header_value = next(iter(self.auth.items()))
             self.auth = HeaderAuth(
                 header_name=header_name,
