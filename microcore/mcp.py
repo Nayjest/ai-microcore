@@ -273,9 +273,9 @@ class MCPServer:
     def _guess_transport_type_by_url(url: str) -> Optional[McpTransport]:
         if url.startswith("ws://") or url.startswith("wss://"):
             return McpTransport.WS
-        if url.endswith("/mcp"):
+        if url.endswith("/mcp") or url.endswith("/mcp/"):
             return McpTransport.STREAMABLE_HTTP
-        if url.endswith("/sse"):
+        if url.endswith("/sse") or url.endswith("/sse/"):
             return McpTransport.SSE
         return None
 
