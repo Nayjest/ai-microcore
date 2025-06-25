@@ -76,7 +76,7 @@ There are a few options available for configuring microcore:
 -   Use a custom configuration file: `mc.configure(DOT_ENV_FILE='dev-config.ini')`
 -   Define OS environment variables
 
-For the full list of available configuration options, you may also check [`microcore/config.py`](https://github.com/Nayjest/ai-microcore/blob/main/microcore/config.py).
+For the full list of available configuration options, you may also check [`microcore/config.py`](https://github.com/Nayjest/ai-microcore/blob/main/microcore/configuration.py#L175).
 
 ### Installing vendor-specific packages
 For the models working not via OpenAI API, you may need to install additional packages:
