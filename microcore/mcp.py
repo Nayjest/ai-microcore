@@ -160,15 +160,19 @@ class MCPConnection:
                 f"Tool name should be passed in {env().config.AI_SYNTAX_FUNCTION_NAME_FIELD} field"
             )
         logging.info(f"Calling MCP tool {ui.green(name)} with {params}...")
-        content = await self._client.call_tool(
+        call_tool_result: mcp.types.CallToolResult = await self._client.call_tool(
             name=name,
             arguments=params,
             timeout=timeout,
             progress_handler=progress_handler
         )
-        if content and len(content) == 1 and content[0].type == "text":
-            return MCPAnswer(content[0].text, dict(response=content))
-        return content
+        if (
+            call_tool_result
+            and len(call_tool_result.content) == 1
+            and call_tool_result.content[0].type == "text"
+        ):
+            return MCPAnswer(call_tool_result.content[0].text, dict(response=call_tool_result))
+        return call_tool_result
 
 
 @dataclass

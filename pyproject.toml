@@ -26,8 +26,8 @@ dependencies = [
     "PyYAML~=6.0",
     "chardet~=5.2.0",
     "tiktoken>=0.7.0,<1.0",
-    "mcp~=1.9",
-    "fastmcp~=2.8",
+    "mcp~=1.10.1",
+    "fastmcp~=2.10.2",
     "docstring_parser~=0.16.0",
     "httpx~=0.28.1"
 ]
