@@ -89,11 +89,11 @@ class MCPConnection:
         auth: httpx.Auth = None,
     ) -> "MCPConnection":
         con: MCPConnection = MCPConnection(url=url, transport=transport)
-        con._client = Client(
+        con._client = Client(  # pylint: disable=W0212
             url,
             timeout=connect_timeout,
             auth=auth,
-        )  # pylint: disable=W0212
+        )
         await con._client.__aenter__()  # pylint: disable=E1101,W0212,C2801
         if fetch_tools:
             await con.fetch_tools(use_cache=use_cache)
@@ -160,15 +160,19 @@ class MCPConnection:
                 f"Tool name should be passed in {env().config.AI_SYNTAX_FUNCTION_NAME_FIELD} field"
             )
         logging.info(f"Calling MCP tool {ui.green(name)} with {params}...")
-        content = await self._client.call_tool(
+        call_tool_result: mcp.types.CallToolResult = await self._client.call_tool(
             name=name,
             arguments=params,
             timeout=timeout,
             progress_handler=progress_handler
         )
-        if content and len(content) == 1 and content[0].type == "text":
-            return MCPAnswer(content[0].text, dict(response=content))
-        return content
+        if (
+            call_tool_result
+            and len(call_tool_result.content) == 1
+            and call_tool_result.content[0].type == "text"
+        ):
+            return MCPAnswer(call_tool_result.content[0].text, dict(response=call_tool_result))
+        return call_tool_result
 
 
 @dataclass
