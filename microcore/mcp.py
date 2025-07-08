@@ -89,11 +89,11 @@ class MCPConnection:
         auth: httpx.Auth = None,
     ) -> "MCPConnection":
         con: MCPConnection = MCPConnection(url=url, transport=transport)
-        con._client = Client(
+        con._client = Client(  # pylint: disable=W0212
             url,
             timeout=connect_timeout,
             auth=auth,
-        )  # pylint: disable=W0212
+        )
         await con._client.__aenter__()  # pylint: disable=E1101,W0212,C2801
         if fetch_tools:
             await con.fetch_tools(use_cache=use_cache)
