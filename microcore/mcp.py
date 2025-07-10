@@ -35,7 +35,9 @@ class HeaderAuth(httpx.Auth):
             self.headers = header_name_or_dict
         else:
             if header_value is None:
-                raise ValueError("HeaderAuth: header_value must be provided when header_name is a string")
+                raise ValueError(
+                    "HeaderAuth: header_value must be provided when header_name is a string"
+                )
             self.headers = {str(header_name_or_dict): str(header_value)}
 
     def auth_flow(self, request):
