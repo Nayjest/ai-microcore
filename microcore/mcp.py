@@ -29,7 +29,8 @@ class HeaderAuth(httpx.Auth):
         if isinstance(header_name_or_dict, dict):
             if header_value is not None:
                 raise ValueError(
-                    "HeaderAuth: If a dictionary is provided in first argument, header_value should not be set."
+                    "HeaderAuth: If a dictionary is provided in first argument, "
+                    "header_value should not be set."
                 )
             self.headers = header_name_or_dict
         else:
@@ -37,9 +38,8 @@ class HeaderAuth(httpx.Auth):
                 str(header_name_or_dict): str(header_value)
             } if header_value is not None else dict()
 
-
     def auth_flow(self, request):
-        for k,v in self.headers.items():
+        for k, v in self.headers.items():
             request.headers[k] = v
         yield request
 
