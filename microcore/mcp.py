@@ -25,12 +25,22 @@ class WrongMcpUsage(BadAIAnswer):
 
 
 class HeaderAuth(httpx.Auth):
-    def __init__(self, header_name, header_value):
-        self.header_name = header_name
-        self.header_value = header_value
+    def __init__(self, header_name_or_dict: str | dict, header_value: str | None = None):
+        if isinstance(header_name_or_dict, dict):
+            if header_value is not None:
+                raise ValueError(
+                    "HeaderAuth: If a dictionary is provided in first argument, header_value should not be set."
+                )
+            self.headers = header_name_or_dict
+        else:
+            self.headers = {
+                str(header_name_or_dict): str(header_value)
+            } if header_value is not None else dict()
+
 
     def auth_flow(self, request):
-        request.headers[self.header_name] = self.header_value
+        for k,v in self.headers.items():
+            request.headers[k] = v
         yield request
 
 
@@ -293,12 +303,8 @@ class MCPServer:
             self.name = MCPServer.name_from_url(self.url)
         if not self.transport:
             self.transport = self._guess_transport_type_by_url(self.url)
-        if self.auth and isinstance(self.auth, dict) and len(self.auth) == 1:
-            header_name, header_value = next(iter(self.auth.items()))
-            self.auth = HeaderAuth(
-                header_name=header_name,
-                header_value=header_value
-            )
+        if self.auth and isinstance(self.auth, dict):
+            self.auth = HeaderAuth(self.auth)
 
     async def connect(
         self,
