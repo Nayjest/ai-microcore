@@ -23,7 +23,7 @@ jobs:
       id: gito-version
       run: pip index versions gito.bot 2>/dev/null | head -1 | sed -n 's/.* (\([^)]*\)).*/version=\1/p' >> $GITHUB_OUTPUT
 
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       id: cache
       with:
         path: |
@@ -33,20 +33,20 @@ jobs:
 
     - name: Install Gito
       if: steps.cache.outputs.cache-hit != 'true'
-      run: pip install gito.bot~=2.0
+      run: pip install gito.bot~=3.1
 
     - name: Run AI code review
       env:
         LLM_API_TYPE: anthropic
-        LLM_API_KEY: ${{ secrets.ANTHROPIC_API_KEY}}
-        MODEL: "claude-opus-4-20250514"
+        LLM_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        MODEL: claude-opus-4-20250514
         JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
         JIRA_URL: ${{ secrets.JIRA_URL }}
         JIRA_USER: ${{ secrets.JIRA_USER }}
         LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
         PR_NUMBER_FROM_WORKFLOW_DISPATCH: ${{ github.event.inputs.pr_number }}
       run: |
-        gito --verbose review
+        gito --verbose review ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref && format(' --against="origin/{0}"', github.event.pull_request.base.ref) || '' }}
         gito github-comment --token ${{ secrets.GITHUB_TOKEN }}
 
     - uses: actions/upload-artifact@v4

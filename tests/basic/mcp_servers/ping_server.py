@@ -9,8 +9,10 @@ args = parser.parse_args()
 
 mcp = FastMCP(debug=True, host='127.0.0.1', port=args.port)
 
+
 @mcp.tool()
 def ping(message: str): return " ".join(["pong", message])
+
 
 if __name__ == "__main__":
     mcp.run(args.transport)

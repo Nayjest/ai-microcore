@@ -86,7 +86,7 @@ def test_first_last_outer():
         == f"{b}1{b}"
     )
     assert (
-        extract_block(f"0{b}1{b}2{e}3{e}4", b, e, False, ExtractStrategy.FIRST) == f"1"
+        extract_block(f"0{b}1{b}2{e}3{e}4", b, e, False, ExtractStrategy.FIRST) == "1"
     )
 
     assert (
@@ -94,7 +94,7 @@ def test_first_last_outer():
         == f"{e}3{e}"
     )
     assert (
-        extract_block(f"0{b}1{b}2{e}3{e}4", b, e, False, ExtractStrategy.LAST) == f"3"
+        extract_block(f"0{b}1{b}2{e}3{e}4", b, e, False, ExtractStrategy.LAST) == "3"
     )
 
     assert (
