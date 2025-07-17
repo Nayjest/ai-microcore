@@ -360,7 +360,7 @@ class CantResolveCallable(ValueError):
     Raised when a callable cannot be resolved by name.
     """
     def __init__(self, message: str = None, name: str = None, e: Exception = None):
-        message = message or f"Can't resolve callable by name '{name}'{', '+str(e) if e else ''}"
+        message = message or f"Can't resolve callable by name '{name}'{', ' + str(e) if e else ''}"
         super().__init__(message)
         self.name = name
 
@@ -386,7 +386,7 @@ def resolve_callable(
         else:
             parts = fn.split(".")
             # Try resolve as *module.ClassName.static_method if 1st character is upper-cased
-            if len(parts) >= 3 and len(parts[-2]) and parts[-2][0].upper() == parts[-2][0].upper():
+            if len(parts) >= 3 and len(parts[-2]) and parts[-2][0].isupper():
                 module_name = ".".join(parts[:-2])
                 class_name = parts[-2]
                 try:
