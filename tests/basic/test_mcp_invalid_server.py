@@ -1,10 +1,10 @@
-import logging
 import microcore as mc
 import pytest
 
 servers_cfg = [
     {"name": "mcp1", "url": "http://localhost:8899"},
 ]
+
 
 @pytest.mark.asyncio
 async def test_bad_mcp():

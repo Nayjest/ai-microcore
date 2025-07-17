@@ -1,4 +1,3 @@
-import os
 import microcore as mc
 import pytest
 from microcore.mcp import ToolsCache

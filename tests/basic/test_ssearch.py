@@ -13,6 +13,7 @@ if USE_QDRANT:
         EMBEDDING_DB_FUNCTION=SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2"),
     )
 
+
 def test_save_load():
     texts.clear("test_collection")
     texts.save("test_collection", "test text", {"test": "test"})
@@ -207,13 +208,14 @@ def test_delete_non_existing():
 
 def test_bool_metadata():
     mc.texts.clear("test_bool_metadata")
-    mc.texts.save_many("test_bool_metadata",
+    mc.texts.save_many(
+        "test_bool_metadata",
         "Dog,cat,wolf,cow,fish,insect,spider,ant,bee,wasp,собака,кішка".split(","),
     )
-    mc.texts.save("test_bool_metadata","Perro", {"is_pet": True})
-    mc.texts.save("test_bool_metadata","песик", {"is_pet": "Yes"})
-    mc.texts.save("test_bool_metadata","вовк", {"is_pet": False})
-    res = mc.texts.find("test_bool_metadata","some dogs", n_results=6)
+    mc.texts.save("test_bool_metadata", "Perro", {"is_pet": True})
+    mc.texts.save("test_bool_metadata", "песик", {"is_pet": "Yes"})
+    mc.texts.save("test_bool_metadata", "вовк", {"is_pet": False})
+    res = mc.texts.find("test_bool_metadata", "some dogs", n_results=6)
     assert len(res) == 6
     assert "Dog" in res
     assert "wolf" in res
@@ -221,6 +223,7 @@ def test_bool_metadata():
     assert len(res) == 1
     assert "Perro" in res
     mc.texts.clear("test_bool_metadata")
+
 
 def test_or_filter():
     cid = "test_collection"

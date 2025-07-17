@@ -21,7 +21,6 @@ class TestHeaderAuth:
         with pytest.raises(ValueError, match="header_value should not be set"):
             HeaderAuth({"Authorization": "Bearer token"}, "extra_value")
 
-
     def test_init_with_empty_string_value(self):
         """Test initialization with empty string header value."""
         auth = HeaderAuth("X-Custom-Header", "")
