@@ -355,32 +355,57 @@ async def run_parallel(tasks: list, max_concurrent_tasks: int):
     return await asyncio.gather(*[worker(task) for task in tasks])
 
 
+class CantResolveCallable(ValueError):
+    """
+    Raised when a callable cannot be resolved by name.
+    """
+    def __init__(self, message: str = None, name: str = None, e: Exception = None):
+        message = message or f"Can't resolve callable by name '{name}'{', '+str(e) if e else ''}"
+        super().__init__(message)
+        self.name = name
+
+
 def resolve_callable(
     fn: Union[Callable, str, None], allow_empty=False
 ) -> Union[Callable, None]:
     """
-    Resolves a callable function from a string (module.function)
+    Resolves a callable function from a string.
+    Supported formats:
+      - module[.submodules].function
+      - module[.submodules].ClassName.static_method
     """
     if callable(fn):
         return fn
     if not fn:
         if allow_empty:
             return None
-        raise ValueError("Function is not specified")
+        raise CantResolveCallable("Can't resolve callable: function is not specified")
     try:
         if "." not in fn:
             fn = globals()[fn]
         else:
             parts = fn.split(".")
+            # Try resolve as *module.ClassName.static_method if 1st character is upper-cased
+            if len(parts) >= 3 and len(parts[-2]) and parts[-2][0].upper() == parts[-2][0].upper():
+                module_name = ".".join(parts[:-2])
+                class_name = parts[-2]
+                try:
+                    module = __import__(module_name, fromlist=[class_name])
+                    cls = getattr(module, class_name)
+                    fn = getattr(cls, parts[-1])
+                    assert callable(fn)
+                    return fn
+                except (ImportError, AttributeError, AssertionError, ValueError):
+                    pass
             module_name = ".".join(parts[:-1])
             func_name = parts[-1]
             if not module_name:
-                raise ValueError(f"Invalid module name: {module_name}")
+                raise CantResolveCallable(f"Invalid module name: {module_name}")
             module = __import__(module_name, fromlist=[func_name])
             fn = getattr(module, func_name)
         assert callable(fn)
     except (ImportError, AttributeError, AssertionError, ValueError) as e:
-        raise ValueError(f"Can't resolve callable by name '{fn}', {e}") from e
+        raise CantResolveCallable(name=fn, e=e) from e
     return fn
 
 
