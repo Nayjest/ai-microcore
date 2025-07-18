@@ -365,22 +365,9 @@ class CantResolveCallable(ValueError):
         super().__init__(message)
         self.name = name
 
+
 @lru_cache
-def resolve_callable(
-    fn: Union[Callable, str, None], allow_empty=False
-) -> Union[Callable, None]:
-    """
-    Resolves a callable function from a string.
-    Supported formats:
-      - module[.submodules].function
-      - module[.submodules].ClassName.static_method
-    """
-    if callable(fn):
-        return fn
-    if not fn:
-        if allow_empty:
-            return None
-        raise CantResolveCallable("Can't resolve callable: function is not specified")
+def _load_callable(fn: str) -> callable:
     try:
         if "." not in fn:
             fn = globals()[fn]
@@ -408,6 +395,24 @@ def resolve_callable(
     except (ImportError, AttributeError, AssertionError, ValueError) as e:
         raise CantResolveCallable(name=fn, e=e) from e
     return fn
+
+
+def resolve_callable(
+    fn: Union[Callable, str, None], allow_empty=False
+) -> Union[Callable, None]:
+    """
+    Resolves a callable function from a string.
+    Supported formats:
+      - module[.submodules].function
+      - module[.submodules].ClassName.static_method
+    """
+    if callable(fn):
+        return fn
+    if not fn:
+        if allow_empty:
+            return None
+        raise CantResolveCallable("Can't resolve callable: function is not specified")
+    return _load_callable(fn)
 
 
 def levenshtein(a: str, b: str) -> int:
