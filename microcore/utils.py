@@ -9,6 +9,7 @@ import re
 import subprocess
 from dataclasses import dataclass
 from fnmatch import fnmatch
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Union, Callable
 
@@ -364,7 +365,7 @@ class CantResolveCallable(ValueError):
         super().__init__(message)
         self.name = name
 
-
+@lru_cache
 def resolve_callable(
     fn: Union[Callable, str, None], allow_empty=False
 ) -> Union[Callable, None]:
