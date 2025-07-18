@@ -367,12 +367,12 @@ class CantResolveCallable(ValueError):
 
 
 @lru_cache
-def _load_callable(fn: str) -> callable:
+def _load_callable(fn_path: str) -> callable:
     try:
-        if "." not in fn:
-            fn = globals()[fn]
+        if "." not in fn_path:
+            fn = globals()[fn_path]
         else:
-            parts = fn.split(".")
+            parts = fn_path.split(".")
             # Try resolve as *module.ClassName.static_method if 1st character is upper-cased
             if len(parts) >= 3 and len(parts[-2]) and parts[-2][0].isupper():
                 module_name = ".".join(parts[:-2])
@@ -393,7 +393,7 @@ def _load_callable(fn: str) -> callable:
             fn = getattr(module, func_name)
         assert callable(fn)
     except (ImportError, AttributeError, AssertionError, ValueError) as e:
-        raise CantResolveCallable(name=fn, e=e) from e
+        raise CantResolveCallable(name=fn_path, e=e) from e
     return fn
 
 
