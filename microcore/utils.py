@@ -9,6 +9,7 @@ import re
 import subprocess
 from dataclasses import dataclass
 from fnmatch import fnmatch
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Union, Callable
 
@@ -365,26 +366,13 @@ class CantResolveCallable(ValueError):
         self.name = name
 
 
-def resolve_callable(
-    fn: Union[Callable, str, None], allow_empty=False
-) -> Union[Callable, None]:
-    """
-    Resolves a callable function from a string.
-    Supported formats:
-      - module[.submodules].function
-      - module[.submodules].ClassName.static_method
-    """
-    if callable(fn):
-        return fn
-    if not fn:
-        if allow_empty:
-            return None
-        raise CantResolveCallable("Can't resolve callable: function is not specified")
+@lru_cache
+def _load_callable(fn_path: str) -> callable:
     try:
-        if "." not in fn:
-            fn = globals()[fn]
+        if "." not in fn_path:
+            fn = globals()[fn_path]
         else:
-            parts = fn.split(".")
+            parts = fn_path.split(".")
             # Try resolve as *module.ClassName.static_method if 1st character is upper-cased
             if len(parts) >= 3 and len(parts[-2]) and parts[-2][0].isupper():
                 module_name = ".".join(parts[:-2])
@@ -405,8 +393,26 @@ def resolve_callable(
             fn = getattr(module, func_name)
         assert callable(fn)
     except (ImportError, AttributeError, AssertionError, ValueError) as e:
-        raise CantResolveCallable(name=fn, e=e) from e
+        raise CantResolveCallable(name=fn_path, e=e) from e
     return fn
+
+
+def resolve_callable(
+    fn: Union[Callable, str, None], allow_empty=False
+) -> Union[Callable, None]:
+    """
+    Resolves a callable function from a string.
+    Supported formats:
+      - module[.submodules].function
+      - module[.submodules].ClassName.static_method
+    """
+    if callable(fn):
+        return fn
+    if not fn:
+        if allow_empty:
+            return None
+        raise CantResolveCallable("Can't resolve callable: function is not specified")
+    return _load_callable(fn)
 
 
 def levenshtein(a: str, b: str) -> int:
