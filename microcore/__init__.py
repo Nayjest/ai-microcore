@@ -26,18 +26,31 @@ from .metrics import Metrics
 from .interactive_setup import interactive_setup
 
 
-def tpl(file: os.PathLike[str] | str, **kwargs) -> str | PromptWrapper:
+def tpl(
+    file: os.PathLike[str] | str,
+    sanitize_utf8=True,
+    **kwargs
+) -> str | PromptWrapper:
     """Renders a prompt template using the provided parameters."""
-    return PromptWrapper(env().tpl_function(file, **kwargs), kwargs)
+    rendered = env().tpl_function(file, **kwargs)
+    if sanitize_utf8:
+        rendered = rendered.encode('utf-8', errors='replace').decode('utf-8')
+    return PromptWrapper(rendered, kwargs)
 
 
-def prompt(template_str: str, remove_indent=True, **kwargs) -> str | PromptWrapper:
+def prompt(
+    template_str: str,
+    remove_indent=True,
+    sanitize_utf8=True,
+    **kwargs
+) -> str | PromptWrapper:
     """Renders a prompt template from string using the provided parameters."""
     if remove_indent:
         template_str = dedent(template_str)
-    return PromptWrapper(
-        env().jinja_env.from_string(template_str).render(**kwargs), kwargs
-    )
+    rendered = env().jinja_env.from_string(template_str).render(**kwargs)
+    if sanitize_utf8:
+        rendered = rendered.encode('utf-8', errors='replace').decode('utf-8')
+    return PromptWrapper(rendered, kwargs)
 
 
 fmt = prompt
@@ -186,4 +199,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "4.2.5"
+__version__ = "4.3.0"
