@@ -393,6 +393,8 @@ class Config(LLMConfig):
 
     EMBEDDING_DB_TYPE: str = from_env(EmbeddingDbType.CHROMA)
 
+    EMBEDDING_DB_TIMEOUT: int = from_env(default=10 * 60)
+
     EMBEDDING_DB_SIZE: int = from_env(default=0)
     """Used with Qdrant"""
 
