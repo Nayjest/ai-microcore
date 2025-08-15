@@ -45,7 +45,8 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
         )
         self.client = QdrantClient(
             host=self.config.EMBEDDING_DB_HOST,
-            port=self.config.EMBEDDING_DB_PORT or 6333
+            port=self.config.EMBEDDING_DB_PORT or 6333,
+            timeout=self.config.EMBEDDING_DB_TIMEOUT,
         )
         self.embedding_function = prepare_embedding_function(self.config.EMBEDDING_DB_FUNCTION)
 
