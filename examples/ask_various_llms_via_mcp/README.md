@@ -1,7 +1,7 @@
 # Querying various LLMs via MCP
 
 This example shows how to create a simple MCP server
-that allows you to ask different LLMs (OpenAI, Google Gemini, Anthropic Claude)
+that allows you to query different LLMs (OpenAI, Google Gemini, Anthropic Claude)
 via a single MCP interface.
 
 
