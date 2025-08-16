@@ -1,7 +1,7 @@
 import os, pathlib, fastmcp, dotenv, microcore as mc
 
 dotenv.load_dotenv(pathlib.Path(__file__).parent / '.env', override=True)
-configs = {
+configs = {  # See https://github.com/Nayjest/ai-microcore?tab=readme-ov-file#%EF%B8%8F-configuring
     "gpt5": {
         "model": "gpt-5",
         "api_type": mc.ApiType.OPEN_AI,
