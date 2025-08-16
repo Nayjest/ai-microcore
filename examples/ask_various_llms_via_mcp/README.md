@@ -75,5 +75,28 @@ For Claude Desktop use following config: [claude_desktop_config.json](claude_des
 
 Alternatively you can query MCP server from python code using ai-microcore, see [query_mcp.py](query_mcp.py)
 
+```python
+import asyncio
+import microcore as mc
+
+async def main():
+    mc.configure(LLM_API_TYPE=mc.ApiType.NONE, MCP_SERVERS=['http://localhost:8001'])
+    mcp = await mc.mcp.server('localhost:8001').connect()
+    models = (await mcp.call('models')).parse_json()
+    print('Models:', models)
+    for model in models:
+        response = await mcp.call(
+            'ask',
+            query="""
+            What is your favorite video game character name?
+            Just give me the name, no explanation or details.""",
+            model=model
+        )
+        print(f"Response from {model}: {response}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
 ## Special thanks
-Thanks to AI Talks VLC community for the idea.
+Thanks to `AI Talks VLC` community for the idea.
