@@ -13,7 +13,8 @@ async def main():
             query="""
             What is your favorite video game character name?
             Just give me the name, no explanation or details.""",
-            model=model
+            model=model,
+            timeout=300,
         )
         print(f"Response from {model}: {response}")
 
