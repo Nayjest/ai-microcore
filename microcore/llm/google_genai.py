@@ -47,7 +47,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
     def _prepare_chat(prompt, **kwargs):
         model_name = kwargs.pop("model", config.MODEL)
         callbacks = prepare_callbacks(config, kwargs, set_stream=False)
-        kwargs.pop("stream")
+        kwargs.pop("stream", None)
         model = genai.GenerativeModel(
             model_name,
             generation_config=GenerationConfig(**kwargs),
