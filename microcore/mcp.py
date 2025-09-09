@@ -18,6 +18,7 @@ from .types import BadAIAnswer, BadAIJsonAnswer
 from .wrappers.llm_response_wrapper import LLMResponse
 from ._env import env
 from .file_storage import storage
+from .json_parsing import parse_json
 
 
 class WrongMcpUsage(BadAIAnswer):
@@ -157,19 +158,29 @@ class MCPConnection:
         timeout: datetime.timedelta | float | int | None = None,
         progress_handler: ProgressHandler | None = None,
     ):
+        tool_field = env().config.AI_SYNTAX_FUNCTION_NAME_FIELD
         if isinstance(params, LLMResponse):
             try:
                 params = params.parse_json(
                     raise_errors=True,
-                    required_fields=[env().config.AI_SYNTAX_FUNCTION_NAME_FIELD],
+                    required_fields=[tool_field],
+                )
+            except BadAIJsonAnswer as e:
+                raise WrongMcpUsage(str(e)) from e
+        elif isinstance(params, str):
+            try:
+                params = parse_json(
+                    params,
+                    raise_errors=True,
+                    required_fields=[tool_field]
                 )
             except BadAIJsonAnswer as e:
                 raise WrongMcpUsage(str(e)) from e
         params = dict(params)
-        name = params.pop(env().config.AI_SYNTAX_FUNCTION_NAME_FIELD)
-        if not name:
+        if not (name := params.pop(tool_field, "")):
             raise WrongMcpUsage(
-                f"Tool name should be passed in {env().config.AI_SYNTAX_FUNCTION_NAME_FIELD} field"
+                f"Wrong MCP tool usage:\n"
+                f"Tool name should be passed in '{tool_field}' field."
             )
         logging.info(f"Calling MCP tool {ui.green(name)} with {params}...")
         call_tool_result: mcp.types.CallToolResult = await self._client.call_tool(
@@ -185,6 +196,9 @@ class MCPConnection:
         ):
             return MCPAnswer(call_tool_result.content[0].text, dict(response=call_tool_result))
         return call_tool_result
+
+    # alias
+    execute = exec
 
 
 @dataclass
