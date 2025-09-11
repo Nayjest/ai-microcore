@@ -11,12 +11,19 @@ import os
 from . import mcp
 from . import ui
 from . import tokenizing
+from . import presets
 from .embedding_db import SearchResult, AbstractEmbeddingDB, SearchResults
 from .file_storage import storage
-from ._env import configure, env, config
+from ._env import configure, env, config, min_setup
 from .logging import use_logging
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg, PartialMsg
-from .configuration import ApiType, LLMConfigError, Config, EmbeddingDbType
+from .configuration import (
+    ApiType,
+    LLMConfigError,
+    Config,
+    EmbeddingDbType,
+    PRINT_STREAM,
+)
 from .types import BadAIJsonAnswer, BadAIAnswer
 from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
@@ -160,6 +167,7 @@ __all__ = [
     "fmt",
     "texts",
     "configure",
+    "min_setup",
     "validate_config",
     "storage",
     "use_model",
@@ -174,6 +182,8 @@ __all__ = [
     "ApiType",
     "EmbeddingDbType",
     "BadAIJsonAnswer",
+    "PRINT_STREAM",
+    "presets",
     "BadAIAnswer",
     "LLMConfigError",
     "LLMResponse",
@@ -199,4 +209,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "4.3.4"
+__version__ = "4.4.0"

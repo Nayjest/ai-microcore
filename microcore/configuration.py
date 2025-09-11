@@ -14,6 +14,11 @@ _MISSING = object()
 TRUE_VALUES = ["1", "TRUE", "YES", "ON", "ENABLED", "Y", "+"]
 """@private"""
 
+PRINT_STREAM = "print_stream"
+"""Logging method ID, value for 'config.use_logging'"""
+
+DEFAULT_LOCAL_ENV_FILE = ".env"
+
 
 def from_env(default=None, dtype=None):
     """
@@ -426,17 +431,18 @@ class Config(LLMConfig):
     """Whether to run interactive setup if configuration is not valid."""
 
     def __post_init__(self):
+        # Enforce using .env files if interactive_setup is enabled
+        if self.INTERACTIVE_SETUP and not self.DOT_ENV_FILE:
+            self.DOT_ENV_FILE = DEFAULT_LOCAL_ENV_FILE
         try:
             super().__post_init__()
         except LLMConfigError as e:
-            if (
-                self.INTERACTIVE_SETUP
-                and self.DOT_ENV_FILE
-                and not os.path.exists(self.DOT_ENV_FILE)
-            ):
+            if self.INTERACTIVE_SETUP and not os.path.exists(self.DOT_ENV_FILE):
                 from .interactive_setup import interactive_setup
+                orig_logging = self.USE_LOGGING  # avoid rewr. logging settings
                 config = interactive_setup(self.DOT_ENV_FILE)
                 self.__dict__.update(config.__dict__)
+                self.USE_LOGGING = orig_logging
             else:
                 raise e
         if self.TEXT_TO_SPEECH_PATH is None:
