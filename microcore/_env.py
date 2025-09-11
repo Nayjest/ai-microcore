@@ -6,7 +6,14 @@ from typing import TYPE_CHECKING
 import jinja2
 
 from .embedding_db import AbstractEmbeddingDB
-from .configuration import Config, ApiType, LLMConfigError, EmbeddingDbType
+from .configuration import (
+    Config,
+    ApiType,
+    LLMConfigError,
+    EmbeddingDbType,
+    PRINT_STREAM,
+)
+from .presets import MIN_SETUP
 from .types import TplFunctionType, LLMAsyncFunctionType, LLMFunctionType
 from .templating.jinja2 import make_jinja2_env, make_tpl_function
 from .llm.openai_llm import make_llm_functions as make_openai_llm_functions
@@ -44,7 +51,7 @@ class Env:
         if self.config.USE_LOGGING:
             from .logging import use_logging
 
-            use_logging()
+            use_logging(stream=self.config.USE_LOGGING == PRINT_STREAM)
         self.init_similarity_search()
 
     def make_stopping_criteria(self, seq: str | list[str]) -> list[callable]:
@@ -204,6 +211,15 @@ if True:  # pylint: disable=W0125
         return _Configure(**(cfg and asdict(cfg) or kwargs))
 
     configure = _config_builder_wrapper
+
+
+def min_setup():
+    """
+    Minimal handy setup for non-production usage
+    (simple scripts, small experiments, etc.)
+    """
+    return configure(MIN_SETUP)
+
 
 _env: Env | None = None
 
