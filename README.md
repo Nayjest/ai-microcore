@@ -266,6 +266,9 @@ Determine the number of petals and the color of the flower from a photo (gpt-4-t
 
 #### [Banchmark LLMs on math problems](https://www.kaggle.com/code/nayjest/gigabenchmark-llm-accuracy-math-problems) (Kaggle Notebook)
 Benchmark accuracy of 20+ state of the art models on solving olympiad math problems. Inferencing local language models via HuggingFace Transformers, parallel inference.
+
+#### [Generate meme image](https://github.com/Nayjest/ai-microcore/blob/main/examples/generate_meme_image.py)
+Simple example demonstrating image generation using [OpenAI GPT Image](https://platform.openai.com/docs/guides/image-generation?image-generation-model=gpt-image-1) model.
  
 #### [Other examples](https://github.com/llm-microcore/microcore/tree/main/examples)
 
