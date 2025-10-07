@@ -30,6 +30,11 @@ def is_chat_model(model: str, config: Config = None) -> bool:
     return not any(keyword in str(model).lower() for keyword in completion_keywords)
 
 
+def is_image_model(model: str) -> bool:
+    model = str(model)
+    return model.startswith("dall-e-") or model.startswith("gpt-image-")
+
+
 class ConvertableToMessage:
     @property
     def as_user(self) -> UserMsg:

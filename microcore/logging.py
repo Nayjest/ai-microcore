@@ -1,10 +1,11 @@
 import dataclasses
+
 from colorama import Fore, init
 
 from .configuration import ApiType
+from .utils import is_chat_model, is_notebook
 from ._env import env, config
 from ._prepare_llm_args import prepare_chat_messages, prepare_prompt
-from .utils import is_chat_model, is_notebook
 
 
 def _format_request_log_str(prompt, **kwargs) -> str:
@@ -97,11 +98,56 @@ def _log_response(out):
     LoggingConfig.OUTPUT_METHOD(_format_response_log_str(out))
 
 
-def use_logging():
+_is_new_request = False
+
+
+def _stream_log_request(prompt, **kwargs):
+    global _is_new_request
+    _is_new_request = True
+    _log_request(prompt, **kwargs)
+
+
+def _stream_log_response(out):
+    global _is_new_request
+    if _is_new_request:
+        LoggingConfig.OUTPUT_METHOD(_format_response_log_str(out))
+        _is_new_request = False
+    else:
+        out = f"{LoggingConfig.RESPONSE_COLOR}{out}{LoggingConfig.COLOR_RESET}"
+        if not LoggingConfig.DENSE and LoggingConfig.INDENT:
+            out = out.replace("\n", "\n" + LoggingConfig.INDENT)
+        LoggingConfig.OUTPUT_METHOD(out)
+
+
+def _print_no_nln(s):
+    print(s, end='', flush=True)
+
+
+def use_logging(stream: bool = False):
     """Turns on logging of LLM requests and responses to console."""
     if not is_notebook():
         init(strip=False)
-    if _log_request not in env().llm_before_handlers:
-        env().llm_before_handlers.append(_log_request)
-    if _log_response not in env().llm_after_handlers:
-        env().llm_after_handlers.append(_log_response)
+    if stream:
+        LoggingConfig.OUTPUT_METHOD = _print_no_nln
+        # Remove non-streamable handlers if any
+        if _log_request in env().llm_before_handlers:
+            env().llm_before_handlers.remove(_log_request)
+        if _log_response in env().llm_after_handlers:
+            env().llm_after_handlers.remove(_log_response)
+        # Add streamable handlers if not already present
+        if _stream_log_request not in env().llm_before_handlers:
+            env().llm_before_handlers.append(_stream_log_request)
+        if _stream_log_response not in config().CALLBACKS:
+            env().config.CALLBACKS.append(_stream_log_response)
+    else:
+        if _log_request not in env().llm_before_handlers:
+            env().llm_before_handlers.append(_log_request)
+        if _log_response not in env().llm_after_handlers:
+            env().llm_after_handlers.append(_log_response)
+        # Cleanup prev. streamable setup if any
+        if LoggingConfig.OUTPUT_METHOD is _print_no_nln:
+            LoggingConfig.OUTPUT_METHOD = print
+        if _stream_log_request in env().llm_before_handlers:
+            env().llm_before_handlers.remove(_stream_log_request)
+        if _stream_log_response in config().CALLBACKS:
+            config().CALLBACKS.remove(_stream_log_response)

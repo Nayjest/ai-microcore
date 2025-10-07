@@ -13,7 +13,7 @@ def interactive_setup(
     extras: dict | list = None,
 ) -> Config | None:
     """
-    Interactive setup for LLM API configuration.
+    Start interactive CLI setup for LLM API configuration.
     Prompts user for configuration details such as API type, key, model name,
     and base URL. Tests the LLM API with a sample query and saves the configuration
     to a specified file if the user chooses to do so.
@@ -54,16 +54,13 @@ def interactive_setup(
             if field not in raw_config:
                 raw_config[field] = ask_non_empty(f"{title}: ").strip()
     try:
-        config = configure(
-            **{
-                **dict(
-                    USE_DOT_ENV=False,
-                    EMBEDDING_DB_TYPE=EmbeddingDbType.NONE,
-                    USE_LOGGING=True,
-                ),
-                **raw_config
-            }
+        config_dict = dict(
+            USE_DOT_ENV=False,
+            EMBEDDING_DB_TYPE=EmbeddingDbType.NONE,
+            USE_LOGGING=True,
         )
+        config_dict.update(raw_config)
+        config = configure(config_dict)
         print("Testing LLM...")
         q = "What is capital of France?\n(!) IMPORTANT: Answer only with one word"
         assert "pari" in llm(q).lower()
@@ -75,7 +72,7 @@ def interactive_setup(
 
     config_body = ''.join(f"{k}={v}\n" for k, v in raw_config.items())
     print(f"Configuration:\n{yellow(config_body)}")
-    if ask_yn("Save configuration to file?"):
+    if ask_yn(f"Save configuration to file {file_link(file_path)}?"):
         dir_path = os.path.dirname(file_path)
         if dir_path:
             os.makedirs(dir_path, exist_ok=True)

@@ -4,6 +4,7 @@ File storage functions
 
 import fnmatch
 import json
+import logging
 import os
 from dataclasses import dataclass, field
 import shutil
@@ -125,7 +126,7 @@ class Storage:
     def write(
         self,
         name: str | Path,
-        content: str = _missing,
+        content: str | bytes = _missing,
         rewrite_existing: bool = None,
         backup_existing: bool = None,
         encoding: str = None,
@@ -134,6 +135,12 @@ class Storage:
         """
         :return: str File name for further usage
         """
+        if isinstance(content, bytes):
+            if encoding is not None:
+                logging.warning("Encoding is ignored when writing bytes content")
+            if append:
+                raise ValueError("Cannot append bytes content")
+
         if rewrite_existing is None:
             rewrite_existing = True
         if backup_existing is None:
@@ -165,7 +172,11 @@ class Storage:
             with (self.path / file_name).open(mode="a", encoding=encoding) as file:
                 file.write(content)
         else:
-            (self.path / file_name).write_text(content, encoding=encoding)
+            if isinstance(content, bytes):
+                with (self.path / file_name).open(mode="wb") as file:
+                    file.write(content)
+            else:
+                (self.path / file_name).write_text(content, encoding=encoding)
         return file_name
 
     def clean(self, path: str | Path):
