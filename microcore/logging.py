@@ -145,7 +145,7 @@ def use_logging(stream: bool = False):
         if _log_response not in env().llm_after_handlers:
             env().llm_after_handlers.append(_log_response)
         # Cleanup prev. streamable setup if any
-        if LoggingConfig.OUTPUT_METHOD == _print_no_nln:
+        if LoggingConfig.OUTPUT_METHOD is _print_no_nln:
             LoggingConfig.OUTPUT_METHOD = print
         if _stream_log_request in env().llm_before_handlers:
             env().llm_before_handlers.remove(_stream_log_request)

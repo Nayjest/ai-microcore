@@ -187,7 +187,10 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
                     actual_fn = storage.abs_path(actual_fn)
                     logging.info(f"Image saved to {file_link(actual_fn)}")
                     response_attrs["files"].append(actual_fn)
-                response_attrs["file"] = response_attrs["files"][0] if response_attrs["files"] else None
+                response_attrs["file"] = (
+                    response_attrs["files"][0] if response_attrs["files"]
+                    else None
+                )
                 if len(response_attrs["files"]) == 1:
                     img_repr = file_link(response_attrs['file'])
                 elif len(response_attrs["files"]) > 1:
