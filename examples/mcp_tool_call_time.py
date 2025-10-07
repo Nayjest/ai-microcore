@@ -4,6 +4,7 @@ import microcore as mc
 
 mc.configure(MCP_SERVERS=['https://time.mcp.inevitable.fyi/mcp'], VALIDATE_CONFIG=False)
 
+
 async def main():
     mcp = await mc.mcp_server("time.mcp.inevitable.fyi").connect()
     print(mc.ui.magenta("Tools:\n"), mcp.tools)

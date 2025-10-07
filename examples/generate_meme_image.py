@@ -1,4 +1,7 @@
-"""Usage: uv run https://raw.githubusercontent.com/Nayjest/ai-microcore/refs/heads/main/examples/generate_meme_image.py"""
+"""
+Usage:
+uv run https://raw.githubusercontent.com/Nayjest/ai-microcore/refs/heads/main/examples/generate_meme_image.py
+"""
 # /// script
 # dependencies = ["ai-microcore>=4.4.0"]
 # ///

@@ -40,6 +40,7 @@ mcp = fastmcp.FastMCP("Ask LLMs via MCP")
 @mcp.tool()
 def models() -> list[str]: return list(configs.keys())
 
+
 @mcp.tool()
 def ask(query: str, model: str) -> str:
     mc.configure(configs[model])

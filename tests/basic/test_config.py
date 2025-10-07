@@ -61,6 +61,7 @@ def test_dataclass_fields_prefixing(monkeypatch):
         == 77
     )
 
+
 def test_empty_preset(monkeypatch):
     mc.configure(mc.presets.EMPTY)
     assert mc.config().LLM_API_TYPE == mc.ApiType.NONE
