@@ -5,10 +5,14 @@ from typing import Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
-import httpx
-import requests
+# Temporary mitigate dotenv warnings
+# because of issue in FastMCP: https://github.com/jlowin/fastmcp/issues/2018
+import microcore.logging_patch  # noqa: F401
+
 from fastmcp import Client
 from fastmcp.client.progress import ProgressHandler
+import httpx
+import requests
 import mcp.types
 
 from .utils import ExtendedString, ConvertableToMessage

@@ -3,6 +3,7 @@ import asyncio
 from microcore import allm, mcp, configure, ui
 configure(DOT_ENV_FILE="~/.ai-microcore.env", INTERACTIVE_SETUP=True)
 
+
 async def main():
     question = "How many stars nayjest/ai-microcore has on GitHub?"
     # This is public MCP capable of fetching web-pages
