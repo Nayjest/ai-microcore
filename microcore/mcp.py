@@ -1,16 +1,10 @@
 import asyncio
 import logging
 import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from dataclasses import dataclass, field
 from enum import Enum
 
-# Temporary mitigate dotenv warnings
-# because of issue in FastMCP: https://github.com/jlowin/fastmcp/issues/2018
-import microcore.logging_patch  # noqa: F401
-
-from fastmcp import Client
-from fastmcp.client.progress import ProgressHandler
 import httpx
 import requests
 import mcp.types
@@ -23,6 +17,13 @@ from .wrappers.llm_response_wrapper import LLMResponse
 from ._env import env
 from .file_storage import storage
 from .json_parsing import parse_json
+
+# Temporary mitigate dotenv warnings
+# because of issue in FastMCP: https://github.com/jlowin/fastmcp/issues/2018
+logging.getLogger("dotenv.main").setLevel(logging.CRITICAL)
+if TYPE_CHECKING:
+    from fastmcp.client import Client
+    from fastmcp.client.progress import ProgressHandler
 
 
 class WrongMcpUsage(BadAIAnswer):
@@ -94,7 +95,7 @@ class MCPConnection:
     url: str = None
     transport: McpTransport = field(default=McpTransport.STREAMABLE_HTTP)
     tools: Optional["Tools"] = field(default=None, init=False)
-    _client: Client | None = field(default=None, init=False)
+    _client: Optional["Client"] = field(default=None, init=False)
 
     @staticmethod
     async def init(
@@ -105,6 +106,9 @@ class MCPConnection:
         connect_timeout: float = 10,
         auth: httpx.Auth = None,
     ) -> "MCPConnection":
+        # Temporary mitigate FastMCP errors in some environments
+        # https://github.com/jlowin/fastmcp/issues/2018
+        from fastmcp.client import Client
         con: MCPConnection = MCPConnection(url=url, transport=transport)
         con._client = Client(  # pylint: disable=W0212
             url,
@@ -148,7 +152,7 @@ class MCPConnection:
         self,
         name: str,
         timeout: datetime.timedelta | float | int | None = None,
-        progress_handler: ProgressHandler | None = None,
+        progress_handler: Optional["ProgressHandler"] = None,
         **kwargs
     ):
         assert env().config.AI_SYNTAX_FUNCTION_NAME_FIELD not in kwargs
@@ -160,7 +164,7 @@ class MCPConnection:
         self,
         params: dict | LLMResponse,
         timeout: datetime.timedelta | float | int | None = None,
-        progress_handler: ProgressHandler | None = None,
+        progress_handler: Optional["ProgressHandler"] = None,
     ):
         tool_field = env().config.AI_SYNTAX_FUNCTION_NAME_FIELD
         if isinstance(params, LLMResponse):
