@@ -60,3 +60,8 @@ def test_dataclass_fields_prefixing(monkeypatch):
         ).LLM_DEFAULT_ARGS["max_new_tokens"]
         == 77
     )
+
+def test_empty_preset(monkeypatch):
+    mc.configure(mc.presets.EMPTY)
+    assert mc.config().LLM_API_TYPE == mc.ApiType.NONE
+    assert mc.config().EMBEDDING_DB_TYPE == mc.EmbeddingDbType.NONE
