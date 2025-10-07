@@ -1,13 +1,15 @@
 import asyncio
+import base64
+import logging
+
 import openai
 
 from ..configuration import Config, ApiType
 from .._prepare_llm_args import prepare_chat_messages, prepare_prompt
 from ..types import LLMAsyncFunctionType, LLMFunctionType, BadAIAnswer
 from ..wrappers.llm_response_wrapper import LLMResponse
-from ..utils import is_chat_model
+from ..utils import file_link, is_chat_model, is_image_model
 from .shared import make_remove_hidden_output, prepare_callbacks
-
 OPENAI_V1_API = True
 
 
@@ -164,6 +166,35 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
 
     def llm(prompt, **kwargs):
         args, options = _prepare_llm_arguments(config, kwargs)
+        if is_image_model(args["model"]):
+            save: bool = args.pop("save", True)
+            args.pop("stream", None)
+            if args["model"] in ["dall-e-2", "dall-e-3"] and "response_format" not in args:
+                args["response_format"] = "b64_json"
+            if save and args.get("response_format", "b64_json") != "b64_json":
+                raise ValueError("Can only save images with response_format='b64_json'")
+            response = _connection.images.generate(prompt=prompt, **args)
+            check_for_errors(response)
+            response_attrs = response.__dict__.copy()
+            img_repr = "<image>"
+            if save:
+                from ..file_storage import storage
+                file_name = save if isinstance(save, str) else "generated_images/image.png"
+                response_attrs["files"] = []
+                for i, img in enumerate(response.data):
+                    image_bytes = base64.b64decode(img.b64_json)
+                    actual_fn = storage.write(file_name, image_bytes, rewrite_existing=False)
+                    actual_fn = storage.abs_path(actual_fn)
+                    logging.info(f"Image saved to {file_link(actual_fn)}")
+                    response_attrs["files"].append(actual_fn)
+                response_attrs["file"] = response_attrs["files"][0] if response_attrs["files"] else None
+                if len(response_attrs["files"]) == 1:
+                    img_repr = file_link(response_attrs['file'])
+                elif len(response_attrs["files"]) > 1:
+                    img_repr = "\n".join(response_attrs["files"])
+            for cb in options["callbacks"]:
+                cb(img_repr)
+            return LLMResponse(img_repr, response_attrs)
         if is_chat_model(args["model"], config):
             response = _connection.chat.completions.create(
                 messages=prepare_chat_messages(prompt), **args
