@@ -38,7 +38,7 @@ def _resolve_tiktoken_encoding(
         return tiktoken.get_encoding(encoding)
     except (ValueError, requests.exceptions.ConnectionError) as e:
         raise CantLoadTikTokenEncoding(
-            f"Can't load tiktok encoding '{encoding}'"
+            f"Can't load tiktoken encoding '{encoding}'"
         ) from e
 
 

@@ -84,6 +84,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
 def _chat_messages_to_google(messages: list[dict]):
     # Convert roles to Google Vertex roles
     # (system,user,assistant) -> (user, model)
+    messages = [msg.copy() for msg in messages]
     for msg in messages:
         if msg["role"] == Role.SYSTEM:
             msg["role"] = "user"

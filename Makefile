@@ -13,6 +13,9 @@ up:
 build:
 	docker-compose up -d --build
 
+force-rebuild:
+	docker-compose build --no-cache
+
 init:
 	make build && make sh
 sh:

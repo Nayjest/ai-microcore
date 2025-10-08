@@ -104,7 +104,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             prepare_chat_messages(prompt)
         )
         response = await async_client.messages.create(**args)
-        if args["stream"]:
+        if args.get("stream"):
             return await _a_process_streamed_response(response, options["callbacks"])
 
         for cb in options["callbacks"]:
@@ -120,7 +120,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             prepare_chat_messages(prompt)
         )
         response = sync_client.messages.create(**args)
-        if args["stream"]:
+        if args.get("stream"):
             return _process_streamed_response(response, options["callbacks"])
 
         for cb in options["callbacks"]:

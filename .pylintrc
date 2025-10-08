@@ -98,7 +98,7 @@ persistent=yes
 py-version=3.11
 
 # Discover python modules and packages in the file system subtree.
-recursive=no
+recursive=yes
 
 # Add paths to the list of the source roots. Supports globbing patterns. The
 # source root is an absolute path or a path relative to the current working
