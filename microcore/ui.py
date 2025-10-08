@@ -22,6 +22,11 @@ def warning(*args, **kwargs):
 
 
 def ask_yn(msg: str, default: bool | None = None) -> bool:
+    """
+    Ask user a yes/no question via input() and return their answer as a boolean.
+    If default is None, force user to answer y/n with retries.
+    If default is True/False, use it on incorrect input or Ctrl-C.
+    """
     try:
         input_val = input(msg + " (y/n) ").lower().strip()
         if any(i in input_val for i in ["y", "si", "так", "да", "1", "+"]):
@@ -29,12 +34,13 @@ def ask_yn(msg: str, default: bool | None = None) -> bool:
         if any(i in input_val for i in ["n", "0", "-", "н"]):
             return False
         if default is not None:
-            return default
+            warning("Incorrect input, using default:", "Yes" if default else "No")
+            return bool(default)
         warning("Please answer with y/n")
         return ask_yn(msg, default)
     except KeyboardInterrupt:
         warning("Interrupted, using default:", "Yes" if default else "No")
-        return default
+        return bool(default)
 
 
 def ask_choose(msg: str, variants: list):

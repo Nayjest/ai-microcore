@@ -4,7 +4,7 @@ from .._llm_functions import allm, llm
 from ..utils import ExtendedString, ConvertableToMessage
 
 if TYPE_CHECKING:
-    from .wrappers.llm_response_wrapper import LLMResponse  # noqa: F401
+    from .llm_response_wrapper import LLMResponse  # noqa: F401
 
 
 class PromptWrapper(ExtendedString, ConvertableToMessage):
