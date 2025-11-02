@@ -1,3 +1,4 @@
+import logging
 import asyncio
 import anthropic
 from anthropic.types import ContentBlockDeltaEvent
@@ -46,7 +47,15 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
             args["max_tokens"] = 16384
         else:
             args["max_tokens"] = 4096
-    args.pop("seed", None)  # Not supported by Anthropic
+    # Remove arguments not supported by Anthropic
+    args.pop("seed", None)
+    args.pop("n", None)
+    if "temperature" in args and "top_p" in args:
+        del args["top_p"]
+        logging.warning(
+            "`temperature` and `top_p` cannot both be specified for this model. "
+            "`top_p` parameter will be ignored. "
+        )
     callbacks = prepare_callbacks(config, args)
     return args, {"callbacks": callbacks}
 
