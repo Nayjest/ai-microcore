@@ -423,7 +423,7 @@ class Config(LLMConfig):
 
     AI_SYNTAX_FUNCTION_NAME_FIELD: str = from_env(default="call")
 
-    DEFAULT_AI_FUNCTION_SYNTAX: str = from_env("json")
+    DEFAULT_AI_FUNCTION_SYNTAX: str = from_env(default="json")
 
     JINJA2_GLOBALS: dict = from_env(dtype=dict)
 

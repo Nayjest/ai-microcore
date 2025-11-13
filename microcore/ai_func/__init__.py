@@ -200,7 +200,7 @@ ai_response_tool_params_extractors = {
 }
 
 
-def extract_tool_params(llm_response: LLMResponse | str) -> tuple[str, dict] | None:
+def extract_tool_params(llm_response: LLMResponse | str) -> tuple[str, list, dict] | None:
     syntax = env().config.DEFAULT_AI_FUNCTION_SYNTAX
     if syntax not in ai_response_tool_params_extractors:
         raise ValueError(f"No tool call extractor defined for syntax '{syntax}'")
