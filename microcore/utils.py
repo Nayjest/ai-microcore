@@ -508,3 +508,38 @@ def most_similar(
             most_similar_word = word
 
     return most_similar_word, min_dist
+
+
+# XML tag extraction
+
+_TAG_PATTERN = re.compile(r'<(\w+)(.*?)>(.*?)</\1>', re.DOTALL)
+_TAG_ATTRIBUTE_PATTERN = re.compile(
+    r'(\w+)\s?=\s?["\']([^"\']*)["\']|(\w+)\s?=\s?([^\s\'\"\>]+)'
+)
+TExtractedTag = tuple[str, dict[str, str], str]
+
+
+def extract_tags(
+    text: str,
+    strip: bool = False
+) -> list[TExtractedTag]:
+    """
+    Extract all XML tags with attributes and content.
+    Returns:
+         list of tuples: (tag_name, attributes_dict, content)
+    """
+    tags = re.findall(_TAG_PATTERN, text)
+    return [
+        (name, _parse_tag_attributes(attrs_str), content.strip() if strip else content)
+        for name, attrs_str, content in tags
+    ]
+
+
+def _parse_tag_attributes(attrs_str: str) -> dict[str, str]:
+    attr_dict = {}
+    for match in re.finditer(_TAG_ATTRIBUTE_PATTERN, attrs_str):
+        if match.group(1):  # Quoted attribute
+            attr_dict[match.group(1)] = match.group(2)
+        else:  # Unquoted attribute
+            attr_dict[match.group(3)] = match.group(4)
+    return attr_dict
