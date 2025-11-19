@@ -72,7 +72,7 @@ def func_metadata(func, name=None) -> Dict[str, Any]:
             metadata["args"][key]["type"] = param_type
 
     arg_comments = func_arg_comments(func)
-    for key, val in metadata["args"].items():
+    for key, val in metadata.get("args", {}).items():
         val["comment"] = arg_comments[key]
 
     # Parse docstring
@@ -80,7 +80,7 @@ def func_metadata(func, name=None) -> Dict[str, Any]:
 
     # Add descriptions from parsed docstring to parameters
     for param in parsed_docstring.params:
-        if param.arg_name in metadata["args"]:
+        if param.arg_name in metadata.get("args", []):
             metadata["args"][param.arg_name]["docstr"] = param.description
 
     return metadata
