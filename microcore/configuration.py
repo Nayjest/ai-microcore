@@ -283,13 +283,11 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
         if self.LLM_API_TYPE == ApiType.FUNCTION:
             if not self.INFERENCE_FUNC:
                 raise LLMConfigError(
-                    "LLM configuration error: "
                     "INFERENCE_FUNC should be provided for local models"
                 )
         elif self.LLM_API_TYPE == ApiType.TRANSFORMERS:
             if not self.MODEL:
                 raise LLMConfigError(
-                    "LLM configuration error: "
                     "MODEL should be provided for local transformers models"
                 )
 
@@ -307,7 +305,7 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
             return
         if self.INFERENCE_FUNC:
             raise LLMConfigError(
-                "LLM configuration error: INFERENCE_FUNC should be provided only for local models"
+                "INFERENCE_FUNC should be provided only for local models"
             )
         if self.LLM_API_TYPE == ApiType.GOOGLE_VERTEX_AI:
             if (
@@ -315,27 +313,23 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
                 and not self.GOOGLE_VERTEX_GCLOUD_AUTH
             ):
                 raise LLMConfigError(
-                    "LLM configuration error: "
                     "GOOGLE_VERTEX_ACCESS_TOKEN should be provided "
                     "or GOOGLE_VERTEX_GCLOUD_AUTH should be enabled"
                 )
         else:
             if not self.LLM_API_KEY:
-                raise LLMConfigError("LLM configuration error: LLM_API_KEY is absent")
+                raise LLMApiKeyError()
             if self.LLM_API_TYPE == ApiType.AZURE:
                 if not self.LLM_API_BASE:
                     raise LLMConfigError(
-                        "LLM configuration error: "
                         "LLM_API_BASE is required for using Azure models"
                     )
                 if not self.LLM_DEPLOYMENT_ID:
                     raise LLMConfigError(
-                        "LLM configuration error: "
                         "LLM_DEPLOYMENT_ID is required for using Azure models"
                     )
                 if not self.LLM_API_VERSION:
                     raise LLMConfigError(
-                        "LLM configuration error: "
                         "LLM_API_VERSION is required for using Azure models"
                     )
 
@@ -368,6 +362,19 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
 
 class LLMConfigError(ValueError):
     """LLM configuration error"""
+    BASE_MSG = "LLM configuration error"
+
+    def __init__(self, message: str = None):
+        message = f"{self.BASE_MSG}: {message}"
+        super().__init__(message)
+
+
+class LLMApiKeyError(LLMConfigError):
+    """LLM API key error"""
+
+    def __init__(self, message: str = None):
+        message = message or "LLM_API_KEY is absent"
+        super().__init__(message)
 
 
 @dataclass
