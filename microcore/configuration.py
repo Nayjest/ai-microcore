@@ -321,17 +321,11 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
                 raise LLMApiKeyError()
             if self.LLM_API_TYPE == ApiType.AZURE:
                 if not self.LLM_API_BASE:
-                    raise LLMConfigError(
-                        "LLM_API_BASE is required for using Azure models"
-                    )
+                    raise LLMApiBaseError()
                 if not self.LLM_DEPLOYMENT_ID:
-                    raise LLMConfigError(
-                        "LLM_DEPLOYMENT_ID is required for using Azure models"
-                    )
+                    raise LLMApiDeploymentIdError()
                 if not self.LLM_API_VERSION:
-                    raise LLMConfigError(
-                        "LLM_API_VERSION is required for using Azure models"
-                    )
+                    raise LLMApiVersionError()
 
     def describe(self, return_dict=False):
         """
@@ -370,10 +364,34 @@ class LLMConfigError(ValueError):
 
 
 class LLMApiKeyError(LLMConfigError):
-    """LLM API key error"""
+    """LLM API KEY error"""
 
     def __init__(self, message: str = None):
         message = message or "LLM_API_KEY is absent"
+        super().__init__(message)
+
+
+class LLMApiBaseError(LLMConfigError):
+    """LLM API BASE error"""
+
+    def __init__(self, message: str = None):
+        message = message or "LLM_API_BASE is required for using Azure models"
+        super().__init__(message)
+
+
+class LLMApiDeploymentIdError(LLMConfigError):
+    """LLM API DEPLOYMENT ID error"""
+
+    def __init__(self, message: str = None):
+        message = message or "LLM_DEPLOYMENT_ID is required for using Azure models"
+        super().__init__(message)
+
+
+class LLMApiVersionError(LLMConfigError):
+    """LLM API VERSION error"""
+
+    def __init__(self, message: str = None):
+        message = message or "LLM_API_VERSION is required for using Azure models"
         super().__init__(message)
 
 
