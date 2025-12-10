@@ -19,7 +19,10 @@ from .logging import use_logging
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg, PartialMsg
 from .configuration import (
     ApiType,
+    LLMApiBaseError,
+    LLMApiDeploymentIdError,
     LLMApiKeyError,
+    LLMApiVersionError,
     LLMConfigError,
     Config,
     EmbeddingDbType,
@@ -186,7 +189,10 @@ __all__ = [
     "PRINT_STREAM",
     "presets",
     "BadAIAnswer",
+    "LLMApiBaseError",
+    "LLMApiDeploymentIdError",
     "LLMApiKeyError",
+    "LLMApiVersionError",
     "LLMConfigError",
     "LLMResponse",
     "PromptWrapper",
@@ -211,4 +217,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "4.4.5"
+__version__ = "4.4.6"
