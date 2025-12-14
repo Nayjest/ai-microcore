@@ -103,7 +103,7 @@ def resolve_model(config: Config):
         model_init_params = {
             **dict(
                 trust_remote_code=True,
-                torch_dtype="auto",
+                dtype="auto",
                 device_map="auto",
                 offload_folder=config.STORAGE_PATH,
             ),
@@ -163,7 +163,7 @@ def make_llm_functions(
             params.get("pipeline_task", "text-generation"),
             model=model,
             tokenizer=tokenizer,
-            torch_dtype=params.get("torch_dtype", "auto"),
+            dtype=params.get("torch_dtype") or params.get("dtype") or "auto",
             device_map=params.get("device_map", "auto"),
         )
         setattr(env, "pipeline", pipeline)
