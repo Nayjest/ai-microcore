@@ -28,7 +28,7 @@ from .configuration import (
     EmbeddingDbType,
     PRINT_STREAM,
 )
-from .types import BadAIJsonAnswer, BadAIAnswer
+from .types import BadAIJsonAnswer, BadAIAnswer, LLMContextLengthExceededError
 from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
 from ._llm_functions import llm, allm, llm_parallel
@@ -194,6 +194,7 @@ __all__ = [
     "LLMApiKeyError",
     "LLMApiVersionError",
     "LLMConfigError",
+    "LLMContextLengthExceededError",
     "LLMResponse",
     "PromptWrapper",
     "parse",
@@ -217,4 +218,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "4.4.6"
+__version__ = "4.5.0"
