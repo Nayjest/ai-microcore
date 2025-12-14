@@ -269,6 +269,10 @@ Benchmark accuracy of 20+ state of the art models on solving olympiad math probl
 
 #### [Generate meme image](https://github.com/Nayjest/ai-microcore/blob/main/examples/generate_meme_image.py)
 Simple example demonstrating image generation using [OpenAI GPT Image](https://platform.openai.com/docs/guides/image-generation?image-generation-model=gpt-image-1) model.
+
+
+#### [Local inference with PyTorch / Transformers](https://github.com/Nayjest/ai-microcore/blob/main/examples/pytorch_transformers.py)
+Text generation using HF/Transformers model locally (example withQwen 3 0.6B).
  
 #### [Other examples](https://github.com/llm-microcore/microcore/tree/main/examples)
 
