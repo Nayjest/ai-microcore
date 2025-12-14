@@ -58,6 +58,7 @@ def convert_exception(e: Exception, model: str = None) -> Exception | None:
             max_tokens=max_tokens,
             model=model
         )
+    return None
 
 
 def llm(
@@ -115,8 +116,7 @@ def llm(
             if tries == 0 or isinstance(converted_exception, LLMContextLengthExceededError):
                 if converted_exception:
                     raise converted_exception from e
-                else:
-                    raise e
+                raise e
             logging.error(f"LLM error: {e}")
             logging.info(f"Retrying... {tries} retries left")
             continue
@@ -198,8 +198,7 @@ async def allm(
             if tries == 0 or isinstance(converted_exception, LLMContextLengthExceededError):
                 if converted_exception:
                     raise converted_exception from e
-                else:
-                    raise e
+                raise e
             logging.error(f"LLM error: {e}")
             logging.info(f"Retrying... {tries} retries left")
             continue
