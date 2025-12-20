@@ -24,6 +24,18 @@ def _format_request_log_str(prompt, **kwargs) -> str:
                 else dataclasses.astuple(msg)
             )
             nl2 = "\n" if LoggingConfig.DENSE else nl + LoggingConfig.INDENT
+            if isinstance(content, list):
+                content_str = ""
+                for i, item in enumerate(content):
+                    num = i + 1
+                    item_str = item if isinstance(item, str) else json.dumps(
+                        item,
+                        ensure_ascii=False,
+                        indent=2
+                    )
+                    content_str += f"Content-Block [{num}]:\n{item_str}\n"
+                content=content_str.rstrip("\n")
+                content = (nl2+"").join(content)
             content = (" " if LoggingConfig.DENSE else nl2) + nl2.join(
                 content.split("\n")
             )
