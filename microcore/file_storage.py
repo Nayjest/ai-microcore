@@ -19,7 +19,7 @@ _missing = object()
 
 @dataclass
 class Storage:
-    _FILE_NUMBER_PLACEHOLDER = "{n}"
+    _FILE_NUMBER_PLACEHOLDER = "<n>"
 
     custom_path: str = field(default="")
 
