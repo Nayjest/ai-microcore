@@ -159,6 +159,8 @@ class Storage:
 
         if rewrite_existing is None:
             rewrite_existing = True
+        elif append and rewrite_existing is False:
+            raise ValueError("Cannot both append and prevent rewriting existing files")
         if backup_existing is None:
             backup_existing = not append
         encoding = encoding or self.default_encoding
@@ -168,6 +170,11 @@ class Storage:
 
         file_name = f"{base_name}{ext}"
         use_file_num_pattern = self._FILE_NUMBER_PLACEHOLDER in file_name
+        if use_file_num_pattern and (append or not rewrite_existing):
+            raise ValueError(
+                f"Cannot use file number pattern '{self._FILE_NUMBER_PLACEHOLDER}' "
+                "when appending or preventing rewriting existing files"
+            )
         if (self.path / file_name).is_file() and (
             backup_existing or not rewrite_existing
         ) or use_file_num_pattern:
