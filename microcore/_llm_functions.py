@@ -1,10 +1,64 @@
+import re
 import logging
 from datetime import datetime
+from typing import Any
 
-from .utils import run_parallel
+from .utils import run_parallel, RETURN_EXCEPTION
 from .wrappers.llm_response_wrapper import LLMResponse, DictFromLLMResponse
-from .types import TPrompt
+from .types import TPrompt, LLMContextLengthExceededError
 from ._env import env
+
+
+def convert_exception(e: Exception, model: str = None) -> Exception | None:
+    """
+    Convert LLM exceptions microcore-specific exceptions if possible.
+    Args:
+        e (Exception): Original exception
+        model (str): LLM model name, used for better error messages
+    Returns:
+        Converted exception or None if no conversion is possible
+    """
+    if not isinstance(e, Exception):
+        return None
+    t, msg = f"{type(e).__module__}.{type(e).__name__}", str(e)
+    max_tokens, actual_tokens = None, None
+    if t == "openai.BadRequestError" and "context_length_exceeded" in msg:
+        match = re.search(
+            r"maximum context length is (\d+) tokens.*?resulted in (\d+) tokens",
+            msg
+        )
+        if match:
+            max_tokens = int(match.group(1))
+            actual_tokens = int(match.group(2))
+        return LLMContextLengthExceededError(
+            actual_tokens=actual_tokens,
+            max_tokens=max_tokens,
+            model=model
+        )
+    if t == "anthropic.BadRequestError" and "prompt is too long:" in msg:
+        if match := re.search(r"(\d+)\s+tokens\s+>\s+(\d+)\s+maximum", msg):
+            max_tokens = int(match.group(2))
+            actual_tokens = int(match.group(1))
+        return LLMContextLengthExceededError(
+            actual_tokens=actual_tokens,
+            max_tokens=max_tokens,
+            model=model
+        )
+    if (
+        t == "google.api_core.exceptions.InvalidArgument"
+        and "The input token count exceeds the maximum number of tokens allowed" in msg
+    ):
+        if match := re.search(
+            r"The input token count exceeds the maximum number of tokens allowed (\d+)",
+            msg
+        ):
+            max_tokens = int(match.group(1))
+        return LLMContextLengthExceededError(
+            actual_tokens=actual_tokens,
+            max_tokens=max_tokens,
+            model=model
+        )
+    return None
 
 
 def llm(
@@ -57,7 +111,11 @@ def llm(
             response = env().llm_function(prompt, **kwargs)
             break
         except Exception as e:  # pylint: disable=W0718
-            if tries == 0:
+            converted_exception = convert_exception(e)
+            # If context length exceeded, or no tries left --> do not retry
+            if tries == 0 or isinstance(converted_exception, LLMContextLengthExceededError):
+                if converted_exception:
+                    raise converted_exception from e
                 raise e
             logging.error(f"LLM error: {e}")
             logging.info(f"Retrying... {tries} retries left")
@@ -135,7 +193,11 @@ async def allm(
             response = await env().llm_async_function(prompt, **kwargs)
             break
         except Exception as e:  # pylint: disable=W0718
-            if tries == 0:
+            converted_exception = convert_exception(e)
+            # If context length exceeded, or no tries left --> do not retry
+            if tries == 0 or isinstance(converted_exception, LLMContextLengthExceededError):
+                if converted_exception:
+                    raise converted_exception from e
                 raise e
             logging.error(f"LLM error: {e}")
             logging.info(f"Retrying... {tries} retries left")
@@ -160,7 +222,12 @@ async def allm(
 
 
 async def llm_parallel(
-    prompts: list[TPrompt], max_concurrent_tasks: int = None, **kwargs
+    prompts: list[TPrompt],
+    max_concurrent_tasks: int = None,
+    allow_failures: bool = False,
+    return_on_failure: Any = RETURN_EXCEPTION,
+    log_errors: bool = True,
+    **kwargs
 ) -> list[str | LLMResponse]:
     """
     Execute multiple LLM requests in parallel
@@ -174,4 +241,10 @@ async def llm_parallel(
     if not max_concurrent_tasks:
         max_concurrent_tasks = len(tasks)
 
-    return await run_parallel(tasks, max_concurrent_tasks=max_concurrent_tasks)
+    return await run_parallel(
+        tasks,
+        max_concurrent_tasks=max_concurrent_tasks,
+        allow_failures=allow_failures,
+        return_on_failure=return_on_failure,
+        log_errors=log_errors,
+    )

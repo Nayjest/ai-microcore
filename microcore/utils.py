@@ -7,6 +7,7 @@ import os
 import sys
 import re
 import subprocess
+import logging
 from dataclasses import dataclass
 from fnmatch import fnmatch
 from functools import lru_cache
@@ -348,15 +349,39 @@ def dedent(text: str) -> str:
     return "\n".join(dedented_lines)
 
 
-async def run_parallel(tasks: list, max_concurrent_tasks: int):
+RETURN_EXCEPTION = object()
+
+
+async def run_parallel(
+    tasks: list,
+    max_concurrent_tasks: int,
+    allow_failures: bool = False,
+    return_on_failure: Any = RETURN_EXCEPTION,
+    log_errors: bool = True,
+):
     """
     Run tasks in parallel with a limit on the number of concurrent tasks.
+    Args:
+        tasks (list): A list of awaitable tasks to run.
+        max_concurrent_tasks (int): Maximum number of tasks to run concurrently.
+        allow_failures (bool): If True, exceptions in tasks are caught and
+            handled according to the `return_on_failure` parameter.
+        return_on_failure (Any): Value to return for failed tasks if `allow_failures` is True.
+            If set to microcore.utils.RETURN_EXCEPTION, the exception object is returned.
+        log_errors (bool): If True, errors are logged when `allow_failures` is True.
     """
     semaphore = asyncio.Semaphore(max_concurrent_tasks)
 
     async def worker(task):
         async with semaphore:
-            return await task
+            try:
+                return await task
+            except Exception as e:
+                if allow_failures:
+                    if log_errors:
+                        logging.error(e)
+                    return e if return_on_failure == RETURN_EXCEPTION else return_on_failure
+                raise
 
     return await asyncio.gather(*[worker(task) for task in tasks])
 
