@@ -38,7 +38,10 @@ class Storage:
         """
         Creates a new Storage instance with a customized path and other attributes.
         """
-        return Storage(custom_path)
+        return Storage(
+            custom_path=custom_path,
+            file_number_placeholder=file_number_placeholder
+        )
 
     @property
     def path(self) -> Path:
