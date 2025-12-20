@@ -39,7 +39,7 @@ def test_storage_write_with_numbering_placeholder():
     assert mc.storage.read(f"{dir}/-file4-") == "content3"
 
     custom_storage = mc.storage(
-        custom_path=storage.path / dir,
+        custom_path=mc.storage.path / dir,
         numbering_placeholder="[num]"
     )
     name5 = custom_storage.write(f"-file[num]-", "content5", rewrite_existing=False)
