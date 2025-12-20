@@ -9,6 +9,26 @@ from ._env import env, config
 from ._prepare_llm_args import prepare_chat_messages, prepare_prompt
 
 
+def _serialize_message_content_blocks(content: list | str) -> str:
+    """
+    Serializes message content blocks into a single string
+    specifically for logging.
+    """
+    if isinstance(content, list):
+        content_str = ""
+        for i, item in enumerate(content):
+            num = i + 1
+            item_str = item if isinstance(item, str) else json.dumps(
+                item,
+                ensure_ascii=False,
+                indent=2
+            )
+            content_str += f"[Content-Block #{num}]:\n{item_str}\n"
+        if content_str.endswith("\n"):
+            content_str = content_str[:-1]
+    return content
+
+
 def _format_request_log_str(prompt, **kwargs) -> str:
     nl = "\n" if LoggingConfig.DENSE else "\n" + LoggingConfig.INDENT
     model = _resolve_model(**kwargs)
@@ -24,18 +44,8 @@ def _format_request_log_str(prompt, **kwargs) -> str:
                 if isinstance(msg, dict)
                 else dataclasses.astuple(msg)
             )
+            content = _serialize_message_content_blocks(content)
             nl2 = "\n" if LoggingConfig.DENSE else nl + LoggingConfig.INDENT
-            if isinstance(content, list):
-                content_str = ""
-                for i, item in enumerate(content):
-                    num = i + 1
-                    item_str = item if isinstance(item, str) else json.dumps(
-                        item,
-                        ensure_ascii=False,
-                        indent=2
-                    )
-                    content_str += f"[Content-Block #{num}]:\n{item_str}\n"
-                content = content_str.rstrip("\n")
             content = (" " if LoggingConfig.DENSE else nl2) + nl2.join(
                 content.split("\n")
             )
