@@ -19,12 +19,16 @@ from .logging import use_logging
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg, PartialMsg
 from .configuration import (
     ApiType,
+    LLMApiBaseError,
+    LLMApiDeploymentIdError,
+    LLMApiKeyError,
+    LLMApiVersionError,
     LLMConfigError,
     Config,
     EmbeddingDbType,
     PRINT_STREAM,
 )
-from .types import BadAIJsonAnswer, BadAIAnswer
+from .types import BadAIJsonAnswer, BadAIAnswer, LLMContextLengthExceededError
 from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
 from ._llm_functions import llm, allm, llm_parallel
