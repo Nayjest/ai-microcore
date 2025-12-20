@@ -26,6 +26,7 @@ def _serialize_message_content_blocks(content: list | str) -> str:
             content_str += f"[Content-Block #{num}]:\n{item_str}\n"
         if content_str.endswith("\n"):
             content_str = content_str[:-1]
+        return content_str
     return content
 
 
