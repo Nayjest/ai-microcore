@@ -151,9 +151,15 @@ def parse(
     return result
 
 
-def file_link(file_path: str | Path):
-    """Returns file name in format displayed in PyCharm console as a link."""
-    return "file:///" + str(Path(file_path).absolute()).replace("\\", "/")
+def file_link(file_path: str | Path, use_file_prefix: bool = True) -> str:
+    """
+    Returns file name in format displayed in PyCharm console as a link.
+    Args:
+        file_path (str | Path): Path to the file.
+        use_file_prefix (bool): Whether to add "file:///" prefix. Defaults to True
+    """
+    normalized_path = str(Path(file_path).absolute()).replace("\\", "/")
+    return (use_file_prefix and "file:///" or "") + normalized_path
 
 
 def list_files(
