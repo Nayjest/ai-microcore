@@ -140,7 +140,7 @@ class Storage:
             content (str | bytes): Content to write.
                 If not provided, uses `name` as content and defaults the file name.
             rewrite_existing (bool, optional): Whether to overwrite existing files.
-                Defaults to True or False if file numbering placeholder was used.
+                Defaults to True
             backup_existing (bool, optional): Whether to back up existing files
                 in case of overwrite.
                 Defaults to True if not appending, else False.
@@ -162,21 +162,20 @@ class Storage:
             if append:
                 raise ValueError("Cannot append bytes content")
 
-        base_name = Path(name).with_suffix("")
-        ext = Path(name).suffix or self.default_ext
-
-        file_name = f"{base_name}{ext}"
-        use_file_num_pattern = self._FILE_NUMBER_PLACEHOLDER in file_name
-
         if rewrite_existing is None:
-            rewrite_existing = not use_file_num_pattern
+            rewrite_existing = True
         elif append and rewrite_existing is False:
             raise ValueError("Cannot both append and prevent rewriting existing files")
         if backup_existing is None:
             backup_existing = not append
         encoding = encoding or self.default_encoding
 
-        if use_file_num_pattern and (append or not rewrite_existing):
+        base_name = Path(name).with_suffix("")
+        ext = Path(name).suffix or self.default_ext
+
+        file_name = f"{base_name}{ext}"
+        use_file_num_pattern = self._FILE_NUMBER_PLACEHOLDER in file_name
+        if use_file_num_pattern and append:
             raise ValueError(
                 f"Cannot use file number pattern '{self._FILE_NUMBER_PLACEHOLDER}' "
                 "when appending or preventing rewriting existing files"
