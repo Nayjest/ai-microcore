@@ -19,6 +19,7 @@ _missing = object()
 
 @dataclass
 class Storage:
+    _FILE_NUMBER_PLACEHOLDER = "{n}"
 
     custom_path: str = field(default="")
 
@@ -133,8 +134,23 @@ class Storage:
         append: bool = False,
     ) -> str | os.PathLike:
         """
-        :return: str File name for further usage
+        Writes file to the storage.
+        Args:
+            name (str | Path): File name within the storage.
+            content (str | bytes): Content to write.
+                If not provided, uses `name` as content and defaults the file name.
+            rewrite_existing (bool, optional): Whether to overwrite existing files. Defaults to True.
+            backup_existing (bool, optional): Whether to back up existing files in case of overwrite.
+                Defaults to True if not appending, else False.
+            encoding (str, optional): Defaults to config().DEFAULT_ENCODING (utf-8).
+            append (bool, optional): Whether to append to the file if it exists. Defaults to False.
+        Returns:
+            str | os.PathLike: The actual file name used for writing.
         """
+        if content == _missing:
+            content = name
+            name = f"out{self.default_ext}"
+
         if isinstance(content, bytes):
             if encoding is not None:
                 logging.warning("Encoding is ignored when writing bytes content")
@@ -146,20 +162,23 @@ class Storage:
         if backup_existing is None:
             backup_existing = not append
         encoding = encoding or self.default_encoding
-        if content == _missing:
-            content = name
-            name = f"out{self.default_ext}"
 
         base_name = Path(name).with_suffix("")
         ext = Path(name).suffix or self.default_ext
 
         file_name = f"{base_name}{ext}"
+        use_file_num_pattern = self._FILE_NUMBER_PLACEHOLDER in file_name
         if (self.path / file_name).is_file() and (
             backup_existing or not rewrite_existing
-        ):
+        ) or use_file_num_pattern:
             counter = 1
             while True:
-                file_name1 = f"{base_name}_{counter}{ext}"  # noqa
+                if use_file_num_pattern:
+                    file_name1 = file_name.replace(
+                        self._FILE_NUMBER_PLACEHOLDER, str(counter)
+                    )
+                else:
+                    file_name1 = f"{base_name}_{counter}{ext}"  # noqa
                 if not (self.path / file_name1).is_file():
                     break
                 counter += 1
@@ -169,7 +188,10 @@ class Storage:
                 os.rename(self.path / file_name, self.path / file_name1)
         (self.path / file_name).parent.mkdir(parents=True, exist_ok=True)
         if append:
-            with (self.path / file_name).open(mode="a", encoding=encoding) as file:
+            with (self.path / file_name).open(
+                mode="a",
+                encoding=encoding if not isinstance(content, bytes) else None,
+            ) as file:
                 file.write(content)
         else:
             if isinstance(content, bytes):
