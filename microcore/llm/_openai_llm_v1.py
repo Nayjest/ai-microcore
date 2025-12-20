@@ -3,7 +3,6 @@ import base64
 import logging
 
 import openai
-from microcore.utils import is_kaggle, is_notebook
 
 from ..configuration import Config, ApiType
 from .._prepare_llm_args import prepare_chat_messages, prepare_prompt
