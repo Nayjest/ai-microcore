@@ -34,9 +34,8 @@ def _format_request_log_str(prompt, **kwargs) -> str:
                         ensure_ascii=False,
                         indent=2
                     )
-                    content_str += f"Content-Block [{num}]:\n{item_str}\n"
+                    content_str += f"[Content-Block #{num}]:\n{item_str}\n"
                 content = content_str.rstrip("\n")
-                content = (nl2+"").join(content)
             content = (" " if LoggingConfig.DENSE else nl2) + nl2.join(
                 content.split("\n")
             )
