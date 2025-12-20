@@ -216,18 +216,19 @@ class Storage:
             counter = 1
             while True:
                 if use_file_num_pattern:
-                    file_name1 = file_name.replace(
-                        self.file_number_placeholder, str(counter)
-                    )
+                    fn_incremented = file_name.replace(self.file_number_placeholder, str(counter))
                 else:
-                    file_name1 = f"{base_name}_{counter}{ext}"  # noqa
-                if not (self.path / file_name1).is_file():
+                    fn_incremented = f"{base_name}_{counter}{ext}"  # noqa
+                if not (self.path / fn_incremented).is_file():
                     break
                 counter += 1
             if not rewrite_existing:
-                file_name = file_name1
+                file_name = fn_incremented
             elif backup_existing:
-                os.rename(self.path / file_name, self.path / file_name1)
+                if use_file_num_pattern:
+                    file_name = file_name.replace(self.file_number_placeholder, "1")
+                if file_name != fn_incremented:
+                    os.rename(self.path / file_name, self.path / fn_incremented)
         (self.path / file_name).parent.mkdir(parents=True, exist_ok=True)
         if append:
             with (self.path / file_name).open(

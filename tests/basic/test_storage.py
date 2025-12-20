@@ -28,11 +28,12 @@ def test_storage_write_existing():
 
 def test_storage_write_with_numbering_placeholder():
     dir = "tests_tmp"
+    assert mc.storage.file_number_placeholder == '<n>'
     mc.storage.delete(dir)
     name1 = mc.storage.write(f"{dir}/-file<n>-", "content1")
     name2 = mc.storage.write(f"{dir}/-file<n>-", "content2", rewrite_existing=False)
     name3 = mc.storage.write(f"{dir}/-file<n>-", "content3", rewrite_existing=True)
-    name4 = mc.storage.write(f"{dir}/-file<n>-", "content4")
+    name4 = mc.storage.write(f"{dir}/-file<n>-", "content4")  # default rewrite_existing=True
     assert mc.storage.read(f"{dir}/-file1-") == "content4"  # last overwrite
     assert mc.storage.read(f"{dir}/-file2-") == "content2"
     assert mc.storage.read(f"{dir}/-file3-") == "content1"
@@ -40,7 +41,7 @@ def test_storage_write_with_numbering_placeholder():
 
     custom_storage = mc.storage(
         custom_path=mc.storage.path / dir,
-        numbering_placeholder="[num]"
+        file_number_placeholder="[num]"
     )
     name5 = custom_storage.write(f"-file[num]-", "content5", rewrite_existing=False)
     assert name5 == "-file5-"
@@ -48,12 +49,29 @@ def test_storage_write_with_numbering_placeholder():
 
     custom_storage.file_number_placeholder = "$"
     name6 = custom_storage.write("-file$-", "content6", rewrite_existing=False)
-    assert name5 == "-file6-"
+    assert name6 == "-file6-"
     assert custom_storage.read("-file6-") == "content6"
 
     name7 = custom_storage.write("-file[num]-", "content7", rewrite_existing=False)
-    assert name5 == "-file[num]-"
+    assert name7 == "-file[num]-"
     assert custom_storage.read("-file[num]-") == "content7"
+
+    custom_storage.file_number_placeholder = None
+    assert custom_storage.write("file", "content1") == "file"
+    assert custom_storage.write("file", "content2", rewrite_existing=False) == "file_1"
+    assert custom_storage.write("file", "content3", rewrite_existing=True) == "file"
+    assert custom_storage.read("file") == "content3"
+    #assert custom_storage.read("file_2", default=None) == None
+    assert custom_storage.write(
+        "file",
+        "content4",
+        rewrite_existing=True,
+        backup_existing=False
+    ) == "file"
+    assert custom_storage.read("file_3", default=None) == None
+    assert custom_storage.read("file") == "content4"
+
+    assert custom_storage.read("file_1") == "content2"
     mc.storage.delete(dir)
 
 
