@@ -3,6 +3,7 @@ import base64
 import logging
 
 import openai
+from microcore.utils import is_kaggle, is_notebook
 
 from ..configuration import Config, ApiType
 from .._prepare_llm_args import prepare_chat_messages, prepare_prompt
@@ -194,7 +195,9 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
                 if len(response_attrs["files"]) == 1:
                     img_repr = file_link(response_attrs['file'])
                 elif len(response_attrs["files"]) > 1:
-                    img_repr = "\n".join(response_attrs["files"])
+                    img_repr = "\n".join(
+                        file_link(file) for file in response_attrs["files"]
+                    )
             for cb in options["callbacks"]:
                 cb(img_repr)
             return LLMResponse(img_repr, response_attrs)
