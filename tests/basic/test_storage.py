@@ -11,19 +11,50 @@ def test_storage_read_write():
 
 
 def test_storage_write_existing():
-    mc.storage.delete("tests_tmp")
-    filename = mc.storage.write("tests_tmp/test_b", "old content")
-    filename2 = mc.storage.write("tests_tmp/test_b", "new content")
-    assert mc.storage.read(filename) == "new content"
-    assert filename2 == filename
-    assert mc.storage.read("tests_tmp/test_b_1") == "old content"
-    filename3 = mc.storage.write(
-        "tests_tmp/test_b", "content 3", rewrite_existing=False
+    dir = "tests_tmp"
+    mc.storage.delete(dir)
+    name1 = mc.storage.write(f"{dir}/test_b", "content1")
+    name2 = mc.storage.write(f"{dir}/test_b", "content2")
+    assert mc.storage.read(name1) == "content2"  # overwritten by 2
+    assert name2 == name1  # returned same filename
+    assert mc.storage.read(f"{dir}/test_b_1") == "content1"  # original saved as _1
+    name3 = mc.storage.write(
+        f"{dir}/test_b", "content3", rewrite_existing=False
     )
-    assert mc.storage.read(filename) == "new content"
-    assert mc.storage.read(filename3) == "content 3"
-    assert filename != filename3
-    mc.storage.delete("tests_tmp")
+    assert mc.storage.read(name1) == "content2"  # original unchanged
+    assert mc.storage.read(name3) == "content3"
+    assert name1 != name3
+    mc.storage.delete(dir)
+
+def test_storage_write_with_numbering_placeholder():
+    dir = "tests_tmp"
+    mc.storage.delete(dir)
+    name1 = mc.storage.write(f"{dir}/-file<n>-", "content1")
+    name2 = mc.storage.write(f"{dir}/-file<n>-", "content2", rewrite_existing=False)
+    name3 = mc.storage.write(f"{dir}/-file<n>-", "content3", rewrite_existing=True)
+    name4 = mc.storage.write(f"{dir}/-file<n>-", "content4")
+    assert mc.storage.read(f"{dir}/-file1-") == "content4"  # last overwrite
+    assert mc.storage.read(f"{dir}/-file2-") == "content2"
+    assert mc.storage.read(f"{dir}/-file3-") == "content1"
+    assert mc.storage.read(f"{dir}/-file4-") == "content3"
+
+    custom_storage = mc.storage(
+        custom_path=storage.path / dir,
+        numbering_placeholder="[num]"
+    )
+    name5 = custom_storage.write(f"-file[num]-", "content5", rewrite_existing=False)
+    assert name5 == "-file5-"
+    assert custom_storage.read("-file5-") == "content5"
+
+    custom_storage.file_number_placeholder = "$"
+    name6 = custom_storage.write("-file$-", "content6", rewrite_existing=False)
+    assert name5 == "-file6-"
+    assert custom_storage.read("-file6-") == "content6"
+
+    name7 = custom_storage.write("-file[num]-", "content7", rewrite_existing=False)
+    assert name5 == "-file[num]-"
+    assert custom_storage.read("-file[num]-") == "content7"
+    mc.storage.delete(dir)
 
 
 def test_list_files():

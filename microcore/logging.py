@@ -1,4 +1,5 @@
 import dataclasses
+import json
 
 from colorama import Fore, init
 
@@ -34,7 +35,7 @@ def _format_request_log_str(prompt, **kwargs) -> str:
                         indent=2
                     )
                     content_str += f"Content-Block [{num}]:\n{item_str}\n"
-                content=content_str.rstrip("\n")
+                content = content_str.rstrip("\n")
                 content = (nl2+"").join(content)
             content = (" " if LoggingConfig.DENSE else nl2) + nl2.join(
                 content.split("\n")

@@ -19,19 +19,35 @@ _missing = object()
 
 @dataclass
 class Storage:
-    _FILE_NUMBER_PLACEHOLDER = "<n>"
-
     custom_path: str = field(default="")
+    file_number_placeholder: str | None = field(default="<n>")
+    """
+    When writing files, if the file name contains this placeholder,
+    it will be replaced with an incrementing number to avoid overwriting existing files,
+    starting from 1.
+    For example, if the file name is "output_<n>.txt", the first file will be
+    "output_1.txt", the second "output_2.txt", and so on.
+    If set to None or an empty string, this feature is disabled.
+    """
 
-    def __call__(self, custom_path: str):
+    def __call__(
+        self,
+        custom_path: str,
+        file_number_placeholder: str | None = "<n>"
+    ) -> "Storage":
+        """
+        Creates a new Storage instance with a customized path and other attributes.
+        """
         return Storage(custom_path)
 
     @property
     def path(self) -> Path:
+        """Returns the file storage path as a Path object."""
         return Path(str(self.custom_path) or config().STORAGE_PATH)
 
     @property
     def default_ext(self) -> str | None:
+        """Returns the default file extension according to configuration."""
         ext = config().STORAGE_DEFAULT_FILE_EXT
         if ext and not ext.startswith("."):
             ext = "." + ext
@@ -43,14 +59,19 @@ class Storage:
 
     @property
     def default_encoding(self) -> str:
+        """Returns the default file encoding according to configuration."""
         return config().DEFAULT_ENCODING
 
     def exists(self, name: str | Path) -> bool:
+        """Checks if a file or directory exists within the storage path."""
         if isinstance(name, Path):
             name = name.as_posix()
         return (self.path / name).exists()
 
     def abs_path(self, name: str | Path) -> Path:
+        """
+        Returns the absolute path of the file or directory within the storage path.
+        """
         if os.path.isabs(name):
             return Path(name)
         return self.path / name
@@ -62,6 +83,9 @@ class Storage:
         return Path(name).relative_to(self.path)
 
     def read(self, name: str | Path, encoding: str = None, default=_missing):
+        """
+        Reads file from the storage.
+        """
         name = str(name)
         encoding = encoding or self.default_encoding
         if not os.path.isabs(name) and not name.startswith("./"):
@@ -174,10 +198,13 @@ class Storage:
         ext = Path(name).suffix or self.default_ext
 
         file_name = f"{base_name}{ext}"
-        use_file_num_pattern = self._FILE_NUMBER_PLACEHOLDER in file_name
+        use_file_num_pattern = (
+            self.file_number_placeholder
+            and self.file_number_placeholder in file_name
+        )
         if use_file_num_pattern and append:
             raise ValueError(
-                f"Cannot use file number pattern '{self._FILE_NUMBER_PLACEHOLDER}' "
+                f"Cannot use file number pattern '{self.file_number_placeholder}' "
                 "when appending or preventing rewriting existing files"
             )
         if (self.path / file_name).is_file() and (
@@ -187,7 +214,7 @@ class Storage:
             while True:
                 if use_file_num_pattern:
                     file_name1 = file_name.replace(
-                        self._FILE_NUMBER_PLACEHOLDER, str(counter)
+                        self.file_number_placeholder, str(counter)
                     )
                 else:
                     file_name1 = f"{base_name}_{counter}{ext}"  # noqa
