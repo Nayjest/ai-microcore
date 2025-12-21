@@ -1,15 +1,20 @@
 # File cache
 
-A lightweight general purpose file-based caching system for Python objetcs designed for cross-cutting concern within the ai-microcore horizontal functionality.  
+A lightweight general-purpose file-based caching system for Python objects
+designed for cross-cutting concern within the ai-microcore horizontal functionality.  
 
 Target applications: rapid prototyping, R&D, and AI experiments.  
 
 ## Overview
-The **microcore.file_cache** submodule provides a simple yet powerful way to persist Python objects to disk using pickle serialization. Built on top of microcore's file storage submodule, it offers automatic key generation, hierarchical organization, and straightforward cache management.
+The **microcore.file_cache** submodule provides a simple yet powerful way to persist Python objects
+to disk using pickle serialization.
+Built on top of microcore's file storage submodule, it offers automatic key generation,
+hierarchical organization, and straightforward cache management.
 
 ## Key Features
 
-- Automatic Key Generation: Creates unique cache keys based on function arguments and current configuration.
+- Automatic Key Generation:
+  Creates unique cache keys based on function arguments and current configuration.
 - Hierarchical Organization: Organize cached objects using prefix-based subdirectories
 - Type Agnostic: Cache any picklable Python object
 - Simple API: Intuitive functions for common cache operations
@@ -23,7 +28,9 @@ The **microcore.file_cache** submodule provides a simple yet powerful way to per
 - Rapid prototyping with persistent state
 
 > **Note:**
-> This implementation prioritizes simplicity and ease of use. For production workloads with high-frequency access patterns, consider faster in-memory storage solutions like Redis or Memcached.
+> This implementation prioritizes simplicity and ease of use.
+> For production workloads with high-frequency access patterns,
+> consider faster in-memory storage solutions like Redis or Memcached.
 
 
 ## API Reference
@@ -34,6 +41,7 @@ Returns the relative path to the cache directory, optionally with a prefix subdi
 
 ```python
 from microcore.file_cache import cache_dir
+
 # Base cache directory
 path = cache_dir()  # "cache/"
 
@@ -47,6 +55,7 @@ Generates a unique cache key based on provided arguments and current configurati
 
 ```python
 from microcore.file_cache import build_cache_name
+
 key = build_cache_name("my-query", model="gpt-4", prefix="llm-requests")
 ```
 

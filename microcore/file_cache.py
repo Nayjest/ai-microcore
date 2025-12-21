@@ -1,6 +1,6 @@
 """
-A lightweight general purpose file-based caching system for Python objetcs designed for cross-cutting concern
-within the ai-microcore horizontal functionality.
+A lightweight general-purpose file-based caching system for Python objects
+designed for cross-cutting concern within the ai-microcore horizontal functionality.
 
 Target applications: rapid prototyping, R&D, and AI experiments.
 
@@ -94,5 +94,8 @@ def flush_cache(prefix: str = "") -> bool:
     Returns:
         bool: True if cache flush operation was successful, False otherwise.
     """
-    logging.debug("Flushing cache storage" + (f"prefixed as \"{prefix}\"" if prefix else ""))
+    logging.debug(
+        "Flushing cache storage%s",
+        " prefixed as \"%s\"" % prefix if prefix else ""
+    )
     return storage.delete(cache_dir(prefix))

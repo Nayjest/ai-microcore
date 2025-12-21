@@ -125,7 +125,7 @@ def llm(
 
     if (file_cache and cache_hit(
         cache_name := build_cache_name(
-            kwargs,
+            prompt, kwargs,
             prefix=file_cache if isinstance(file_cache, str) else "llm_requests"
         )
     )):
@@ -223,7 +223,7 @@ async def allm(
 
     if (file_cache and cache_hit(
         cache_name := build_cache_name(
-            kwargs,
+            prompt, kwargs,
             prefix=file_cache if isinstance(file_cache, str) else "llm_requests"
         )
     )):
