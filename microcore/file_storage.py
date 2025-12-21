@@ -24,7 +24,7 @@ class Storage:
     """
     When writing files, if the file name contains this placeholder,
     it will be replaced with an incrementing number to avoid overwriting existing files,
-    starting from 1.
+    starting from 1, or considered in naming of backup copies when rewriting same files.
     For example, if the file name is "output_<n>.txt", the first file will be
     "output_1.txt", the second "output_2.txt", and so on.
     If set to None or an empty string, this feature is disabled.
@@ -169,11 +169,11 @@ class Storage:
                 False if no target paths existed.
         """
         if isinstance(target, list):
-            any_deletions_performad = False
+            any_deletions_performed = False
             for t in target:
                 if self.delete(t):
-                    any_deletions_performad = True
-            return any_deletions_performad
+                    any_deletions_performed = True
+            return any_deletions_performed
         path = (self.path / target).resolve()
         if not path.exists():
             return False
