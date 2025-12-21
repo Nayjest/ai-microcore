@@ -42,12 +42,12 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
 
     def __new__(cls, string: str, attrs: dict = None):
         attrs = {
-            **(attrs or {}),
             "role": Role.ASSISTANT,
             "content": str(string),
             "prompt": None,
             # generation duration in seconds (float), used in metrics
             "gen_duration": None,
+            **(attrs or {}),
         }
         obj = ExtendedString.__new__(cls, string, attrs)
         return obj
