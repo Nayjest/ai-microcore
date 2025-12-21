@@ -94,7 +94,7 @@ def llm(
             When enabled, identical requests with identical parameters
             will return cached responses instead of making new API calls.
             Default is False (no caching).
-        **kwargs (dict): Parameters supported by the LLM API.
+        **kwargs: Parameters supported by the LLM API.
 
             See parameters supported by the OpenAI:
 
@@ -190,7 +190,7 @@ async def allm(
         parse_json (bool|dict):
             If True, parses response as JSON,
             alternatively non-empty dict can be used as parse_json arguments.
-        **kwargs (dict): Parameters supported by the LLM API.
+        **kwargs: Parameters supported by the LLM API.
 
             See parameters supported by the OpenAI:
 
