@@ -30,6 +30,8 @@ def cache_dir(prefix: str = "") -> str:
     Returns:
         str: path to the cache directory within the file storage.
     """
+    if prefix: # prevent directory traversal attacks
+        prefix = prefix.replace("..", "").strip("/")
     return CACHE_ROOT_FOLDER + "/" + (f"{prefix}/" if prefix else '')
 
 
@@ -38,12 +40,12 @@ def build_cache_name(*args, prefix: str = "", **kwargs) -> str:
     Build a unique (key) name for cached object based on the provided arguments.
     Returned value serves as both unique key and file name for storing and retrieving cached object.
     """
-    obj = asdict(config())
-    obj.update({"prefix": prefix})
-    obj.update(kwargs)
-    for i, v in enumerate(args):
-        obj.update({f"arg_{i}": v})
-
+    obj = {
+        "config": asdict(config()),
+        "prefix": prefix,
+        "kwargs": kwargs,
+        "args": args
+    }
     serialized = pickle.dumps(obj)
     return cache_dir(prefix) + hashlib.sha256(serialized).hexdigest() + ".pkl"
 
