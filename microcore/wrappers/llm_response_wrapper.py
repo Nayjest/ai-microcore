@@ -38,6 +38,7 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
     content: str
     prompt: TPrompt
     gen_duration: float
+    from_file_cache: bool = False
 
     def __new__(cls, string: str, attrs: dict = None):
         attrs = {
