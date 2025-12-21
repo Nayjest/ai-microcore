@@ -1,3 +1,6 @@
+"""
+General-purpose utility functions.
+"""
 import asyncio
 import builtins
 import dataclasses
@@ -32,11 +35,36 @@ def is_chat_model(model: str, config: Config = None) -> bool:
 
 
 def is_image_model(model: str) -> bool:
-    model = str(model)
+    """
+    Detects if model is an image generation model by name.
+
+    Warning:
+        Limited implementation: Currently only detects DALL-E and GPT-image models.
+
+    Args:
+        model: Model identifier string
+
+    Returns:
+        True if the model is identified as an image generation model
+
+    Examples:
+        >>> is_image_model("dall-e-3")
+        True
+        >>> is_image_model("gpt-4")
+        False
+
+    Todo:
+        * Add Google / xAI / Anthropic image generation models detection.
+    """
+    model = str(model).lower()
     return model.startswith("dall-e-") or model.startswith("gpt-image-")
 
 
 class ConvertableToMessage:
+    """
+    Trait / mixin class that provides properties to convert
+    string-like objects to microcore chat message types.
+    """
     @property
     def as_user(self) -> UserMsg:
         return UserMsg(str(self))
@@ -56,22 +84,35 @@ class ConvertableToMessage:
 
 class ExtendedString(str):
     """
-    Provides a way of extending string with attributes and methods
+    Way of extending strings with attributes and methods.
+    - Allows chaining of global functions that accept string as first argument.
+      Example: `s.upper().strip()`
+    - Can hold arbitrary attributes.
+    - Inherits from str.
+    - Provides handy utility methods for tokenization and JSON parsing.
     """
 
-    def __new__(cls, string: str, attrs: dict = None):
+    def __new__(cls, string: str, attrs: dict = None, **kwargs):
         """
-        Allows string to have attributes.
+        Create new ExtendedString instance with optional attributes.
+        Args:
+            string (str): The string value.
+            attrs (dict): Optional dictionary of attributes to set.
+            **kwargs: Additional attributes to set.
+        Returns:
+            ExtendedString: New instance of ExtendedString.
         """
         obj = str.__new__(cls, string)
         if attrs:
             for k, v in attrs.items():
                 setattr(obj, k, v)
+        for k, v in kwargs.items():
+            setattr(obj, k, v)
         return obj
 
     def __getattr__(self, item):
         """
-        Provides chaining of global functions
+        Provides chaining of global functions.
         """
         global_func = inspect.currentframe().f_back.f_globals.get(item) or vars(
             builtins
@@ -170,15 +211,15 @@ def list_files(
     posix: bool = False,
 ) -> list[Path]:
     """
-    Lists files in a specified directory, excluding those that match given patterns.
+    List files in target directory, excluding those that match given fnmatch patterns.
 
-    This function traverses the specified directory recursively and returns a list of all files
+    This function traverse target directory recursively and returns a list of all files
     that do not match the specified exclusion patterns. It can return absolute paths,
     paths relative to the target directory, or paths relative to a specified directory.
 
     Args:
         target_dir (str | Path): The directory to search in.
-        exclude (list[str | Path]): Patterns of files to exclude.
+        exclude (list[str | Path]): fnmatch patterns of files to exclude.
         relative_to (str | Path, optional): Base directory for relative paths.
             If None, paths are relative to `target_dir`. Defaults to None.
         absolute (bool, optional): If True, returns absolute paths. Defaults to False.
@@ -238,7 +279,7 @@ def is_notebook() -> bool:
 
 def is_google_colab() -> bool:
     """
-    Returns True if the code is running in a Google Colab notebook
+    Returns True if the code is running in a Google Colab notebook.
     """
     return "google.colab" in sys.modules
 
@@ -289,6 +330,13 @@ def show_vram_usage():
 
 
 def return_default(default, *args):
+    """
+    Generic-purpose default value handler.
+    This utility function performs the following actions based on the type of `value`:
+    - If value is an Exception type or instance, raises it.
+    - If value is a function, method or built-in, calls it with provided args.
+    - Otherwise, returns the value as is.
+    """
     if isinstance(default, type) and issubclass(default, BaseException):
         raise default()
     if isinstance(default, BaseException):
@@ -312,7 +360,14 @@ def extract_number(
     rounding: bool = False,
 ) -> int | float | Any:
     """
-    Extract a number from a string.
+    Extract a number from a text.
+    Returns default value if no number is found or conversion fails.
+    Args:
+        text (str): The input text to extract the number from.
+        default: The default value to return if no number is found or conversion fails.
+        position (str): "last" to extract the last number, "first" for the first number.
+        dtype (type | str): The desired type of the extracted number ("int" or "float").
+        rounding (bool): If True and dtype is float, rounds the result to the nearest integer.
     """
     assert position in ["last", "first"], f"Invalid position: {position}"
     idx = {"last": -1, "first": 0}[position]
@@ -335,8 +390,9 @@ def extract_number(
 
 def dedent(text: str) -> str:
     """
-    Removes minimal shared leading whitespace from each line
-    and strips leading and trailing empty lines.
+    Remove minimal shared leading whitespace from each line
+    and strip leading and trailing empty lines.
+    @deprecated: Use textwrap.dedent from standard library instead.
     """
     lines = text.splitlines()
     while lines and lines[0].strip() == "":
