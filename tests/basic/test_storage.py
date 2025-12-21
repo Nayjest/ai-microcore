@@ -9,6 +9,16 @@ def test_storage_read_write():
     assert content == "test content"
     mc.storage.delete("tests_tmp")
 
+def test_storage_delete():
+    mc.storage.delete("tests_tmp")
+    assert mc.storage.delete("tests_tmp") == False
+    mc.storage.write("tests_tmp/test_file", "test content")
+    assert mc.storage.delete("tests_tmp/test_file") == True
+    assert not mc.storage.exists("tests_tmp/test_file")
+    mc.storage.write("tests_tmp/test_file2", "test content")
+    assert mc.storage.delete("tests_tmp") == True
+    assert not mc.storage.exists("tests_tmp/test_file2")
+    assert mc.storage.delete("tests_tmp") == False
 
 def test_storage_write_existing():
     dir = "tests_tmp"

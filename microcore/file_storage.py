@@ -85,12 +85,31 @@ class Storage:
         """
         return Path(name).relative_to(self.path)
 
-    def read(self, name: str | Path, encoding: str = None, default=_missing):
+    def read(
+        self,
+        name: str | Path,
+        encoding: str = None,
+        default=_missing,
+        binary: bool = False,
+    ) -> str | bytes:
         """
-        Reads file from the storage.
+        Read file from the storage and return it's content.
+        Args:
+            name (str | Path): File name within the storage.
+            encoding (str, optional): File encoding. Defaults to config().DEFAULT_ENCODING (utf-8).
+            default (any, optional): Default value to return if file not found.
+                If not provided, FileNotFoundError is raised.
+            binary (bool, optional): Whether to read the file in binary mode. Defaults to False.
+        Returns:
+            str | bytes: File content as string or bytes.
         """
         name = str(name)
-        encoding = encoding or self.default_encoding
+        if binary:
+            if encoding is not None:
+                logging.warning("Encoding is ignored when reading binary files")
+        else:
+            if not encoding:
+                encoding = self.default_encoding
         if not os.path.isabs(name) and not name.startswith("./"):
             if "." in name:
                 parts = name.split(".")
@@ -102,9 +121,11 @@ class Storage:
                     ext = ""
             name = f"{self.path}/{name}{ext}"
         try:
-            if encoding is None:
+            if binary or encoding is None:
                 with open(name, "rb") as f:
                     rawdata = f.read()
+                    if binary:
+                        return rawdata
                 result = chardet.detect(rawdata)
                 encoding = result["encoding"]
                 return rawdata.decode(encoding)
@@ -135,9 +156,14 @@ class Storage:
                 return default
             raise e
 
-    def delete(self, target: str | Path | list[str | Path]):
+    def delete(self, target: str | Path | list[str | Path]) -> bool:
         """
-        Removes the file or directory specified by `path` within the `storage_path` if exists.
+        Remove the file or directory specified by target path
+        related to the storage root (if exists).
+        Args:
+            target (str | Path | list[str | Path]): The target file or directory path.
+        Returns:
+            bool: True if the file or directory was deleted, False if it did not exist.
         """
         if isinstance(target, list):
             for t in target:
@@ -145,11 +171,12 @@ class Storage:
             return
         path = (self.path / target).resolve()
         if not path.exists():
-            return
+            return False
         if path.is_dir():
             shutil.rmtree(path)
         else:
             os.remove(path)
+        return True
 
     def write(
         self,
@@ -268,7 +295,7 @@ class Storage:
         posix: bool = False,
     ) -> list[Path | str]:
         """
-        Lists files in a specified directory, excluding those that match given patterns.
+        List files in a target directory, excluding those that match given patterns.
 
         Args:
             target_dir (str | Path): The directory to search in.
