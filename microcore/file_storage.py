@@ -161,14 +161,19 @@ class Storage:
         Remove the file or directory specified by target path
         related to the storage root (if exists).
         Args:
-            target (str | Path | list[str | Path]): The target file or directory path.
+            target (str | Path | list[str | Path]):
+                The target file / directory path or list of paths.
         Returns:
-            bool: True if the file or directory was deleted, False if it did not exist.
+            bool:
+                True if any file(s) or director(ies) was deleted,
+                False if no target paths existed.
         """
         if isinstance(target, list):
+            any_deletions_performad = False
             for t in target:
-                self.delete(t)
-            return
+                if self.delete(t):
+                    any_deletions_performad = True
+            return any_deletions_performad
         path = (self.path / target).resolve()
         if not path.exists():
             return False
