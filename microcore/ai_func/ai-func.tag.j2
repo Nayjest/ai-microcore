@@ -26,7 +26,7 @@ Tool:<{{ name }}> {{ description or name.replace('_', ' ').capitalize() }}
   {%- for k,v in args.items() %}
   "{{ k }}":
     {%- if v.type %} <{{ v.type }}>{% endif -%}
-    {%- if v.default != 'NOT_SET' %} (default = {{ v.default }}){%endif-%}
+    {%- if v.default != 'NOT_SET' %} (default = {{ v.default }}){% endif -%}
     {%- if not loop.last -%},{%- endif -%}
     {%- if v.comment %} {{ v.comment }}{% endif -%}
   {%- endfor -%}
