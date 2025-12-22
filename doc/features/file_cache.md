@@ -6,6 +6,7 @@ designed for cross-cutting concern within the ai-microcore horizontal functional
 Target applications: rapid prototyping, R&D, and AI experiments.  
 
 ## Overview
+
 The **microcore.file_cache** submodule provides a simple yet powerful way to persist Python objects
 to disk using pickle serialization.
 Built on top of microcore's file storage submodule, it offers automatic key generation,
@@ -31,7 +32,6 @@ hierarchical organization, and straightforward cache management.
 > This implementation prioritizes simplicity and ease of use.
 > For production workloads with high-frequency access patterns,
 > consider faster in-memory storage solutions like Redis or Memcached.
-
 
 ## API Reference
 
