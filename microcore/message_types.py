@@ -28,7 +28,8 @@ class Msg:
         return str(self.content)
 
     def strip(self):
-        self.content = self.content.strip()
+        if isinstance(self.content, str):
+            self.content = self.content.strip()
         return self
 
 
