@@ -145,10 +145,16 @@ class Storage:
         backup_existing: bool = True,
         ensure_ascii: bool = False,
     ):
+        """
+        Writes JSON data to a file in the storage.
+        """
         serialized_data = json.dumps(data, indent=4, ensure_ascii=ensure_ascii)
         return self.write(name, serialized_data, rewrite_existing, backup_existing)
 
     def read_json(self, name: str | Path, default=_missing):
+        """
+        Reads JSON data from a file in the storage.
+        """
         try:
             return json.loads(self.read(name))
         except FileNotFoundError as e:
