@@ -12,6 +12,7 @@ from . import mcp
 from . import ui
 from . import tokenizing
 from . import presets
+from . import file_cache
 from .embedding_db import SearchResult, AbstractEmbeddingDB, SearchResults
 from .file_storage import storage
 from ._env import configure, env, config, min_setup
@@ -203,6 +204,7 @@ __all__ = [
     "dedent",
     # submodules
     "embedding_db",
+    "file_cache",
     "file_storage",
     "message_types",
     "utils",
@@ -218,4 +220,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "4.5.0"
+__version__ = "5.0.0a2"

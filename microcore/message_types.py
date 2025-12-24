@@ -20,7 +20,7 @@ DEFAULT_MESSAGE_ROLE = Role.USER
 @dataclass
 class Msg:
     role: str = field(default=DEFAULT_MESSAGE_ROLE)
-    content: str = field(default="")
+    content: str | list[dict] = field(default="")
 
     DICT_FACTORY: ClassVar = dict
 
@@ -28,7 +28,8 @@ class Msg:
         return str(self.content)
 
     def strip(self):
-        self.content = self.content.strip()
+        if isinstance(self.content, str):
+            self.content = self.content.strip()
         return self
 
 

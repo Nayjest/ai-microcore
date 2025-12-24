@@ -38,15 +38,16 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
     content: str
     prompt: TPrompt
     gen_duration: float
+    from_file_cache: bool = False
 
     def __new__(cls, string: str, attrs: dict = None):
         attrs = {
-            **(attrs or {}),
             "role": Role.ASSISTANT,
             "content": str(string),
             "prompt": None,
             # generation duration in seconds (float), used in metrics
             "gen_duration": None,
+            **(attrs or {}),
         }
         obj = ExtendedString.__new__(cls, string, attrs)
         return obj
@@ -94,8 +95,20 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
         return await mcp.exec(self)
 
     def is_tool_call(self):
-        from .._env import env
-        return self.parse_json(
-            raise_errors=False,
-            required_fields=[env().config.AI_SYNTAX_FUNCTION_NAME_FIELD],
-        ) is not False
+        from ..ai_func import extract_tool_params
+        return bool(extract_tool_params(self))
+
+    def as_tool_call(
+        self,
+        toolset=None,
+    ) -> tuple[str, list, dict] | None:
+        """
+        Extracts tool call from the LLM response.
+        Args:
+            toolset: Optional ToolSet to use for extraction.
+            If not provided, uses default extractor.
+        """
+        from ..ai_func import extract_tool_params, ToolSet
+        if isinstance(toolset, ToolSet):
+            return toolset.extract_tool_params(self)
+        return extract_tool_params(self)

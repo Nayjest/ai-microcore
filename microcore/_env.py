@@ -1,3 +1,6 @@
+"""
+MicroCore environment object / initialization.
+"""
 import os.path
 from dataclasses import dataclass, field, asdict, fields
 from importlib.util import find_spec
@@ -58,17 +61,20 @@ class Env:
         raise NotImplementedError
 
     def init_templating(self):
+        """Initialize Jinja2 environment and template function for templates rendering."""
         self.jinja_env = make_jinja2_env(self)
         self.tpl_function = make_tpl_function(self)
 
     @property
-    def mcp_registry(self):
+    def mcp_registry(self) -> "MCPRegistry":
+        """Lazily initialize and return the registry of preconfigured MCP servers."""
         if self._mcp_registry is None:
             from .mcp import MCPRegistry
             self._mcp_registry = MCPRegistry(self.config.MCP_SERVERS)
         return self._mcp_registry
 
     def init_llm(self):
+        """Initialize language model functions based on configuration."""
         if self.config.LLM_API_TYPE == ApiType.NONE:
 
             def not_configured(*args, **kwargs) -> "LLMResponse":
@@ -225,10 +231,10 @@ _env: Env | None = None
 
 
 def env() -> Env:
-    """Returns the current MicroCore environment"""
+    """Return current MicroCore environment object."""
     return _env or Env()
 
 
 def config() -> Config:
-    """Resolve current configuration"""
+    """Resolve current configuration."""
     return env().config

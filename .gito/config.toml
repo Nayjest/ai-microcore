@@ -1,0 +1,8 @@
+# Override project configuration for AI code reviewer (gito.bot)
+# Bundled configuration can be found here: https://github.com/Nayjest/Gito/blob/main/gito/config.toml
+[prompt_vars]
+awards = ""  # Disable awards
+requirements = """
+- Treat language issues as critical defects: Unclear or incorrect English that may cause misunderstanding must be flagged, not ignored.
+- Enforce consistency: Terminology, tense, and naming patterns must be consistent across the codebase.
+"""
