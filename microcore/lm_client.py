@@ -85,7 +85,7 @@ class BaseAIChatClient(BaseAIClient, abc.ABC):
     def _convert_message_content_part(
         self,
         content_part: TMsgContentPart,
-        converted_content: list = None,
+        converted_content: list = None,  # pylint: disable=unused-argument
     ) -> Any | list[Any] | None:
         """
         Convert the content block into a format suitable for the LLM inference chat API.

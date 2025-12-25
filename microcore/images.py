@@ -19,6 +19,7 @@ def image_format_to_mime_type(output_format: str) -> str | None:
 
 
 class ImageInterface(MsgContentPart, ConvertableToMessage, ABC):
+
     @abstractmethod
     def bytes(self) -> bytes | None:
         raise NotImplementedError()
@@ -39,8 +40,8 @@ class ImageInterface(MsgContentPart, ConvertableToMessage, ABC):
     def display(self, **kwargs):
         """Display the generated image if possible."""
         if is_kaggle() or is_google_colab() or is_notebook():
-            from IPython.display import display, Image
-            display(Image(data=self.bytes(), **kwargs))
+            from IPython.display import display, Image as IPythonImage
+            display(IPythonImage(data=self.bytes(), **kwargs))
         else:
             print(str(self))
 
@@ -93,11 +94,11 @@ class Image(ImageInterface):
         data: bytes,
         mime_type: str | None = None
     ):
-        self._bytes_data = data
+        self._bytes = data
         self._mime_type = mime_type
 
     def bytes(self):
-        return self._bytes_data
+        return self._bytes
 
     def mime_type(self) -> str | None:
         return self._mime_type

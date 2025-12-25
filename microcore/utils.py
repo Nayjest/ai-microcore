@@ -80,7 +80,7 @@ class ConvertableToMessage(abc.ABC):
         # use conversion method from subclass if available
         if isinstance(self, MsgContent):
             return self
-        elif isinstance(self, MsgContentPart):
+        if isinstance(self, MsgContentPart):
             return [self]
         return str(self)
 

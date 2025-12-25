@@ -2,10 +2,10 @@ import asyncio
 import base64
 
 import openai
-from microcore.images import ImageInterface, ImageListInterface, image_format_to_mime_type
+from openai.types import ImagesResponse
+
 from microcore.lm_client import BaseAIChatClient, BaseAsyncAIClient
 from microcore.message_types import TMsgContentPart
-from openai.types import ImagesResponse
 
 from ..configuration import Config, ApiType
 from .._prepare_llm_args import prepare_prompt
@@ -17,7 +17,13 @@ from ..wrappers.llm_response_wrapper import (
 )
 from ..utils import is_chat_model, is_image_model
 from .shared import make_image_generation_response, make_remove_hidden_output, prepare_callbacks
-from ..images import Image, FileImage
+from ..images import (
+    Image,
+    FileImage,
+    ImageInterface,
+    ImageListInterface,
+    image_format_to_mime_type
+)
 
 
 class AsyncOpenAIClient(BaseAsyncAIClient):
@@ -128,7 +134,7 @@ class OpenAIClient(BaseAIChatClient):
         return content_part
 
     def load_models(self, **kwargs) -> dict:
-        models_iter = self.oai_client.models.list()
+        models_iter = self.oai_client.models.list(**kwargs)
         return {model.id: model for model in models_iter}
 
     def generate(
@@ -149,22 +155,24 @@ class OpenAIClient(BaseAIChatClient):
             response = self.oai_client.chat.completions.create(
                 messages=messages, **args
             )
-            check_for_errors(response)
-            if args["stream"]:
-                return _process_streamed_response(
-                    response,
-                    options["callbacks"],
-                    chat_model_used=True,
-                    hidden_output_begin=self.config.HIDDEN_OUTPUT_BEGIN,
-                    hidden_output_end=self.config.HIDDEN_OUTPUT_END,
-                )
-            response_text = response.choices[0].message.content
+        else:
+            response = self.oai_client.completions.create(prompt=prompt, **args)
+        check_for_errors(response)
+        if args["stream"]:
+            return _process_streamed_response(
+                response,
+                options["callbacks"],
+                chat_model_used=True,
+                hidden_output_begin=self.config.HIDDEN_OUTPUT_BEGIN,
+                hidden_output_end=self.config.HIDDEN_OUTPUT_END,
+            )
+        response_text = response.choices[0].message.content
 
-            if self.config.hiding_output():
-                response_text = self.remove_hidden_output(response_text)
-            for cb in options["callbacks"]:
-                cb(response_text)
-            return LLMResponse(response_text, response.__dict__)
+        if self.config.hiding_output():
+            response_text = self.remove_hidden_output(response_text)
+        for cb in options["callbacks"]:
+            cb(response_text)
+        return LLMResponse(response_text, response.__dict__)
 
 
 def image_to_oai(img: ImageInterface) -> dict:
@@ -205,13 +213,12 @@ async def _a_process_streamed_response(
                 if text_chunk == hidden_output_begin:
                     hiding = True
                     continue
-                else:
-                    if hiding:
-                        if text_chunk == hidden_output_end:
-                            hiding = False
-                            text_chunk = ""
-                        else:
-                            continue
+                if hiding:
+                    if text_chunk == hidden_output_end:
+                        hiding = False
+                        text_chunk = ""
+                    else:
+                        continue
             response_text += text_chunk
             for cb in callbacks:
                 if asyncio.iscoroutinefunction(cb):
@@ -237,13 +244,12 @@ def _process_streamed_response(
                 if text_chunk == hidden_output_begin:
                     is_hiding = True
                     continue
-                else:
-                    if is_hiding:
-                        if text_chunk == hidden_output_end:
-                            is_hiding = False
-                            text_chunk = ""
-                        else:
-                            continue
+                if is_hiding:
+                    if text_chunk == hidden_output_end:
+                        is_hiding = False
+                        text_chunk = ""
+                    else:
+                        continue
             response_text += text_chunk
             [cb(text_chunk) for cb in callbacks]
     return LLMResponse(response_text, {})
@@ -272,7 +278,7 @@ def check_for_errors(response):
 
 def _oai_image_response_to_images(response: ImagesResponse) -> list[Image]:
     images = []
-    for i, oai_img in enumerate(response.data):
+    for oai_img in response.data:
         image_bytes = base64.b64decode(oai_img.b64_json)
         img = Image(
             image_bytes,
@@ -288,7 +294,6 @@ def _generate_image(
     connection: openai.OpenAI | openai.AsyncOpenAI,
     options
 ) -> ImageGenerationResponse | None:
-
     def convert_input_image(img: ImageInterface) -> str:
         if isinstance(img, FileImage):
             return open(img.file, "rb")
