@@ -145,6 +145,7 @@ class ImageGenerationResponse(LLMResponse, ImageListInterface, ImageInterface):
     def display(self, **kwargs):
         for i in self.images():
             i.display(**kwargs)
+        return self
 
 
 class StoredImageGenerationResponse(ImageGenerationResponse):

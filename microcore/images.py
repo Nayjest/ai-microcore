@@ -44,6 +44,7 @@ class ImageInterface(MsgContentPart, ConvertableToMessage, ABC):
             display(IPythonImage(data=self.bytes(), **kwargs))
         else:
             print(repr(self))
+        return self
 
     def __repr__(self):
         return "<Image>"
