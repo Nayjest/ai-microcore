@@ -226,7 +226,8 @@ __all__ = [
     "tokenizing",
     "Metrics",
     "interactive_setup",
+    "model_names",
     # "wrappers",
 ]
 
-__version__ = "5.0.0a2"
+__version__ = "5.0.0dev2"
