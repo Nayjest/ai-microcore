@@ -4,7 +4,7 @@ import anthropic
 from anthropic.types import ContentBlockDeltaEvent
 
 from ..configuration import Config
-from .._prepare_llm_args import prepare_chat_messages
+from .._prepare_llm_args import prompt_to_message_dicts
 from ..message_types import Role
 from ..types import LLMAsyncFunctionType, LLMFunctionType
 from ..wrappers.llm_response_wrapper import LLMResponse
@@ -110,7 +110,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
     async def allm(prompt, **kwargs):
         args, options = _prepare_llm_arguments(config, kwargs)
         args["system"], args["messages"] = _extract_sys_msg(
-            prepare_chat_messages(prompt)
+            prompt_to_message_dicts(prompt)
         )
         response = await async_client.messages.create(**args)
         if args.get("stream"):
@@ -126,7 +126,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
     def llm(prompt, **kwargs):
         args, options = _prepare_llm_arguments(config, kwargs)
         args["system"], args["messages"] = _extract_sys_msg(
-            prepare_chat_messages(prompt)
+            prompt_to_message_dicts(prompt)
         )
         response = sync_client.messages.create(**args)
         if args.get("stream"):

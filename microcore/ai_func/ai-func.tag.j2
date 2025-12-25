@@ -1,0 +1,35 @@
+Tool:<{{ name }}> {{ description or name.replace('_', ' ').capitalize() }}
+<{{ name -}}
+{%- if args | length > 1 and not render_settings.json_inside -%}
+{%- set items = args.items() | list -%}
+{%- for k, v in items[1:] -%}
+    {{- " " -}}
+    {{- k }} = {{ '"{' -}}
+    {{- v.type -}}
+    {%- if v.default != 'NOT_SET' %}, default = {{ v.default }}{% endif -%}
+    {{- '}"' -}}
+{%- endfor -%}
+{%- endif -%}
+>
+{{- "\n" -}}
+{%- if args | length >= 1 and not render_settings.json_inside -%}
+    ...{{ args.keys() | first }} here
+    {%- if (args.values() | first).type != 'str' -%}
+        {{ ' ' }}({{ (args.values() | first).type }})
+    {%- endif -%}
+    {%- if (args.values() | first).comment -%}
+        {{ '; ' }}{{ (args.values() | first).comment }}
+    {%- endif -%}
+    ...
+{%- elif render_settings.json_inside -%}
+{{ "{" }}
+  {%- for k,v in args.items() %}
+  "{{ k }}":
+    {%- if v.type %} <{{ v.type }}>{% endif -%}
+    {%- if v.default != 'NOT_SET' %} (default = {{ v.default }}){% endif -%}
+    {%- if not loop.last -%},{%- endif -%}
+    {%- if v.comment %} {{ v.comment }}{% endif -%}
+  {%- endfor -%}
+{{ "\n}" }}
+{%- endif %}
+</{{ name }}>

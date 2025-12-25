@@ -22,7 +22,7 @@ configs = {  # See https://github.com/Nayjest/ai-microcore?tab=readme-ov-file#%E
     },
     "gemini-2.5-pro": {
         "model": "gemini-2.5-pro",
-        "api_type": mc.ApiType.GOOGLE_AI_STUDIO,
+        "api_type": mc.ApiType.GOOGLE,
         "api_key": os.getenv("GOOGLE_API_KEY"),
         "api_base": "https://generativelanguage.googleapis.com/v1alpha",
     },

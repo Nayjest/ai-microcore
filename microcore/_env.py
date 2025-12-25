@@ -1,3 +1,6 @@
+"""
+MicroCore environment object / initialization.
+"""
 import os.path
 from dataclasses import dataclass, field, asdict, fields
 from importlib.util import find_spec
@@ -14,9 +17,9 @@ from .configuration import (
     PRINT_STREAM,
 )
 from .presets import MIN_SETUP
+from .lm_client import BaseAIClient
 from .types import TplFunctionType, LLMAsyncFunctionType, LLMFunctionType
 from .templating.jinja2 import make_jinja2_env, make_tpl_function
-from .llm.openai_llm import make_llm_functions as make_openai_llm_functions
 from .llm.local_llm import make_llm_functions as make_local_llm_functions
 
 if TYPE_CHECKING:
@@ -41,6 +44,7 @@ class Env:
     tokenizer: "PreTrainedTokenizer" = field(  # noqa
         default=None, init=False, repr=False
     )
+    default_client: BaseAIClient | None = None
     _mcp_registry: "MCPRegistry" = field(init=False, default=None)
 
     def __post_init__(self):
@@ -58,30 +62,38 @@ class Env:
         raise NotImplementedError
 
     def init_templating(self):
+        """Initialize Jinja2 environment and template function for templates rendering."""
         self.jinja_env = make_jinja2_env(self)
         self.tpl_function = make_tpl_function(self)
 
     @property
-    def mcp_registry(self):
+    def mcp_registry(self) -> "MCPRegistry":
+        """Lazily initialize and return the registry of preconfigured MCP servers."""
         if self._mcp_registry is None:
             from .mcp import MCPRegistry
             self._mcp_registry = MCPRegistry(self.config.MCP_SERVERS)
         return self._mcp_registry
 
     def init_llm(self):
+        """Initialize language model functions based on configuration."""
+
+        def default_llm(*args, **kwargs) -> "LLMResponse":
+            if self.default_client:
+                return self.default_client.generate(*args, **kwargs)
+            raise LLMConfigError("Language model is not configured")
+
+        async def aio_default_llm(*args, **kwargs) -> "LLMResponse":
+            if self.default_client:
+                return await self.default_client.aio.generate(*args, **kwargs)
+            raise LLMConfigError("Language model is not configured")
+
+        self.llm_function, self.llm_async_function = (
+            default_llm,
+            aio_default_llm,
+        )
+
         if self.config.LLM_API_TYPE == ApiType.NONE:
-
-            def not_configured(*args, **kwargs) -> "LLMResponse":
-                raise LLMConfigError("Language model is not configured")
-
-            async def a_not_configured(*args, **kwargs) -> "LLMResponse":
-                raise LLMConfigError("Language model is not configured")
-
-            self.llm_function, self.llm_async_function = (
-                not_configured,
-                a_not_configured,
-            )
-
+            pass
         elif self.config.LLM_API_TYPE == ApiType.FUNCTION:
             self.llm_function, self.llm_async_function = make_local_llm_functions(
                 self.config
@@ -130,25 +142,19 @@ class Env:
                 self.llm_function,
                 self.llm_async_function,
             ) = make_google_vertex_llm_functions(self.config)
-        elif self.config.LLM_API_TYPE == ApiType.GOOGLE_AI_STUDIO:
+        elif self.config.LLM_API_TYPE in (ApiType.GOOGLE, ApiType.GOOGLE_AI_STUDIO):
             try:
-                from .llm.google_genai import (
-                    make_llm_functions as make_google_genai_llm_functions,
-                )
+                from .llm.google_genai import GoogleClient
             except ModuleNotFoundError as e:
                 raise ModuleNotFoundError(
-                    "To use the Google Gemini language models via AI Studio, "
-                    "you need to install the `google-generativeai` package. "
-                    "Run `pip install google-generativeai`."
+                    "To use the Google Gemini language models via Google GenAI SDK, "
+                    "you need to install the `google-genai` package. "
+                    "Run `pip install google-genai`."
                 ) from e
-            (
-                self.llm_function,
-                self.llm_async_function,
-            ) = make_google_genai_llm_functions(self.config)
+            self.default_client = GoogleClient(self.config)
         else:
-            self.llm_function, self.llm_async_function = make_openai_llm_functions(
-                self.config
-            )
+            from .llm.openai import OpenAIClient
+            self.default_client = OpenAIClient(self.config)
 
     def init_similarity_search(self):
         if (
@@ -225,10 +231,10 @@ _env: Env | None = None
 
 
 def env() -> Env:
-    """Returns the current MicroCore environment"""
+    """Return current MicroCore environment object."""
     return _env or Env()
 
 
 def config() -> Config:
-    """Resolve current configuration"""
+    """Resolve current configuration."""
     return env().config
