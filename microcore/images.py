@@ -43,7 +43,10 @@ class ImageInterface(MsgContentPart, ConvertableToMessage, ABC):
             from IPython.display import display, Image as IPythonImage
             display(IPythonImage(data=self.bytes(), **kwargs))
         else:
-            print(str(self))
+            print(repr(self))
+
+    def __repr__(self):
+        return "<Image>"
 
 
 class ImageListInterface(MsgMultipartContent, ConvertableToMessage, ABC):
@@ -77,6 +80,9 @@ class FileImage(ImageInterface):
         if self.file and self._mime is None:
             self._mime, _ = mimetypes.guess_type(self.file)
         return self._mime
+
+    def __repr__(self):
+        return f"<FileImage {file_link(self.file)}>"
 
 
 class FileImageList(ImageListInterface):
