@@ -30,7 +30,7 @@ def cache_dir(prefix: str = "") -> str:
     Returns:
         str: path to the cache directory within the file storage.
     """
-    if prefix: # prevent directory traversal attacks
+    if prefix:  # prevent directory traversal attacks
         prefix = prefix.replace("..", "").strip("/")
     return CACHE_ROOT_FOLDER + "/" + (f"{prefix}/" if prefix else '')
 

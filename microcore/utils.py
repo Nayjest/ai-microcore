@@ -1,6 +1,7 @@
 """
 General-purpose utility functions.
 """
+import abc
 import asyncio
 import builtins
 import dataclasses
@@ -19,15 +20,18 @@ from typing import Any, Union, Callable
 
 import tiktoken
 from colorama import Fore
+from microcore.message_types import MsgContentPart
 
 from .configuration import Config
 from .types import BadAIAnswer, BadAIJsonAnswer
-from .message_types import UserMsg, SysMsg, AssistantMsg
+from .message_types import MsgContent, UserMsg, SysMsg, AssistantMsg
 from .json_parsing import parse_json
 
 
 def is_chat_model(model: str, config: Config = None) -> bool:
-    """Detects if model is chat model or text completion model"""
+    """
+    Detects if model is chat model or text completion model.
+    """
     if config and config.CHAT_MODE is not None:
         return config.CHAT_MODE
     completion_keywords = ["instruct", "davinci", "babbage", "curie", "ada"]
@@ -57,25 +61,40 @@ def is_image_model(model: str) -> bool:
         * Add Google / xAI / Anthropic image generation models detection.
     """
     model = str(model).lower()
-    return model.startswith("dall-e-") or model.startswith("gpt-image-")
+    return (
+        # OpenAI Image models
+        model.startswith("dall-e-")
+        or model.startswith("gpt-image-")
+        # Google image models: gemini-2.5-flash-image, gemini-3-pro-image-preview, etc.
+        or ("gemini" in model and "image" in model)
+    )
 
 
-class ConvertableToMessage:
+class ConvertableToMessage(abc.ABC):
     """
     Trait / mixin class that provides properties to convert
     string-like objects to microcore chat message types.
     """
+
+    def _as_message_content(self) -> str | list[dict]:
+        # use conversion method from subclass if available
+        if isinstance(self, MsgContent):
+            return self
+        elif isinstance(self, MsgContentPart):
+            return [self]
+        return str(self)
+
     @property
     def as_user(self) -> UserMsg:
-        return UserMsg(str(self))
+        return UserMsg(self._as_message_content())
 
     @property
     def as_system(self) -> SysMsg:
-        return SysMsg(str(self))
+        return SysMsg(self._as_message_content())
 
     @property
     def as_assistant(self) -> AssistantMsg:
-        return AssistantMsg(str(self))
+        return AssistantMsg(self._as_message_content())
 
     @property
     def as_model(self) -> AssistantMsg:
@@ -168,7 +187,7 @@ class DataclassEncoder(json.JSONEncoder):
 
     def default(self, o):
         if dataclasses.is_dataclass(o):
-            return dataclasses.asdict(o)
+            return dict(dataclasses.asdict(o))
         return _default(self, o)
 
 

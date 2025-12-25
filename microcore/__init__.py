@@ -74,6 +74,15 @@ def use_model(name: str):
     config().LLM_DEFAULT_ARGS["model"] = name
 
 
+def model_names() -> list[str]:
+    """
+    Return a list of available model names from the default LLM client.
+    """
+    if env().default_client is None:
+        raise ValueError("No default LLM client supporting models list configured.")
+    return env().default_client.model_names()
+
+
 def validate_config():
     """
     Validates current MicroCore configuration

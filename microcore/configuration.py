@@ -72,7 +72,8 @@ class ApiType(str, Enum):
     """List of text generation models: https://deepinfra.com/models?type=text-generation"""
     ANTHROPIC = "anthropic"
     GOOGLE_VERTEX_AI = "google_vertex_ai"
-    GOOGLE_AI_STUDIO = "google_ai_studio"
+    GOOGLE_AI_STUDIO = "google_ai_studio"  # Deprecated
+    GOOGLE = "google"  # new Google SDK
 
     # Local models
     FUNCTION = "function"
@@ -246,10 +247,10 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
         if self.LLM_API_TYPE == ApiType.AZURE:
             self.LLM_API_VERSION = self.LLM_API_VERSION or self.OPENAI_API_VERSION
             self.LLM_DEPLOYMENT_ID = self.LLM_DEPLOYMENT_ID or self.AZURE_DEPLOYMENT_ID
-        elif self.LLM_API_TYPE == ApiType.GOOGLE_AI_STUDIO:
-            self.MODEL = self.MODEL or "gemini-pro"
+        elif self.LLM_API_TYPE in (ApiType.GOOGLE_AI_STUDIO, ApiType.GOOGLE):
+            self.MODEL = self.MODEL or "gemini-2.5-pro"
         elif self.LLM_API_TYPE == ApiType.GOOGLE_VERTEX_AI:
-            self.MODEL = self.MODEL or "gemini-1.0-pro"
+            self.MODEL = self.MODEL or "gemini-2.5-pro"
             if self.GOOGLE_VERTEX_GCLOUD_AUTH is None:
                 self.GOOGLE_VERTEX_GCLOUD_AUTH = get_bool_from_env(
                     "GOOGLE_VERTEX_GCLOUD_AUTH", not self.GOOGLE_VERTEX_ACCESS_TOKEN

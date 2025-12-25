@@ -5,7 +5,7 @@ from typing import Any
 
 
 from .utils import run_parallel, RETURN_EXCEPTION
-from .wrappers.llm_response_wrapper import LLMResponse, DictFromLLMResponse
+from .wrappers.llm_response_wrapper import LLMResponse, DictFromLLMResponse, ImageGenerationResponse
 from .types import TPrompt, LLMContextLengthExceededError
 from .file_cache import (
     cache_hit,
@@ -75,7 +75,7 @@ def llm(
     parse_json: bool | dict = False,
     file_cache: bool | str = False,
     **kwargs
-) -> str | LLMResponse:
+) -> str | LLMResponse | ImageGenerationResponse:
     """
     Request Large Language Model synchronously
 
@@ -178,7 +178,7 @@ async def allm(
     parse_json: bool | dict = False,
     file_cache: bool | str = False,
     **kwargs
-) -> str | LLMResponse | DictFromLLMResponse:
+) -> str | LLMResponse | DictFromLLMResponse | ImageGenerationResponse:
     """
     Request Large Language Model asynchronously
 

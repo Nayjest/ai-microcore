@@ -4,7 +4,7 @@ import threading
 from typing import Awaitable, Optional, Any, TypeVar
 
 from ..configuration import Config, LLMConfigError
-from .._prepare_llm_args import prepare_chat_messages, prepare_prompt
+from .._prepare_llm_args import prompt_to_message_dicts, prepare_prompt
 from ..types import LLMAsyncFunctionType, LLMFunctionType
 from ..utils import resolve_callable
 from ..wrappers.llm_response_wrapper import LLMResponse
@@ -55,7 +55,7 @@ def make_llm_functions(
         async def allm(prompt, **kwargs):
             args, options = _prepare_llm_arguments(config, kwargs)
             prompt = (
-                prepare_chat_messages(prompt)
+                prompt_to_message_dicts(prompt)
                 if config.CHAT_MODE
                 else prepare_prompt(prompt)
             )
@@ -83,7 +83,7 @@ def make_llm_functions(
         def llm(prompt, **kwargs):
             args, options = _prepare_llm_arguments(config, kwargs)
             prompt = (
-                prepare_chat_messages(prompt)
+                prompt_to_message_dicts(prompt)
                 if config.CHAT_MODE
                 else prepare_prompt(prompt)
             )

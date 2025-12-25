@@ -1,5 +1,5 @@
 """Message classes for OpenAI Chat API"""
-
+import abc
 from enum import Enum
 from dataclasses import dataclass, field
 from typing import ClassVar
@@ -17,10 +17,29 @@ class Role(str, Enum):
 DEFAULT_MESSAGE_ROLE = Role.USER
 
 
+class MsgContentPart:
+    pass
+
+
+class MsgContent:
+    pass
+
+
+class MsgMultipartContent(MsgContent,  abc.ABC):
+    @abc.abstractmethod
+    def parts(self) -> list[MsgContentPart]:
+        raise NotImplementedError()
+
+
+TMsgContentPart = str | dict | MsgContentPart
+
+TMsgContent = str | MsgContent | list[TMsgContentPart]
+
+
 @dataclass
 class Msg:
+    content: TMsgContent = field(default="")
     role: str = field(default=DEFAULT_MESSAGE_ROLE)
-    content: str | list[dict] = field(default="")
 
     DICT_FACTORY: ClassVar = dict
 

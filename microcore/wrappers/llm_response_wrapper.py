@@ -1,8 +1,15 @@
 from typing import Any
 from typing import TYPE_CHECKING
 
+from microcore.images import FileImage, ImageInterface, ImageListInterface
+
 from ..types import BadAIAnswer, TPrompt
-from ..utils import ExtendedString, ConvertableToMessage, extract_number
+from ..utils import (
+    ExtendedString,
+    ConvertableToMessage,
+    extract_number,
+    file_link,
+)
 from ..message_types import Role, AssistantMsg
 
 if TYPE_CHECKING:
@@ -40,7 +47,7 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
     gen_duration: float
     from_file_cache: bool = False
 
-    def __new__(cls, string: str, attrs: dict = None):
+    def __new__(cls, string: str, attrs: dict = None, **kwargs):
         attrs = {
             "role": Role.ASSISTANT,
             "content": str(string),
@@ -49,7 +56,7 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
             "gen_duration": None,
             **(attrs or {}),
         }
-        obj = ExtendedString.__new__(cls, string, attrs)
+        obj = ExtendedString.__new__(cls, string, attrs, **kwargs)
         return obj
 
     def parse_json(
@@ -112,3 +119,86 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
         if isinstance(toolset, ToolSet):
             return toolset.extract_tool_params(self)
         return extract_tool_params(self)
+
+
+class ImageGenerationResponse(LLMResponse, ImageListInterface, ImageInterface):
+
+    _images: list[ImageInterface]
+
+    def images(self) -> list[ImageInterface]:
+        return self._images
+
+    def image(self):
+        return self._images[0] if self._images else None
+
+    def mime_type(self) -> str | None:
+        return self.image().mime_type() if self.image() else None
+
+    def bytes(self) -> bytes | None:
+        return self.image().bytes() if self.image() else None
+
+    def __new__(cls, str_repr: str = "<images>", images: list[ImageInterface] = None, **kwargs):
+        images = images or []
+        obj = LLMResponse.__new__(cls, str_repr, _images=images, **kwargs)
+        return obj
+
+    def display(self, **kwargs):
+        for i in self.images():
+            i.display(**kwargs)
+
+
+class StoredImageGenerationResponse(ImageGenerationResponse):
+
+    _images: list[FileImage]
+
+    def __new__(cls, str_repr: str = "<images>", images: list[FileImage] = None, **kwargs):
+        images = images or []
+        if len(images) == 1:
+            str_repr = file_link(images[0].file)
+        elif len(images) > 1:
+            str_repr = "\n".join(
+                file_link(i.file) for i in images
+            )
+        obj = ImageGenerationResponse.__new__(
+            cls,
+            images=images,
+            str_repr=str_repr,
+            **kwargs
+        )
+        return obj
+
+    @property
+    def file(self) -> str | None:
+        return self._images[0].file if self._images else None
+
+    @property
+    def files(self) -> list[str]:
+        return [img.file for img in self._images]
+
+
+# file: str | None
+    # """
+    # Absolute path to the first generated image file saved within the storage.
+    # """
+    #
+    # files: list[str] | None
+    # """
+    # List of absolute paths to the image files saved within the storage.
+    # """
+    #
+    # def as_message_content(self, index=None) -> str | list[dict] | dict:
+    #     if hasattr(self, "data") and self.data:
+    #         if index is None:
+    #             return [Image.from_base64(i.b64_json) for i in self.data]
+    #         else:
+    #             return Image.from_base64(self.data[index])
+    #
+    # def display(self, **kwargs):
+    #     """Display the generated image if possible."""
+    #     if is_kaggle() or is_google_colab() or is_notebook():
+    #         from IPython.display import display, Image
+    #         if self.files and len(self.files) > 0:
+    #             for file in self.files:
+    #                 display(Image(filename=file, **kwargs))
+    #     else:
+    #         print(str(self))
