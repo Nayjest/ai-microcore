@@ -45,9 +45,11 @@ def ask_yn(msg: str, default: bool | None = None) -> bool:
     while True:
         try:
             input_val = input(msg + " (y/n) ").lower().strip()
-            if any(input_val.startswith(i) for i in {"y", "si", "так", "да", "1", "+", "ok"}):
+            if any(input_val.startswith(i) for i in [
+                "y", "si", "так", "да", "1", "+", "ok", "ja", "oui"
+            ]):
                 return True
-            if any(input_val.startswith(i) for i in {"n", "0", "-", "н"}):
+            if any(input_val.startswith(i) for i in ["n", "0", "-", "н"]):
                 return False
             if default is not None:
                 warning("Incorrect input, using default:", "Yes" if default else "No")
