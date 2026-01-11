@@ -13,22 +13,22 @@ if not is_notebook():
 
 def info(*args, color=Fore.LIGHTYELLOW_EX, **kwargs):
     """Print info message (default color: light yellow)."""
-    print(*[color + str(i) for i in args], **kwargs)
+    print(*[color + str(i) for i in args], Fore.RESET, **kwargs)
 
 
-def debug(msg):
+def debug(*args, **kwargs):
     """Print debug message (color: blue)."""
-    info(msg, color=Fore.BLUE)
+    info(*args, color=Fore.BLUE, **kwargs)
 
 
 def error(*args, **kwargs):
     """Print error message (color: red)."""
-    print(*[Fore.RED + str(i) for i in args], **kwargs)
+    info(*args, color=Fore.RED, **kwargs)
 
 
 def warning(*args, **kwargs):
     """Print warning message (color: yellow)."""
-    print(*[Fore.YELLOW + str(i) for i in args], **kwargs)
+    info(*args, color=Fore.YELLOW, **kwargs)
 
 
 def ask_yn(msg: str, default: bool | None = None) -> bool:
@@ -42,9 +42,14 @@ def ask_yn(msg: str, default: bool | None = None) -> bool:
     Returns:
         bool: True if the user confirmed, False otherwise.
     """
+    if default:
+        yn = bright("y") + magenta + "/n"
+    else:
+        yn = "y/" + bright('n')
+    msg += f"\nType {Fore.MAGENTA}[{yn}{Fore.MAGENTA}]{Fore.RESET}: "
     while True:
         try:
-            input_val = input(msg + " (y/n) ").lower().strip()
+            input_val = input(msg).lower().strip()
             if any(input_val.startswith(i) for i in [
                 "y", "si", "так", "да", "1", "+", "ok", "ja", "oui"
             ]):
@@ -54,7 +59,7 @@ def ask_yn(msg: str, default: bool | None = None) -> bool:
             if default is not None:
                 warning("Incorrect input, using default:", "Yes" if default else "No")
                 return bool(default)
-            warning("Please answer with y/n")
+            warning("Please type 'y' or 'n'")
         except KeyboardInterrupt:
             warning("Interrupted, using default:", "Yes" if default else "No")
             return bool(default)
@@ -79,11 +84,11 @@ def ask_choose(msg: str, variants: list):
     while True:
         i = input(f"{msg} {Fore.MAGENTA}[1-{len(variants)}]{Fore.RESET}: ").strip()
         if not i.isdigit():
-            error("Not a number")
+            error("Please type a number")
             continue
         i = int(i) - 1
         if i >= len(variants) or i < 0:
-            error("Incorrect number")
+            error("Incorrect choice")
             continue
         break
 
