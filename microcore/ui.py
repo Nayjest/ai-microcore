@@ -4,7 +4,7 @@ CLI User Interface Utilities.
 This module provides a suite of helper functions for command-line interactions,
 handling colored output and robust user input prompting.
 """
-from typing import Self
+from typing import Union
 
 from colorama import Fore, Style, init
 
@@ -24,7 +24,7 @@ class _ColorFunc(str):
     Or as a wrapper function:
         `print(red("Text"))` # Automatically resets color after
     """
-    def __new__(cls, code, reset_code=Fore.RESET) -> Self:
+    def __new__(cls, code, reset_code=Fore.RESET) -> Union["_ColorFunc", str]:
         obj = str.__new__(cls, code)
         obj.code = code
         obj.reset_code = reset_code
@@ -128,6 +128,7 @@ def ask_choose(
         The selected element from the `variants` list.
     Raises:
         ValueError: If the default choice is not None and not in the variants.
+        ValueError: If variants is neither a list nor a dict.
     """
     def print_choice(number: int, title: str):
         text = f"  {magenta}{dim}[{reset}{magenta}{number}{dim}]{reset}  {title}"
@@ -157,6 +158,8 @@ def ask_choose(
                 default_idx = idx
             print_choice(idx, item_title)
         variants = list(variants.keys())
+    else:
+        raise ValueError("Variants must be a list or a dict")
     if choice_prompt:
         choice_prompt = choice_prompt.rstrip() + " "
 
