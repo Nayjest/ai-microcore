@@ -49,6 +49,8 @@ bright = _ColorFunc(Style.BRIGHT, Style.NORMAL)
 dim = _ColorFunc(Style.DIM, Style.NORMAL)
 normal = _ColorFunc(Style.NORMAL, "")
 
+DEFAULT_QUESTION_STYLE = f"{bright}{magenta('Q: ')}"
+
 
 def info(*args, color=Fore.LIGHTYELLOW_EX, **kwargs):
     """Print info message (default color: light yellow)."""
@@ -70,7 +72,11 @@ def warning(*args, **kwargs):
     info(*args, color=Fore.YELLOW, **kwargs)
 
 
-def ask_yn(msg: str, default: bool | None = None) -> bool:
+def ask_yn(
+    msg: str,
+    default: bool | None = None,
+    question_style: str = DEFAULT_QUESTION_STYLE,
+) -> bool:
     """
     Prompts the user for a Yes/No confirmation via input().
     Retries indefinitely on invalid input if default value is not provided.
@@ -78,6 +84,7 @@ def ask_yn(msg: str, default: bool | None = None) -> bool:
         msg (str): The question to display to the user.
         default (bool | None):
             Value converted to bool and returned on invalid input or KeyboardInterrupt (Ctrl+C).
+        question_style (str): Style applied to the question text.
     Returns:
         bool: True if the user confirmed, False otherwise.
     """
@@ -85,7 +92,9 @@ def ask_yn(msg: str, default: bool | None = None) -> bool:
         yn = bright("y") + magenta + "/n"
     else:
         yn = "y/" + bright('n')
-    msg += f"\nType {Fore.MAGENTA}[{yn}{Fore.MAGENTA}]{Fore.RESET}: "
+    if question_style:
+        msg = f"{question_style}{msg}"
+    msg += f"\n{reset}Type {magenta}[{yn}{magenta}]{reset_color}: "
     while True:
         try:
             input_val = input(msg).lower().strip()
@@ -108,7 +117,7 @@ def ask_choose(
     msg: str,
     variants: list | dict,
     choice_prompt: str = "Enter choice",
-    question_style: str = f"{bright}{magenta('Q: ')}",
+    question_style: str = DEFAULT_QUESTION_STYLE,
     default: str | None = None,
 ):
     """
