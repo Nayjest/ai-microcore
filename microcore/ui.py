@@ -123,9 +123,11 @@ def ask_choose(
         choice_prompt (str): Text shown before the input cursor (default: "Enter choice").
         question_style (str): Style applied to the question text.
         default: str | None:
-            Default choice returned on invalid input or KeyboardInterrupt (Ctrl+C).
+            Default choice returned on empty input. Must be one of the `variants`.
     Returns:
         The selected element from the `variants` list.
+    Raises:
+        ValueError: If the default choice is not None and not in the variants.
     """
     def print_choice(number: int, title: str):
         text = f"  {magenta}{dim}[{reset}{magenta}{number}{dim}]{reset}  {title}"
