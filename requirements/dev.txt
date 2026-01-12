@@ -7,3 +7,4 @@ pylint
 pdoc
 watchdog
 pyflakes
+twine>=6.2.0,<7
