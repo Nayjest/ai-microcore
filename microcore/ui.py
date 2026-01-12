@@ -4,11 +4,50 @@ CLI User Interface Utilities.
 This module provides a suite of helper functions for command-line interactions,
 handling colored output and robust user input prompting.
 """
+from typing import Self
+
 from colorama import Fore, Style, init
+
 from .utils import is_notebook
+
 
 if not is_notebook():
     init(strip=False)
+
+
+class _ColorFunc(str):
+    """
+    A hybrid string/callable class for ANSI color codes.
+
+    Allows usage as a string for concatenation:
+        `print(red + "Text")`
+    Or as a wrapper function:
+        `print(red("Text"))` # Automatically resets color after
+    """
+    def __new__(cls, code, reset_code=Fore.RESET) -> Self:
+        obj = str.__new__(cls, code)
+        obj.code = code
+        obj.reset_code = reset_code
+        return obj
+
+    def __call__(self, *args):
+        return f"{self.code}{''.join([str(i) for i in args])}{self.reset_code}"
+
+
+# Define text colors and styles
+red = _ColorFunc(Fore.RED)
+green = _ColorFunc(Fore.GREEN)
+blue = _ColorFunc(Fore.BLUE)
+cyan = _ColorFunc(Fore.CYAN)
+yellow = _ColorFunc(Fore.YELLOW)
+magenta = _ColorFunc(Fore.MAGENTA)
+white = _ColorFunc(Fore.WHITE)
+gray = _ColorFunc(Fore.LIGHTBLACK_EX)
+reset = _ColorFunc(Style.RESET_ALL, "")
+reset_color = _ColorFunc(Fore.RESET, "")
+bright = _ColorFunc(Style.BRIGHT, Style.NORMAL)
+dim = _ColorFunc(Style.DIM, Style.NORMAL)
+normal = _ColorFunc(Style.NORMAL, "")
 
 
 def info(*args, color=Fore.LIGHTYELLOW_EX, **kwargs):
@@ -65,24 +104,70 @@ def ask_yn(msg: str, default: bool | None = None) -> bool:
             return bool(default)
 
 
-def ask_choose(msg: str, variants: list):
+def ask_choose(
+    msg: str,
+    variants: list | dict,
+    choice_prompt: str = "Enter choice",
+    question_style: str = f"{bright}{magenta('Q: ')}",
+    default: str | None = None,
+):
     """
     Prompt the user to choose one of the variants via input() and return the chosen item.
 
     Args:
-        msg: The prompt message to display.
-        variants: A list of options to choose from.
-
+        msg (str): The question displayed above the list of choices.
+        variants (list[str] | dict(str|str)):
+            A list or dict of options to choose from.
+            If a dict is provided, dict keys will be used as return values
+            and dict values will be displayed.
+        choice_prompt (str): Text shown before the input cursor (default: "Enter choice").
+        question_style (str): Style applied to the question text.
+        default: str | None:
+            Default choice returned on invalid input or KeyboardInterrupt (Ctrl+C).
     Returns:
         The selected element from the `variants` list.
     """
+    def print_choice(number: int, title: str):
+        text = f"  {magenta}{dim}[{reset}{magenta}{number}{dim}]{reset}  {title}"
+        if number == default_idx:
+            text += reset + yellow(" [default]")
+        print(text)
+
+    if question_style:
+        msg = f"{question_style}{msg}{reset}"
+    print(msg)
     idx = 0
+    default_idx: int | None = None
     if isinstance(variants, list):
+        if default is not None and default not in variants:
+            raise ValueError("Default choice is not in variants list")
         for item in variants:
             idx += 1
-            print(f"\t{Fore.MAGENTA}{idx}:{Fore.RESET}\t{item}")
+            if item == default:
+                default_idx = idx
+            print_choice(idx, item)
+    elif isinstance(variants, dict):
+        if default is not None and default not in variants.keys():
+            raise ValueError("Default choice is not in variants list")
+        for key, item_title in variants.items():
+            idx += 1
+            if key == default:
+                default_idx = idx
+            print_choice(idx, item_title)
+        variants = list(variants.keys())
+    if choice_prompt:
+        choice_prompt = choice_prompt.rstrip() + " "
+
+    str_range = f"{magenta}[{bright}1-{len(variants)}"
+    if default_idx is not None:
+        str_range += f"{dim}, default={default_idx}"
+    str_range += f"{reset}{magenta}]{reset}"
     while True:
-        i = input(f"{msg} {Fore.MAGENTA}[1-{len(variants)}]{Fore.RESET}: ").strip()
+
+        i = input(f"{reset}{choice_prompt}{str_range}: ").strip()
+        if not i and default is not None:
+            warning("Using default choice:", str(default))
+            return default
         if not i.isdigit():
             error("Please type a number")
             continue
@@ -103,38 +188,3 @@ def ask_non_empty(msg) -> str:
             break
         error("Empty input")
     return i
-
-
-class _ColorFunc(str):
-    """
-    A hybrid string/callable class for ANSI color codes.
-
-    Allows usage as a string for concatenation:
-        `print(red + "Text")`
-    Or as a wrapper function:
-        `print(red("Text"))` # Automatically resets color after
-    """
-    def __new__(cls, code, reset_code=Fore.RESET):
-        obj = str.__new__(cls, code)
-        obj.code = code
-        obj.reset_code = reset_code
-        return obj
-
-    def __call__(self, *args):
-        return f"{self.code}{''.join([str(i) for i in args])}{self.reset_code}"
-
-
-# Define text colors and styles
-red = _ColorFunc(Fore.RED)
-green = _ColorFunc(Fore.GREEN)
-blue = _ColorFunc(Fore.BLUE)
-cyan = _ColorFunc(Fore.CYAN)
-yellow = _ColorFunc(Fore.YELLOW)
-magenta = _ColorFunc(Fore.MAGENTA)
-white = _ColorFunc(Fore.WHITE)
-gray = _ColorFunc(Fore.LIGHTBLACK_EX)
-reset = _ColorFunc(Style.RESET_ALL, "")
-reset_color = _ColorFunc(Fore.RESET, "")
-bright = _ColorFunc(Style.BRIGHT, Style.NORMAL)
-dim = _ColorFunc(Style.DIM, Style.NORMAL)
-normal = _ColorFunc(Style.NORMAL, "")
