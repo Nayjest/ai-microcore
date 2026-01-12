@@ -1,14 +1,15 @@
-<p align="right"> 
-    <a href="https://github.com/Nayjest/ai-microcore/releases" target="_blank"><img src="https://img.shields.io/github/v/release/Nayjest/ai-microcore.svg" alt="Release Notes"></a>
-    <a href="https://app.codacy.com/gh/Nayjest/ai-microcore/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade" target="_blank"><img src="https://app.codacy.com/project/badge/Grade/441d03416bc048828c649129530dcbc3" alt="Code Quality"></a>
-    <a href="https://github.com/Nayjest/ai-microcore/actions/workflows/pylint.yml" target="_blank"><img src="https://github.com/Nayjest/ai-microcore/actions/workflows/pylint.yml/badge.svg" alt="Pylint"></a>
-    <img src="https://raw.githubusercontent.com/Nayjest/ai-microcore/main/coverage.svg" alt="Code Coverage">
-    <a href="https://github.com/Nayjest/ai-microcore/actions/workflows/tests.yml" target="_blank"><img src="https://github.com/Nayjest/ai-microcore/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
-    <a href="https://github.com/Nayjest/ai-microcore/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/static/v1?label=license&message=MIT&color=d08aff" alt="License"></a>
+# AI MicroCore: A Minimalistic Foundation for AI Applications
+
+<p align="center"> 
+  <a href="https://pypi.org/project/ai-microcore/" target="_blank"><img src="https://img.shields.io/github/v/release/Nayjest/ai-microcore.svg" alt="Release Notes"></a>
+  <a href="https://app.codacy.com/gh/Nayjest/ai-microcore/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade" target="_blank"><img src="https://app.codacy.com/project/badge/Grade/441d03416bc048828c649129530dcbc3" alt="Code Quality"></a>
+  <a href="https://github.com/Nayjest/ai-microcore/actions/workflows/pylint.yml" target="_blank"><img src="https://github.com/Nayjest/ai-microcore/actions/workflows/pylint.yml/badge.svg" alt="Pylint"></a>
+  <a href="https://github.com/Nayjest/ai-microcore/actions/workflows/tests.yml" target="_blank"><img src="https://github.com/Nayjest/ai-microcore/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+  <img src="https://raw.githubusercontent.com/Nayjest/ai-microcore/main/coverage.svg" alt="Code Coverage">
+  <a href="https://github.com/vshymanskyy/StandWithUkraine/blob/main/README.md" target="_blank"><img src="https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/refs/heads/main/badges/StandWithUkraine.svg" alt="Stand With Ukraine"></a>
+  <a href="https://github.com/Nayjest/ai-microcore/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/static/v1?label=license&message=MIT&color=d08aff" alt="License"></a>
 </p>
 
-
-# AI MicroCore: A Minimalistic Foundation for AI Applications
 
 **MicroCore** is a collection of python adapters for Large Language Models
 and Vector Databases / Semantic Search APIs allowing to 
@@ -92,7 +93,7 @@ pip install google-generativeai
 ```bash
 pip install vertexai
 ```
-📌Additonaly for working through [Vertex AI](https://cloud.google.com/vertex-ai) you need to
+📌Additionally for working through [Vertex AI](https://cloud.google.com/vertex-ai) you need to
 [install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install)
 and [configure the authorization](https://cloud.google.com/sdk/docs/authorizing).
 
@@ -143,7 +144,7 @@ configure(
     EMBEDDING_DB_TYPE=EmbeddingDbType.QDRANT,
     EMBEDDING_DB_HOST="localhost",
     EMBEDDING_DB_PORT="6333",
-    EMBEDDING_DB_SIZE=384,  # dimentions quantity in used SentenceTransformer model
+    EMBEDDING_DB_SIZE=384,  # dimensions quantity in used SentenceTransformer model
     EMBEDDING_DB_FUNCTION=SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2"),
 )
 ```
@@ -264,7 +265,7 @@ Performs code review by LLM for changes in git .patch files in any programming l
 #### [Image analysis](https://colab.research.google.com/drive/1qTJ51wxCv3VlyqLt3M8OZ7183YXPFpic) (Google Colab)
 Determine the number of petals and the color of the flower from a photo (gpt-4-turbo)
 
-#### [Banchmark LLMs on math problems](https://www.kaggle.com/code/nayjest/gigabenchmark-llm-accuracy-math-problems) (Kaggle Notebook)
+#### [Benchmark LLMs on math problems](https://www.kaggle.com/code/nayjest/gigabenchmark-llm-accuracy-math-problems) (Kaggle Notebook)
 Benchmark accuracy of 20+ state of the art models on solving olympiad math problems. Inferencing local language models via HuggingFace Transformers, parallel inference.
 
 #### [Generate meme image](https://github.com/Nayjest/ai-microcore/blob/main/examples/generate_meme_image.py)
@@ -272,7 +273,7 @@ Simple example demonstrating image generation using [OpenAI GPT Image](https://p
 
 
 #### [Local inference with PyTorch / Transformers](https://github.com/Nayjest/ai-microcore/blob/main/examples/pytorch_transformers.py)
-Text generation using HF/Transformers model locally (example withQwen 3 0.6B).
+Text generation using HF/Transformers model locally (example with Qwen 3 0.6B).
  
 #### [Other examples](https://github.com/llm-microcore/microcore/tree/main/examples)
 
@@ -301,4 +302,4 @@ Please see [CONTRIBUTING](https://github.com/Nayjest/ai-microcore/blob/main/CONT
 ## 📝 License
 
 Licensed under the [MIT License](https://github.com/Nayjest/ai-microcore/blob/main/LICENSE)
-© 2023 [Vitalii Stepanenko](mailto:mail@vitaliy.in)
+© 2023–2026 [Vitalii Stepanenko](mailto:mail@vitaliy.in)

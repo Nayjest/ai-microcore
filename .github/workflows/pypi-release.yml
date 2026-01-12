@@ -1,0 +1,38 @@
+name: Publish microcore to PyPI
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  call-tests:
+    uses: ./.github/workflows/tests.yml
+
+  build-and-publish:
+    needs: call-tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.13"
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install --upgrade --no-cache-dir -r requirements/dev.txt
+
+    - name: Build dist
+      run: python -m build --wheel --sdist .
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@v1
+      with:
+        password: ${{ secrets.PYPI_TOKEN }}
