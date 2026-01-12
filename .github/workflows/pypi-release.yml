@@ -33,6 +33,6 @@ jobs:
       run: python -m build --wheel --sdist .
 
     - name: Publish to PyPI
-      env:
-        PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
-      run: twine upload dist/* -u __token__ -p $PYPI_TOKEN --verbose
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_TOKEN }}
