@@ -1,4 +1,4 @@
-name: Publish microcore to PyPI
+name: "Publish MicroCore to PyPI"
 
 on:
   release:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   call-tests:
