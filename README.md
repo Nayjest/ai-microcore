@@ -5,6 +5,7 @@
     <img src="https://raw.githubusercontent.com/Nayjest/ai-microcore/main/coverage.svg" alt="Code Coverage">
     <a href="https://github.com/Nayjest/ai-microcore/actions/workflows/tests.yml" target="_blank"><img src="https://github.com/Nayjest/ai-microcore/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
     <a href="https://github.com/Nayjest/ai-microcore/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/static/v1?label=license&message=MIT&color=d08aff" alt="License"></a>
+    <a href="https://github.com/vshymanskyy/StandWithUkraine/blob/main/README.md" target="_blank"><img src="https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badge2-direct.svg" alt="Stand With Ukraine"></a>
 </p>
 
 
