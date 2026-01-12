@@ -466,6 +466,8 @@ class Config(LLMConfig):
                 from .interactive_setup import interactive_setup
                 orig_logging = self.USE_LOGGING  # avoid rewr. logging settings
                 config = interactive_setup(self.DOT_ENV_FILE)
+                if not config:
+                    raise e
                 self.__dict__.update(config.__dict__)
                 self.USE_LOGGING = orig_logging
             else:
