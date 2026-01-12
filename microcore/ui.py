@@ -136,39 +136,33 @@ def ask_choose(
             text += reset + yellow(" [default]")
         print(text)
 
-    if question_style:
-        msg = f"{question_style}{msg}{reset}"
-    print(msg)
+    print(f"{question_style}{msg}{reset}" if question_style else msg)
     idx = 0
     default_idx: int | None = None
-    if isinstance(variants, list):
-        if default is not None and default not in variants:
-            raise ValueError("Default choice is not in variants list")
-        for item in variants:
-            idx += 1
-            if item == default:
-                default_idx = idx
-            print_choice(idx, item)
-    elif isinstance(variants, dict):
-        if default is not None and default not in variants.keys():
-            raise ValueError("Default choice is not in variants list")
-        for key, item_title in variants.items():
-            idx += 1
-            if key == default:
-                default_idx = idx
-            print_choice(idx, item_title)
-        variants = list(variants.keys())
+    if isinstance(variants, dict):
+        keys, display_items = list(variants.keys()), list(variants.values())
+        variants = keys
+    elif isinstance(variants, list):
+        keys = display_items = variants
     else:
         raise ValueError("Variants must be a list or a dict")
-    if choice_prompt:
-        choice_prompt = choice_prompt.rstrip() + " "
 
+    if default is not None and default not in keys:
+        raise ValueError("Default choice is not in variants list")
+
+    for key, display in zip(keys, display_items):
+        idx += 1
+        if key == default:
+            default_idx = idx
+        print_choice(idx, display)
+
+    choice_prompt = (choice_prompt.rstrip() + " ") if choice_prompt else ""
     str_range = f"{magenta}[{bright}1-{len(variants)}"
     if default_idx is not None:
         str_range += f"{dim}, default={default_idx}"
     str_range += f"{reset}{magenta}]{reset}"
-    while True:
 
+    while True:
         i = input(f"{reset}{choice_prompt}{str_range}: ").strip()
         if not i and default is not None:
             warning("Using default choice:", str(default))
@@ -180,10 +174,7 @@ def ask_choose(
         if i >= len(variants) or i < 0:
             error("Incorrect choice")
             continue
-        break
-
-    item = variants[i]
-    return item
+        return variants[i]
 
 
 def ask_non_empty(msg) -> str:
