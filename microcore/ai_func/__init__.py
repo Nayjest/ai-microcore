@@ -238,7 +238,7 @@ class ToolSet(list[AIFunctionWrapper]):
     def extract_tool_params(
         self,
         llm_response: LLMResponse | str,
-    ) -> tuple[str, list | dict] | None:
+    ) -> tuple[str, list , dict] | None:
         tool_call_extractors = set()
         for func in self:
             syntax = func.syntax or env().config.DEFAULT_AI_FUNCTION_SYNTAX
