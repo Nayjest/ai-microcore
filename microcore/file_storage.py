@@ -93,7 +93,7 @@ class Storage:
         binary: bool = False,
     ) -> str | bytes:
         """
-        Read file from the storage and return it's content.
+        Read file from the storage and return its content.
         Args:
             name (str | Path): File name within the storage.
             encoding (str, optional): File encoding. Defaults to config().DEFAULT_ENCODING (utf-8).
