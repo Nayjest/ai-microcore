@@ -53,19 +53,7 @@ def interactive_setup(
         for field, title in extras.items():
             if field not in raw_config:
                 raw_config[field] = ask_non_empty(f"{title}: ").strip()
-    try:
-        config_dict = dict(
-            USE_DOT_ENV=False,
-            EMBEDDING_DB_TYPE=EmbeddingDbType.NONE,
-            USE_LOGGING=True,
-        )
-        config_dict.update(raw_config)
-        config = configure(config_dict)
-        print("Testing LLM...")
-        q = "What is capital of France?\n(!) IMPORTANT: Answer only with one word"
-        assert "pari" in llm(q).lower()
-    except Exception as e:  # pylint: disable=W0718
-        error(f"Error testing LLM API: {e}")
+    if not (config := test_llm_connection(raw_config)):
         if ask_yn("Restart configuring?"):
             return interactive_setup(file_path, defaults, extras)
         return None
@@ -80,3 +68,27 @@ def interactive_setup(
             f.write(config_body)
         print(f"Saved to {file_link(file_path)}")
     return config
+
+
+def test_llm_connection(config_dict: dict) -> Config | None:
+    """
+    Test LLM connection with given configuration dictionary.
+    Args:
+        config_dict (dict): Configuration dictionary for LLM setup.
+    Returns:
+        Config | None: Configuration object if the LLM responds correctly, None otherwise.
+    """
+    try:
+        final_config_dict = dict(
+            USE_DOT_ENV=False,
+            EMBEDDING_DB_TYPE=EmbeddingDbType.NONE,
+            USE_LOGGING=True,
+        )
+        final_config_dict.update(config_dict)
+        config = configure(final_config_dict)
+        print("Testing LLM...")
+        q = "What is capital of France?\n(!) IMPORTANT: Answer only with one word"
+        return config if "pari" in llm(q).lower() else None
+    except Exception as e:  # pylint: disable=W0718
+        error(f"Error testing LLM API: {e}")
+        return None

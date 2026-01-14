@@ -33,7 +33,7 @@ def server(request):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
-        sleep(2)
+        sleep(3)
         yield {"process": process, "port": port, "transport": request.param}
     finally:
         if process:

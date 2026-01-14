@@ -2,7 +2,7 @@
 flake8
 black
 build
-twine
+twine>=6.2.0,<7
 pylint
 pdoc
 watchdog
