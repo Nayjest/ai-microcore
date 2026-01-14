@@ -1,6 +1,7 @@
+import pytest
 from microcore.utils import resolve_callable, CantResolveCallable
 from microcore.ui import red
-import pytest
+
 
 def test_resolve_callable():
     assert resolve_callable("microcore.ui.red")() == red()

@@ -56,21 +56,36 @@ class MockResponse(dict):
         self.__dict__ = self
 
 
+def _restore_prompt(prompt):
+    if (
+        isinstance(prompt, list)
+        and isinstance(prompt[0], dict)
+        and len(prompt) == 1
+        and "text" in prompt[0]
+    ):
+        return prompt[0]["text"]
+    return prompt
+
+
 def _side_effect_compl_parrot(prompt, **kwargs):
+    prompt = _restore_prompt(prompt)
     return MockResponse(choices=[MockResponse(text=f"completion:{prompt}")])
 
 
 def _side_effect_chat_parrot(messages, **kwargs):
+    messages[0]["content"] = _restore_prompt(messages[0]["content"])
     return MockResponse(
         choices=[MockResponse(message=MockResponse(content=messages[0]["content"]))]
     )
 
 
 async def _aside_effect_compl_parrot(prompt, **kwargs):
+    prompt = _restore_prompt(prompt)
     return MockResponse(choices=[MockResponse(text=f"completion:{prompt}")])
 
 
 async def _aside_effect_chat_parrot(messages, **kwargs):
+    messages[0]["content"] = _restore_prompt(messages[0]["content"])
     return MockResponse(
         choices=[MockResponse(message=MockResponse(content=messages[0]["content"]))]
     )

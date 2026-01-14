@@ -1,3 +1,7 @@
+"""
+General-purpose utility functions.
+"""
+import abc
 import asyncio
 import builtins
 import dataclasses
@@ -16,38 +20,84 @@ from typing import Any, Union, Callable
 
 import tiktoken
 from colorama import Fore
+from microcore.message_types import MsgContentPart
 
 from .configuration import Config
 from .types import BadAIAnswer, BadAIJsonAnswer
-from .message_types import UserMsg, SysMsg, AssistantMsg
+from .message_types import MsgContent, UserMsg, SysMsg, AssistantMsg
 from .json_parsing import parse_json
 
 
 def is_chat_model(model: str, config: Config = None) -> bool:
-    """Detects if model is chat model or text completion model"""
+    """
+    Detects if model is chat model or text completion model.
+    """
     if config and config.CHAT_MODE is not None:
         return config.CHAT_MODE
-    completion_keywords = ["instruct", "davinci", "babbage", "curie", "ada"]
+    completion_keywords = [
+        "instruct", "davinci", "babbage", "curie", "ada",  # outdated OpenAI completion models
+        "-codex",  # OpenAI Coding models, gpt-5.1-codex, gpt-5.1-codex-max, gpt-5-codex, etc.
+    ]
     return not any(keyword in str(model).lower() for keyword in completion_keywords)
 
 
 def is_image_model(model: str) -> bool:
-    model = str(model)
-    return model.startswith("dall-e-") or model.startswith("gpt-image-")
+    """
+    Detects if model is an image generation model by name.
+
+    Warning:
+        Limited implementation: Currently only detects DALL-E and GPT-image models.
+
+    Args:
+        model: Model identifier string
+
+    Returns:
+        True if the model is identified as an image generation model
+
+    Examples:
+        >>> is_image_model("dall-e-3")
+        True
+        >>> is_image_model("gpt-4")
+        False
+
+    Todo:
+        * Add Google / xAI / Anthropic image generation models detection.
+    """
+    model = str(model).lower()
+    return (
+        # OpenAI Image models
+        model.startswith("dall-e-")
+        or model.startswith("gpt-image-")
+        # Google image models: gemini-2.5-flash-image, gemini-3-pro-image-preview, etc.
+        or ("gemini" in model and "image" in model)
+    )
 
 
-class ConvertableToMessage:
+class ConvertableToMessage(abc.ABC):
+    """
+    Trait / mixin class that provides properties to convert
+    string-like objects to microcore chat message types.
+    """
+
+    def _as_message_content(self) -> str | list[dict]:
+        # use conversion method from subclass if available
+        if isinstance(self, MsgContent):
+            return self
+        if isinstance(self, MsgContentPart):
+            return [self]
+        return str(self)
+
     @property
     def as_user(self) -> UserMsg:
-        return UserMsg(str(self))
+        return UserMsg(self._as_message_content())
 
     @property
     def as_system(self) -> SysMsg:
-        return SysMsg(str(self))
+        return SysMsg(self._as_message_content())
 
     @property
     def as_assistant(self) -> AssistantMsg:
-        return AssistantMsg(str(self))
+        return AssistantMsg(self._as_message_content())
 
     @property
     def as_model(self) -> AssistantMsg:
@@ -56,22 +106,35 @@ class ConvertableToMessage:
 
 class ExtendedString(str):
     """
-    Provides a way of extending string with attributes and methods
+    Way of extending strings with attributes and methods.
+    - Allows chaining of global functions that accept string as first argument.
+      Example: `s.upper().strip()`
+    - Can hold arbitrary attributes.
+    - Inherits from str.
+    - Provides handy utility methods for tokenization and JSON parsing.
     """
 
-    def __new__(cls, string: str, attrs: dict = None):
+    def __new__(cls, string: str, attrs: dict = None, **kwargs):
         """
-        Allows string to have attributes.
+        Create new ExtendedString instance with optional attributes.
+        Args:
+            string (str): The string value.
+            attrs (dict): Optional dictionary of attributes to set.
+            **kwargs: Additional attributes to set.
+        Returns:
+            ExtendedString: New instance of ExtendedString.
         """
         obj = str.__new__(cls, string)
         if attrs:
             for k, v in attrs.items():
                 setattr(obj, k, v)
+        for k, v in kwargs.items():
+            setattr(obj, k, v)
         return obj
 
     def __getattr__(self, item):
         """
-        Provides chaining of global functions
+        Provides chaining of global functions.
         """
         global_func = inspect.currentframe().f_back.f_globals.get(item) or vars(
             builtins
@@ -127,7 +190,7 @@ class DataclassEncoder(json.JSONEncoder):
 
     def default(self, o):
         if dataclasses.is_dataclass(o):
-            return dataclasses.asdict(o)
+            return dict(dataclasses.asdict(o))
         return _default(self, o)
 
 
@@ -151,9 +214,15 @@ def parse(
     return result
 
 
-def file_link(file_path: str | Path):
-    """Returns file name in format displayed in PyCharm console as a link."""
-    return "file:///" + str(Path(file_path).absolute()).replace("\\", "/")
+def file_link(file_path: str | Path, use_file_prefix: bool = True) -> str:
+    """
+    Returns file name in format displayed in PyCharm console as a link.
+    Args:
+        file_path (str | Path): Path to the file.
+        use_file_prefix (bool): Whether to add "file:///" prefix. Defaults to True
+    """
+    normalized_path = str(Path(file_path).absolute()).replace("\\", "/")
+    return (use_file_prefix and "file:///" or "") + normalized_path
 
 
 def list_files(
@@ -164,15 +233,15 @@ def list_files(
     posix: bool = False,
 ) -> list[Path]:
     """
-    Lists files in a specified directory, excluding those that match given patterns.
+    List files in target directory, excluding those that match given fnmatch patterns.
 
-    This function traverses the specified directory recursively and returns a list of all files
+    This function traverse target directory recursively and returns a list of all files
     that do not match the specified exclusion patterns. It can return absolute paths,
     paths relative to the target directory, or paths relative to a specified directory.
 
     Args:
         target_dir (str | Path): The directory to search in.
-        exclude (list[str | Path]): Patterns of files to exclude.
+        exclude (list[str | Path]): fnmatch patterns of files to exclude.
         relative_to (str | Path, optional): Base directory for relative paths.
             If None, paths are relative to `target_dir`. Defaults to None.
         absolute (bool, optional): If True, returns absolute paths. Defaults to False.
@@ -232,7 +301,7 @@ def is_notebook() -> bool:
 
 def is_google_colab() -> bool:
     """
-    Returns True if the code is running in a Google Colab notebook
+    Returns True if the code is running in a Google Colab notebook.
     """
     return "google.colab" in sys.modules
 
@@ -283,6 +352,13 @@ def show_vram_usage():
 
 
 def return_default(default, *args):
+    """
+    Generic-purpose default value handler.
+    This utility function performs the following actions based on the type of `value`:
+    - If value is an Exception type or instance, raises it.
+    - If value is a function, method or built-in, calls it with provided args.
+    - Otherwise, returns the value as is.
+    """
     if isinstance(default, type) and issubclass(default, BaseException):
         raise default()
     if isinstance(default, BaseException):
@@ -306,7 +382,14 @@ def extract_number(
     rounding: bool = False,
 ) -> int | float | Any:
     """
-    Extract a number from a string.
+    Extract a number from a text.
+    Returns default value if no number is found or conversion fails.
+    Args:
+        text (str): The input text to extract the number from.
+        default: The default value to return if no number is found or conversion fails.
+        position (str): "last" to extract the last number, "first" for the first number.
+        dtype (type | str): The desired type of the extracted number ("int" or "float").
+        rounding (bool): If True and dtype is float, rounds the result to the nearest integer.
     """
     assert position in ["last", "first"], f"Invalid position: {position}"
     idx = {"last": -1, "first": 0}[position]
@@ -329,8 +412,9 @@ def extract_number(
 
 def dedent(text: str) -> str:
     """
-    Removes minimal shared leading whitespace from each line
-    and strips leading and trailing empty lines.
+    Remove minimal shared leading whitespace from each line
+    and strip leading and trailing empty lines.
+    @deprecated: Use textwrap.dedent from standard library instead.
     """
     lines = text.splitlines()
     while lines and lines[0].strip() == "":
@@ -533,3 +617,38 @@ def most_similar(
             most_similar_word = word
 
     return most_similar_word, min_dist
+
+
+# XML tag extraction
+
+_TAG_PATTERN = re.compile(r'<(\w+)(.*?)>(.*?)</\1>', re.DOTALL)
+_TAG_ATTRIBUTE_PATTERN = re.compile(
+    r'(\w+)\s?=\s?["\']([^"\']*)["\']|(\w+)\s?=\s?([^\s\'\"\>]+)'
+)
+TExtractedTag = tuple[str, dict[str, str], str]
+
+
+def extract_tags(
+    text: str,
+    strip: bool = False
+) -> list[TExtractedTag]:
+    """
+    Extract all XML tags with attributes and content.
+    Returns:
+         list of tuples: (tag_name, attributes_dict, content)
+    """
+    tags = re.findall(_TAG_PATTERN, text)
+    return [
+        (name, _parse_tag_attributes(attrs_str), content.strip() if strip else content)
+        for name, attrs_str, content in tags
+    ]
+
+
+def _parse_tag_attributes(attrs_str: str) -> dict[str, str]:
+    attr_dict = {}
+    for match in re.finditer(_TAG_ATTRIBUTE_PATTERN, attrs_str):
+        if match.group(1):  # Quoted attribute
+            attr_dict[match.group(1)] = match.group(2)
+        else:  # Unquoted attribute
+            attr_dict[match.group(3)] = match.group(4)
+    return attr_dict

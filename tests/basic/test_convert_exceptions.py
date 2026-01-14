@@ -5,8 +5,6 @@ from httpx import Request, Response
 from openai import BadRequestError as OpenAIBadRequestError
 from anthropic import BadRequestError as AnthropicBadRequestError
 from google.api_core.exceptions import InvalidArgument
-from grpc import StatusCode
-from http import HTTPStatus
 
 
 def test_convert_unsupported_exception():
@@ -69,6 +67,6 @@ def test_google_bad_request_context_length_exceeded():
 
     ce = convert_exception(error, 'my_model')
     assert isinstance(ce, LLMContextLengthExceededError)
-    assert ce.actual_tokens == None
+    assert ce.actual_tokens is None
     assert ce.max_tokens == 1048577
     assert ce.model == 'my_model'

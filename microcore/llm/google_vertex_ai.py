@@ -1,3 +1,7 @@
+"""
+Google Vertex AI LLM functions.
+@deprecated Use Google GenAI instead.
+"""
 import asyncio
 import logging
 import os
@@ -14,7 +18,7 @@ from vertexai.preview.generative_models import GenerativeModel
 from google.oauth2.credentials import Credentials
 
 from ..configuration import Config
-from .._prepare_llm_args import prepare_chat_messages
+from .._prepare_llm_args import prompt_to_message_dicts
 from ..message_types import Role
 from ..types import LLMAsyncFunctionType, LLMFunctionType, BadAIAnswer
 from ..wrappers.llm_response_wrapper import LLMResponse
@@ -87,7 +91,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             generation_config=GenerationConfig(**kwargs),
             safety_settings=config.GOOGLE_GEMINI_SAFETY_SETTINGS,
         )
-        messages = _chat_messages_to_google(prepare_chat_messages(prompt))
+        messages = _chat_messages_to_google(prompt_to_message_dicts(prompt))
         last_message = messages.pop()
         chat = model.start_chat(
             history=messages,

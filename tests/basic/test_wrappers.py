@@ -1,6 +1,6 @@
-from . import setup
 import pytest
 import microcore as mc
+from . import setup
 
 
 @pytest.mark.asyncio

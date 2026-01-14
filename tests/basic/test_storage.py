@@ -11,19 +11,69 @@ def test_storage_read_write():
 
 
 def test_storage_write_existing():
-    mc.storage.delete("tests_tmp")
-    filename = mc.storage.write("tests_tmp/test_b", "old content")
-    filename2 = mc.storage.write("tests_tmp/test_b", "new content")
-    assert mc.storage.read(filename) == "new content"
-    assert filename2 == filename
-    assert mc.storage.read("tests_tmp/test_b_1") == "old content"
-    filename3 = mc.storage.write(
-        "tests_tmp/test_b", "content 3", rewrite_existing=False
+    dir = "tests_tmp"
+    mc.storage.delete(dir)
+    name1 = mc.storage.write(f"{dir}/test_b", "content1")
+    name2 = mc.storage.write(f"{dir}/test_b", "content2")
+    assert mc.storage.read(name1) == "content2"  # overwritten by 2
+    assert name2 == name1  # returned same filename
+    assert mc.storage.read(f"{dir}/test_b_1") == "content1"  # original saved as _1
+    name3 = mc.storage.write(
+        f"{dir}/test_b", "content3", rewrite_existing=False
     )
-    assert mc.storage.read(filename) == "new content"
-    assert mc.storage.read(filename3) == "content 3"
-    assert filename != filename3
-    mc.storage.delete("tests_tmp")
+    assert mc.storage.read(name1) == "content2"  # original unchanged
+    assert mc.storage.read(name3) == "content3"
+    assert name1 != name3
+    mc.storage.delete(dir)
+
+
+def test_storage_write_with_numbering_placeholder():
+    dir = "tests_tmp"
+    assert mc.storage.file_number_placeholder == '<n>'
+    mc.storage.delete(dir)
+    name1 = mc.storage.write(f"{dir}/-file<n>-", "content1")
+    name2 = mc.storage.write(f"{dir}/-file<n>-", "content2", rewrite_existing=False)
+    name3 = mc.storage.write(f"{dir}/-file<n>-", "content3", rewrite_existing=True)
+    name4 = mc.storage.write(f"{dir}/-file<n>-", "content4")  # default rewrite_existing=True
+    assert mc.storage.read(f"{dir}/-file1-") == "content4"  # last overwrite
+    assert mc.storage.read(f"{dir}/-file2-") == "content2"
+    assert mc.storage.read(f"{dir}/-file3-") == "content1"
+    assert mc.storage.read(f"{dir}/-file4-") == "content3"
+
+    custom_storage = mc.storage(
+        custom_path=mc.storage.path / dir,
+        file_number_placeholder="[num]"
+    )
+    name5 = custom_storage.write("-file[num]-", "content5", rewrite_existing=False)
+    assert name5 == "-file5-"
+    assert custom_storage.read("-file5-") == "content5"
+
+    custom_storage.file_number_placeholder = "$"
+    name6 = custom_storage.write("-file$-", "content6", rewrite_existing=False)
+    assert name6 == "-file6-"
+    assert custom_storage.read("-file6-") == "content6"
+
+    name7 = custom_storage.write("-file[num]-", "content7", rewrite_existing=False)
+    assert name7 == "-file[num]-"
+    assert custom_storage.read("-file[num]-") == "content7"
+
+    custom_storage.file_number_placeholder = None
+    assert custom_storage.write("file", "content1") == "file"
+    assert custom_storage.write("file", "content2", rewrite_existing=False) == "file_1"
+    assert custom_storage.write("file", "content3", rewrite_existing=True) == "file"
+    assert custom_storage.read("file") == "content3"
+    #assert custom_storage.read("file_2", default=None) == None
+    assert custom_storage.write(
+        "file",
+        "content4",
+        rewrite_existing=True,
+        backup_existing=False
+    ) == "file"
+    assert custom_storage.read("file_3", default=None) is None
+    assert custom_storage.read("file") == "content4"
+
+    assert custom_storage.read("file_1") == "content2"
+    mc.storage.delete(dir)
 
 
 def test_list_files():
@@ -56,15 +106,19 @@ def test_storage_delete():
     mc.storage.delete("tests_tmp")
 
     # Delete folder
-    filename = mc.storage.write("tests_tmp/file", "")
+    filename = mc.storage.write("tests_tmp/test_file", "test")
     assert (mc.storage.path / filename).exists()
-    mc.storage.delete("tests_tmp")
+    assert mc.storage.delete("tests_tmp") is True
     assert not (mc.storage.path / filename).exists()
+    assert mc.storage.delete("tests_tmp") is False
 
     # Delete file
-    filename = mc.storage.write("tests_tmp/file", "")
-    mc.storage.delete(filename)
+    filename = mc.storage.write("tests_tmp/test_file", "")
+    assert mc.storage.delete(filename) is True
+    assert mc.storage.delete(filename) is False
     assert not (mc.storage.path / filename).exists()
+    assert mc.storage.delete("tests_tmp") is True
+    assert mc.storage.delete("tests_tmp") is False
 
 
 def test_default_ext():

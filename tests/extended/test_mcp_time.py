@@ -1,5 +1,5 @@
-import microcore as mc
 import pytest
+import microcore as mc
 from microcore.mcp import ToolsCache
 
 

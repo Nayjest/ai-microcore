@@ -3,9 +3,17 @@ import logging
 from datetime import datetime
 from typing import Any
 
+
 from .utils import run_parallel, RETURN_EXCEPTION
-from .wrappers.llm_response_wrapper import LLMResponse, DictFromLLMResponse
+from .wrappers.llm_response_wrapper import LLMResponse, DictFromLLMResponse, ImageGenerationResponse
 from .types import TPrompt, LLMContextLengthExceededError
+from .file_cache import (
+    cache_hit,
+    load_cache,
+    save_cache,
+    build_cache_name,
+    delete_cache
+)
 from ._env import env
 
 
@@ -65,18 +73,28 @@ def llm(
     prompt: TPrompt,
     retries: int = 0,
     parse_json: bool | dict = False,
+    file_cache: bool | str = False,
     **kwargs
-) -> str | LLMResponse:
+) -> str | LLMResponse | ImageGenerationResponse:
     """
     Request Large Language Model synchronously
 
     Args:
-        prompt (str | Msg | dict | list[str | Msg | dict]): Text to send to LLM
-        retries (int): Number of retries in case of error
+        prompt (str | Msg | dict | list[str | Msg | dict]): Text to send to LLM.
+        retries (int):
+            Number of retries in case of error.
+            Default is 0 (no retries).
         parse_json (bool|dict):
             If True, parses response as JSON,
             alternatively non-empty dict can be used as parse_json arguments
-        **kwargs (dict): Parameters supported by the LLM API
+            Default is False (no parsing).
+        file_cache (bool | str):
+            If True or non-empty string, enables file caching of LLM responses.
+            If string, it will be used as cache prefix.
+            When enabled, identical requests with identical parameters
+            will return cached responses instead of making new API calls.
+            Default is False (no caching).
+        **kwargs: Parameters supported by the LLM API.
 
             See parameters supported by the OpenAI:
 
@@ -104,28 +122,41 @@ def llm(
     """
     [h(prompt, **kwargs) for h in env().llm_before_handlers]
     start = datetime.now()
-    tries = retries + 1
-    while tries > 0:
+
+    if (file_cache and cache_hit(
+        cache_name := build_cache_name(
+            prompt, kwargs,
+            prefix=file_cache if isinstance(file_cache, str) else "llm_requests"
+        )
+    )):
+        response: LLMResponse = load_cache(cache_name)
+        response.from_file_cache = True
+        tries = 0
+    else:
+        tries = retries + 1
+        while tries > 0:
+            try:
+                tries -= 1
+                response = env().llm_function(prompt, **kwargs)
+                break
+            except Exception as e:  # pylint: disable=W0718
+                converted_exception = convert_exception(e)
+                # If context length exceeded, or no tries left --> do not retry
+                if tries == 0 or isinstance(converted_exception, LLMContextLengthExceededError):
+                    if converted_exception:
+                        raise converted_exception from e
+                    raise e
+                logging.error(f"LLM error: {e}")
+                logging.info(f"Retrying... {tries} retries left")
+                continue
         try:
-            tries -= 1
-            response = env().llm_function(prompt, **kwargs)
-            break
-        except Exception as e:  # pylint: disable=W0718
-            converted_exception = convert_exception(e)
-            # If context length exceeded, or no tries left --> do not retry
-            if tries == 0 or isinstance(converted_exception, LLMContextLengthExceededError):
-                if converted_exception:
-                    raise converted_exception from e
-                raise e
-            logging.error(f"LLM error: {e}")
-            logging.info(f"Retrying... {tries} retries left")
-            continue
-    try:
-        response.gen_duration = (datetime.now() - start).total_seconds()
-        if not env().config.SAVE_MEMORY:
-            response.prompt = prompt
-    except AttributeError:
-        ...
+            response.gen_duration = (datetime.now() - start).total_seconds()
+            if not env().config.SAVE_MEMORY:
+                response.prompt = prompt
+        except AttributeError:
+            ...
+        if file_cache:
+            save_cache(cache_name, response)
     [h(response) for h in env().llm_after_handlers]
     if tries > 0:
         retry_params = dict(**kwargs)
@@ -145,18 +176,21 @@ async def allm(
     prompt: TPrompt,
     retries: int = 0,
     parse_json: bool | dict = False,
+    file_cache: bool | str = False,
     **kwargs
-) -> str | LLMResponse | DictFromLLMResponse:
+) -> str | LLMResponse | DictFromLLMResponse | ImageGenerationResponse:
     """
     Request Large Language Model asynchronously
 
     Args:
-        prompt (str | Msg | dict | list[str | Msg | dict]): Text to send to LLM
-        retries (int): Number of retries in case of error
+        prompt (str | Msg | dict | list[str | Msg | dict]): Text to send to LLM.
+        retries (int):
+            Number of retries in case of error.
+            Default is 0 (no retries).
         parse_json (bool|dict):
             If True, parses response as JSON,
-            alternatively non-empty dict can be used as parse_json arguments
-        **kwargs (dict): Parameters supported by the LLM API
+            alternatively non-empty dict can be used as parse_json arguments.
+        **kwargs: Parameters supported by the LLM API.
 
             See parameters supported by the OpenAI:
 
@@ -186,28 +220,41 @@ async def allm(
     """
     [h(prompt, **kwargs) for h in env().llm_before_handlers]
     start = datetime.now()
-    tries = retries + 1
-    while tries > 0:
+
+    if (file_cache and cache_hit(
+        cache_name := build_cache_name(
+            prompt, kwargs,
+            prefix=file_cache if isinstance(file_cache, str) else "llm_requests"
+        )
+    )):
+        response: LLMResponse = load_cache(cache_name)
+        response.from_file_cache = True
+        tries = 0
+    else:
+        tries = retries + 1
+        while tries > 0:
+            try:
+                tries -= 1
+                response = await env().llm_async_function(prompt, **kwargs)
+                break
+            except Exception as e:  # pylint: disable=W0718
+                converted_exception = convert_exception(e)
+                # If context length exceeded, or no tries left --> do not retry
+                if tries == 0 or isinstance(converted_exception, LLMContextLengthExceededError):
+                    if converted_exception:
+                        raise converted_exception from e
+                    raise e
+                logging.error(f"LLM error: {e}")
+                logging.info(f"Retrying... {tries} retries left")
+                continue
         try:
-            tries -= 1
-            response = await env().llm_async_function(prompt, **kwargs)
-            break
-        except Exception as e:  # pylint: disable=W0718
-            converted_exception = convert_exception(e)
-            # If context length exceeded, or no tries left --> do not retry
-            if tries == 0 or isinstance(converted_exception, LLMContextLengthExceededError):
-                if converted_exception:
-                    raise converted_exception from e
-                raise e
-            logging.error(f"LLM error: {e}")
-            logging.info(f"Retrying... {tries} retries left")
-            continue
-    try:
-        response.gen_duration = (datetime.now() - start).total_seconds()
-        if not env().config.SAVE_MEMORY:
-            response.prompt = prompt
-    except AttributeError:
-        ...
+            response.gen_duration = (datetime.now() - start).total_seconds()
+            if not env().config.SAVE_MEMORY:
+                response.prompt = prompt
+        except AttributeError:
+            ...
+        if file_cache:
+            save_cache(cache_name, response)
     [h(response) for h in env().llm_after_handlers]
     if parse_json:
         try:
@@ -217,6 +264,8 @@ async def allm(
             if tries > 0:
                 logging.error(f"LLM error: {e}")
                 logging.info(f"Retrying... {tries} retries left")
+                if file_cache:
+                    delete_cache(cache_name)
                 return await allm(prompt, retries=tries - 1, parse_json=parse_json, **kwargs)
     return response
 
