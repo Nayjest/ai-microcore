@@ -2,7 +2,7 @@ import asyncio
 import base64
 
 import openai
-from openai.types import ImagesResponse
+from openai.types import CompletionChoice, ImagesResponse
 
 from microcore.lm_client import BaseAIChatClient, BaseAsyncAIClient
 from microcore.message_types import TMsgContentPart
@@ -150,23 +150,29 @@ class OpenAIClient(BaseAIChatClient):
                 self.oai_client,
                 options
             )
-        if is_chat_model(args["model"], self.config):
+        is_chat: bool = is_chat_model(args["model"], self.config)
+        if is_chat:
             messages = self.convert_prompt_to_chat_input(prompt)
             response = self.oai_client.chat.completions.create(
                 messages=messages, **args
             )
         else:
             response = self.oai_client.completions.create(prompt=prompt, **args)
+
         check_for_errors(response)
         if args["stream"]:
             return _process_streamed_response(
                 response,
                 options["callbacks"],
-                chat_model_used=True,
+                chat_model_used=is_chat,
                 hidden_output_begin=self.config.HIDDEN_OUTPUT_BEGIN,
                 hidden_output_end=self.config.HIDDEN_OUTPUT_END,
             )
-        response_text = response.choices[0].message.content
+        choice = response.choices[0]
+        if is_chat or isinstance(choice, CompletionChoice):
+            response_text = choice.message.content
+        else:
+            response_text = choice.text
 
         if self.config.hiding_output():
             response_text = self.remove_hidden_output(response_text)
