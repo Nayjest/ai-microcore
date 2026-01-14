@@ -1,11 +1,13 @@
 import asyncio
-from typing import Any
+import json
+from typing import Any, Optional
 from dataclasses import dataclass
 
 from google import genai
 from google.genai import types
+from google.oauth2.service_account import Credentials
 
-from ..configuration import Config
+from ..configuration import Config, LLMCredentialError
 from ..message_types import Role, TMsgContentPart
 from ..types import BadAIAnswer, TPrompt
 from ..wrappers.llm_response_wrapper import (
@@ -19,12 +21,79 @@ from ..lm_client import BaseAsyncAIClient, BaseAIChatClient
 from ..images import Image, ImageInterface
 
 
+def _load_service_account_info(config: Config) -> Optional[dict]:
+    """
+    Load Google Cloud service account information from a file or JSON string.
+    Returns the service account info as a dictionary.
+    Raises LLMCredentialError if loading fails.
+    """
+    if config.GOOGLE_CLOUD_SERVICE_ACCOUNT:
+        if isinstance(config.GOOGLE_CLOUD_SERVICE_ACCOUNT, dict):
+            return config.GOOGLE_CLOUD_SERVICE_ACCOUNT
+        try:
+            with open(config.GOOGLE_CLOUD_SERVICE_ACCOUNT, 'r') as f:
+                creds_info = json.load(f)
+                return creds_info
+        except FileNotFoundError:
+            raise LLMCredentialError(
+                f"Service account file not found: {config.GOOGLE_CLOUD_SERVICE_ACCOUNT}"
+            )
+        except PermissionError:
+            raise LLMCredentialError(
+                f"Permission denied reading service account file: "
+                f"{config.GOOGLE_CLOUD_SERVICE_ACCOUNT}"
+            )
+        except json.JSONDecodeError as e:
+            raise LLMCredentialError(
+                f"Invalid JSON in service account file {config.GOOGLE_CLOUD_SERVICE_ACCOUNT}: {e}"
+            )
+    elif config.GOOGLE_CLOUD_SERVICE_ACCOUNT_JSON:
+        if isinstance(config.GOOGLE_CLOUD_SERVICE_ACCOUNT_JSON, dict):
+            return config.GOOGLE_CLOUD_SERVICE_ACCOUNT_JSON
+        try:
+            creds_info = json.loads(config.GOOGLE_CLOUD_SERVICE_ACCOUNT_JSON)
+            return creds_info
+        except json.JSONDecodeError as e:
+            raise LLMCredentialError(
+                f"Invalid JSON in GOOGLE_CLOUD_SERVICE_ACCOUNT_JSON: {e}"
+            )
+    return None
+
+
 class GoogleClient(BaseAIChatClient):
+    """
+    Client for Google GenAI SDK to interact with Google Gemini models.
+    """
+    genai_client: genai.Client
     aio: "AsyncGoogleClient"
 
     def __init__(self, config: Config):
         super().__init__(config)
-        self.genai_client = genai.Client(api_key=config.LLM_API_KEY, **config.INIT_PARAMS)
+        client_params = {**config.INIT_PARAMS}
+
+        if config.GOOGLE_GENAI_USE_VERTEXAI is not None:
+            client_params["vertexai"] = config.GOOGLE_GENAI_USE_VERTEXAI
+
+        if config.GOOGLE_CLOUD_PROJECT_ID:
+            client_params["project"] = config.GOOGLE_CLOUD_PROJECT_ID
+
+        if config.GOOGLE_CLOUD_LOCATION:
+            client_params["location"] = config.GOOGLE_CLOUD_LOCATION
+
+        if creds_info := _load_service_account_info(config):
+            credentials = Credentials.from_service_account_info(
+                creds_info,
+                scopes=["https://www.googleapis.com/auth/cloud-platform"]
+            )
+            client_params["credentials"] = credentials
+            if "project" not in client_params and creds_info.get("project_id"):
+                client_params["project"] = creds_info["project_id"]
+            if "vertexai" not in client_params:
+                client_params["vertexai"] = True
+        else:
+            client_params["api_key"] = config.LLM_API_KEY
+
+        self.genai_client = genai.Client(**client_params)
         self.aio = AsyncGoogleClient(self)
 
     def load_models(self, **kwargs) -> dict:

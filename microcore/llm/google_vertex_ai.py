@@ -1,3 +1,7 @@
+"""
+Google Vertex AI LLM functions.
+@deprecated Use Google GenAI instead.
+"""
 import asyncio
 import logging
 import os

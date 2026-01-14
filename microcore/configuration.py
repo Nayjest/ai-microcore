@@ -71,8 +71,8 @@ class ApiType(str, Enum):
     DEEP_INFRA = "deep_infra"
     """List of text generation models: https://deepinfra.com/models?type=text-generation"""
     ANTHROPIC = "anthropic"
-    GOOGLE_VERTEX_AI = "google_vertex_ai"
-    GOOGLE_AI_STUDIO = "google_ai_studio"  # Deprecated
+    GOOGLE_VERTEX_AI = "google_vertex_ai"  # @Deprecated
+    GOOGLE_AI_STUDIO = "google_ai_studio"  # @Deprecated
     GOOGLE = "google"  # new Google SDK
 
     # Local models
@@ -168,6 +168,7 @@ class _AnthropicEnvVars:
 
 @dataclass
 class _GoogleVertexAiEnvVars:
+    """@deprecated, use _GoogleGenAiEnvVars instead"""
     GOOGLE_VERTEX_ACCESS_TOKEN: str = from_env()
     GOOGLE_VERTEX_PROJECT_ID: str = from_env()
     GOOGLE_VERTEX_LOCATION: str = from_env()
@@ -178,7 +179,24 @@ class _GoogleVertexAiEnvVars:
 
 
 @dataclass
-class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEnvVars):
+class _GoogleGenAiEnvVars:
+    # see https://docs.cloud.google.com/docs/authentication/application-default-credentials
+    GOOGLE_CLOUD_SERVICE_ACCOUNT: str = from_env()  # # file path (standard GCP name)
+    GOOGLE_CLOUD_SERVICE_ACCOUNT_JSON: str = from_env()  # JSON string content
+    # see https://googleapis.github.io/python-genai/
+    GOOGLE_CLOUD_PROJECT_ID: str = from_env()
+    GOOGLE_CLOUD_LOCATION: str = from_env()
+    GOOGLE_GENAI_USE_VERTEXAI: bool | None = from_env(default=None, dtype=bool)
+
+
+@dataclass
+class LLMConfig(
+    BaseConfig,
+    _OpenAIEnvVars,
+    _AnthropicEnvVars,
+    _GoogleVertexAiEnvVars,
+    _GoogleGenAiEnvVars,
+):
     """LLM configuration"""
 
     LLM_API_TYPE: str = from_env()
@@ -317,6 +335,18 @@ class LLMConfig(BaseConfig, _OpenAIEnvVars, _AnthropicEnvVars, _GoogleVertexAiEn
                     "GOOGLE_VERTEX_ACCESS_TOKEN should be provided "
                     "or GOOGLE_VERTEX_GCLOUD_AUTH should be enabled"
                 )
+        elif self.LLM_API_TYPE == ApiType.GOOGLE:
+            if (
+                not self.GOOGLE_CLOUD_SERVICE_ACCOUNT
+                and not self.GOOGLE_CLOUD_SERVICE_ACCOUNT_JSON
+                and not self.LLM_API_KEY
+            ):
+                raise LLMCredentialError(
+                    "Google API credentials not configured. Provide one of: "
+                    "GOOGLE_CLOUD_SERVICE_ACCOUNT (path to service account JSON file), "
+                    "GOOGLE_CLOUD_SERVICE_ACCOUNT_JSON (service account JSON content), "
+                    "or LLM_API_KEY (for Gemini Developer API only, not Vertex AI)"
+                )
         else:
             if not self.LLM_API_KEY:
                 raise LLMApiKeyError()
@@ -364,7 +394,13 @@ class LLMConfigError(ValueError):
         super().__init__(message)
 
 
-class LLMApiKeyError(LLMConfigError):
+class LLMCredentialError(LLMConfigError):
+    def __init__(self, message: str = None):
+        message = message or "LLM credentials are invalid"
+        super().__init__(message)
+
+
+class LLMApiKeyError(LLMCredentialError):
     """LLM API KEY error"""
 
     def __init__(self, message: str = None):
