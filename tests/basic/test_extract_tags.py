@@ -1,5 +1,5 @@
-from microcore.utils import extract_tags
 from textwrap import dedent
+from microcore.utils import extract_tags
 
 
 def test_extract_args():

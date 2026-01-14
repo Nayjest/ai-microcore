@@ -1,10 +1,10 @@
 import time
 
 import pytest
-
+import microcore as mc
 from microcore.metrics import Metrics
 from . import setup  # noqa
-import microcore as mc
+
 
 
 @pytest.mark.asyncio

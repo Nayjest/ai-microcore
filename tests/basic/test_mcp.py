@@ -1,6 +1,6 @@
 import os
-import microcore as mc
 import pytest
+import microcore as mc
 
 
 servers_cfg = [

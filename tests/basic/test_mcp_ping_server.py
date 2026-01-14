@@ -61,7 +61,7 @@ async def test_mcp_ping(server):
     ToolsCache.clear()
     try:
         mcp = await mc.mcp_server("test_mcp").connect()
-    except Exception as e:
+    except Exception:
         await asyncio.sleep(4)
         mcp = await mc.mcp_server("test_mcp").connect(connect_timeout=15)
     logging.info("Ping...")

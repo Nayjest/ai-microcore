@@ -3,6 +3,7 @@ def test_cache_dir():
     assert cache_dir() == "cache/"
     assert cache_dir("test") == "cache/test/"
 
+
 def test_build_cache_name():
     from microcore.file_cache import build_cache_name
     name = build_cache_name("arg1", prefix="test", key="val")

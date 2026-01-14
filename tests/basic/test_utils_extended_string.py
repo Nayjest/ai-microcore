@@ -43,4 +43,3 @@ def test_extended_string_alternative_constructors():
     assert ExtendedString(string="my_text", attrs=dict(myattr="myval")).myattr == "myval"
     assert ExtendedString("my_text", dict(myattr="myval")).myattr == "myval"
     assert ExtendedString("my_text", myattr="myval").myattr == "myval"
-

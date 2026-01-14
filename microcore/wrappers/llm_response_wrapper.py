@@ -121,7 +121,8 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
         return extract_tool_params(self)
 
 
-class ImageGenerationResponse(LLMResponse, ImageListInterface, ImageInterface):
+# pylint: disable=too-many-ancestors
+class ImageGenerationResponse(LLMResponse, ImageListInterface, ImageInterface):  #
 
     _images: list[ImageInterface]
 
@@ -134,8 +135,8 @@ class ImageGenerationResponse(LLMResponse, ImageListInterface, ImageInterface):
     def mime_type(self) -> str | None:
         return self.image().mime_type() if self.image() else None
 
-    def bytes(self) -> bytes | None:
-        return self.image().bytes() if self.image() else None
+    def get_bytes(self) -> bytes | None:
+        return self.image().get_bytes() if self.image() else None
 
     def __new__(cls, str_repr: str = "<images>", images: list[ImageInterface] = None, **kwargs):
         images = images or []
@@ -175,31 +176,3 @@ class StoredImageGenerationResponse(ImageGenerationResponse):
     @property
     def files(self) -> list[str]:
         return [img.file for img in self._images]
-
-
-# file: str | None
-    # """
-    # Absolute path to the first generated image file saved within the storage.
-    # """
-    #
-    # files: list[str] | None
-    # """
-    # List of absolute paths to the image files saved within the storage.
-    # """
-    #
-    # def as_message_content(self, index=None) -> str | list[dict] | dict:
-    #     if hasattr(self, "data") and self.data:
-    #         if index is None:
-    #             return [Image.from_base64(i.b64_json) for i in self.data]
-    #         else:
-    #             return Image.from_base64(self.data[index])
-    #
-    # def display(self, **kwargs):
-    #     """Display the generated image if possible."""
-    #     if is_kaggle() or is_google_colab() or is_notebook():
-    #         from IPython.display import display, Image
-    #         if self.files and len(self.files) > 0:
-    #             for file in self.files:
-    #                 display(Image(filename=file, **kwargs))
-    #     else:
-    #         print(str(self))

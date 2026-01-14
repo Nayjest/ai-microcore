@@ -21,7 +21,7 @@ def image_format_to_mime_type(output_format: str) -> str | None:
 class ImageInterface(MsgContentPart, ConvertableToMessage, ABC):
 
     @abstractmethod
-    def bytes(self) -> bytes | None:
+    def get_bytes(self) -> bytes | None:
         raise NotImplementedError()
 
     @abstractmethod
@@ -41,7 +41,7 @@ class ImageInterface(MsgContentPart, ConvertableToMessage, ABC):
         """Display the generated image if possible."""
         if is_kaggle() or is_google_colab() or is_notebook():
             from IPython.display import display, Image as IPythonImage
-            display(IPythonImage(data=self.bytes(), **kwargs))
+            display(IPythonImage(data=self.get_bytes(), **kwargs))
         else:
             print(repr(self))
         return self
@@ -71,7 +71,7 @@ class FileImage(ImageInterface):
     _bytes: bytes | None = None
     _mime: str | None = None
 
-    def bytes(self):
+    def get_bytes(self):
         if self.file and self._bytes is None:
             with open(self.file, "rb") as f:
                 self._bytes = f.read()
@@ -104,7 +104,7 @@ class Image(ImageInterface):
         self._bytes = data
         self._mime_type = mime_type
 
-    def bytes(self):
+    def get_bytes(self):
         return self._bytes
 
     def mime_type(self) -> str | None:
@@ -112,7 +112,7 @@ class Image(ImageInterface):
 
     def store(self, file_path: str) -> str:
         from .file_storage import storage
-        actual_fn = storage.write(file_path, self.bytes(), rewrite_existing=False)
+        actual_fn = storage.write(file_path, self.get_bytes(), rewrite_existing=False)
         actual_fn = storage.abs_path(actual_fn)
         logging.info(f"Image saved to {file_link(actual_fn)}")
         return actual_fn

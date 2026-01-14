@@ -44,7 +44,7 @@ def test_storage_write_with_numbering_placeholder():
         custom_path=mc.storage.path / dir,
         file_number_placeholder="[num]"
     )
-    name5 = custom_storage.write(f"-file[num]-", "content5", rewrite_existing=False)
+    name5 = custom_storage.write("-file[num]-", "content5", rewrite_existing=False)
     assert name5 == "-file5-"
     assert custom_storage.read("-file5-") == "content5"
 
@@ -69,7 +69,7 @@ def test_storage_write_with_numbering_placeholder():
         rewrite_existing=True,
         backup_existing=False
     ) == "file"
-    assert custom_storage.read("file_3", default=None) == None
+    assert custom_storage.read("file_3", default=None) is None
     assert custom_storage.read("file") == "content4"
 
     assert custom_storage.read("file_1") == "content2"
@@ -108,17 +108,17 @@ def test_storage_delete():
     # Delete folder
     filename = mc.storage.write("tests_tmp/test_file", "test")
     assert (mc.storage.path / filename).exists()
-    assert mc.storage.delete("tests_tmp") == True
+    assert mc.storage.delete("tests_tmp") is True
     assert not (mc.storage.path / filename).exists()
-    assert mc.storage.delete("tests_tmp") == False
+    assert mc.storage.delete("tests_tmp") is False
 
     # Delete file
     filename = mc.storage.write("tests_tmp/test_file", "")
-    assert mc.storage.delete(filename) == True
-    assert mc.storage.delete(filename) == False
+    assert mc.storage.delete(filename) is True
+    assert mc.storage.delete(filename) is False
     assert not (mc.storage.path / filename).exists()
-    assert mc.storage.delete("tests_tmp") == True
-    assert mc.storage.delete("tests_tmp") == False
+    assert mc.storage.delete("tests_tmp") is True
+    assert mc.storage.delete("tests_tmp") is False
 
 
 def test_default_ext():

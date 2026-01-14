@@ -27,14 +27,12 @@ class MsgContentPart:
     """
     Base class for individual parts of multipart message content.
     """
-    pass
 
 
 class MsgContent:
     """
     Base class for message content.
     """
-    pass
 
 
 class MsgMultipartContent(MsgContent,  abc.ABC):

@@ -1,6 +1,6 @@
-from . import setup
 import pytest
 import microcore as mc
+from . import setup
 
 
 def test_to_json(setup):

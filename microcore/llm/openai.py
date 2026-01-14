@@ -182,7 +182,7 @@ class OpenAIClient(BaseAIChatClient):
 
 
 def image_to_oai(img: ImageInterface) -> dict:
-    b64_data = base64.b64encode(img.bytes()).decode()
+    b64_data = base64.b64encode(img.get_bytes()).decode()
     return {
         "type": "image_url",
         "image_url": {
@@ -300,10 +300,10 @@ def _generate_image(
     connection: openai.OpenAI | openai.AsyncOpenAI,
     options
 ) -> ImageGenerationResponse | None:
-    def convert_input_image(img: ImageInterface) -> str:
-        if isinstance(img, FileImage):
-            return open(img.file, "rb")
-        return img.bytes()
+    def convert_input_image(image: ImageInterface):
+        if isinstance(image, FileImage):
+            return open(image.file, "rb")
+        return image.get_bytes()
 
     images = []
     if isinstance(prompt, list):

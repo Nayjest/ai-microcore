@@ -50,7 +50,7 @@ class GoogleClient(BaseAIChatClient):
         if isinstance(content_part, types.Part):
             return content_part
         if isinstance(img := content_part, ImageInterface):
-            return types.Part.from_bytes(data=img.bytes(), mime_type=img.mime_type())
+            return types.Part.from_bytes(data=img.get_bytes(), mime_type=img.mime_type())
         if isinstance(content_part, str):
             return types.Part(text=content_part)
         return content_part
