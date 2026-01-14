@@ -34,7 +34,10 @@ def is_chat_model(model: str, config: Config = None) -> bool:
     """
     if config and config.CHAT_MODE is not None:
         return config.CHAT_MODE
-    completion_keywords = ["instruct", "davinci", "babbage", "curie", "ada"]
+    completion_keywords = [
+        "instruct", "davinci", "babbage", "curie", "ada",  # outdated OpenAI completion models
+        "-codex",  # OpenAI Coding models, gpt-5.1-codex, gpt-5.1-codex-max, gpt-5-codex, etc.
+    ]
     return not any(keyword in str(model).lower() for keyword in completion_keywords)
 
 
