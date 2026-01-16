@@ -20,8 +20,8 @@ from typing import Any, Union, Callable
 
 import tiktoken
 from colorama import Fore
-from microcore.message_types import MsgContentPart
 
+from .message_types import MsgContentPart
 from .configuration import Config
 from .types import BadAIAnswer, BadAIJsonAnswer
 from .message_types import MsgContent, UserMsg, SysMsg, AssistantMsg
