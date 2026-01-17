@@ -56,3 +56,11 @@ class LLMContextLengthExceededError(BadAIAnswer):
         self.actual_tokens = actual_tokens
         self.max_tokens = max_tokens
         self.model = model
+
+class LLMQuotaExceededError(BadAIAnswer):
+    def __init__(
+        self,
+        message: str = "LLM quota exceeded",
+        details: str = None,
+    ):
+        super().__init__(message, details)

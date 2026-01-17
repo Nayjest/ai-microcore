@@ -3,10 +3,9 @@ import logging
 from datetime import datetime
 from typing import Any
 
-
 from .utils import run_parallel, RETURN_EXCEPTION
 from .wrappers.llm_response_wrapper import LLMResponse, DictFromLLMResponse, ImageGenerationResponse
-from .types import TPrompt, LLMContextLengthExceededError
+from .types import TPrompt, LLMContextLengthExceededError, LLMQuotaExceededError
 from .file_cache import (
     cache_hit,
     load_cache,
@@ -30,19 +29,78 @@ def convert_exception(e: Exception, model: str = None) -> Exception | None:
         return None
     t, msg = f"{type(e).__module__}.{type(e).__name__}", str(e)
     max_tokens, actual_tokens = None, None
-    if t == "openai.BadRequestError" and "context_length_exceeded" in msg:
-        match = re.search(
-            r"maximum context length is (\d+) tokens.*?resulted in (\d+) tokens",
-            msg
-        )
-        if match:
-            max_tokens = int(match.group(1))
-            actual_tokens = int(match.group(2))
-        return LLMContextLengthExceededError(
-            actual_tokens=actual_tokens,
-            max_tokens=max_tokens,
-            model=model
-        )
+    if t == "openai.BadRequestError":
+        if "context_length_exceeded" in msg:
+            match = re.search(
+                r"maximum context length is (\d+) tokens.*?resulted in (\d+) tokens",
+                msg
+            )
+            if match:
+                max_tokens = int(match.group(1))
+                actual_tokens = int(match.group(2))
+            return LLMContextLengthExceededError(
+                actual_tokens=actual_tokens,
+                max_tokens=max_tokens,
+                model=model
+            )
+        if "Please reduce the length of the messages or completion." in msg:  # Groq, no details
+            return LLMContextLengthExceededError(model=model)
+
+        # x.ai grok-fast
+        if (
+            "This model's maximum prompt length is" in msg
+            and "but the request contains" in msg
+            and "tokens" in msg
+        ):
+            match = re.search(
+                r"maximum prompt length is (\d+) but the request contains (\d+) tokens",
+                msg
+            )
+            if match:
+                max_tokens = int(match.group(1))
+                actual_tokens = int(match.group(2))
+            return LLMContextLengthExceededError(
+                actual_tokens=actual_tokens,
+                max_tokens=max_tokens,
+                model=model
+            )
+
+        if "maximum context length" in msg:  # Mistral, # DeepSeek
+            if match := re.search(
+                r"Prompt contains (\d+) tokens.*?model with (\d+) maximum context length",
+                msg
+            ):  # Mistral
+                max_tokens = int(match.group(2))
+                actual_tokens = int(match.group(1))
+            elif match := re.search(
+                r"maximum context length is (\d+) tokens.*? you requested (\d+) tokens",
+                msg
+            ):  # DeepSeek
+                max_tokens = int(match.group(1))
+                actual_tokens = int(match.group(2))
+            return LLMContextLengthExceededError(
+                actual_tokens=actual_tokens,
+                max_tokens=max_tokens,
+                model=model
+            )
+        if "too_many_prompt_tokens" in msg:  # Perplexity
+            if match := re.search(
+                r"User input tokens exceeds (\d+) tokens",
+                msg
+            ):
+                max_tokens = int(match.group(1))
+            return LLMContextLengthExceededError(
+                actual_tokens=actual_tokens,
+                max_tokens=max_tokens,
+                model=model
+            )
+
+    if t == "openai.APIStatusError" and "413 Request Entity Too Large" in msg:  # Cerebras
+        return LLMContextLengthExceededError(model=model)
+
+    if t == "openai.APIStatusError" and "Payload Too Large" in msg:  # Fireworks
+        return LLMContextLengthExceededError(model=model)
+
     if t == "anthropic.BadRequestError" and "prompt is too long:" in msg:
         if match := re.search(r"(\d+)\s+tokens\s+>\s+(\d+)\s+maximum", msg):
             max_tokens = int(match.group(2))
@@ -52,20 +110,40 @@ def convert_exception(e: Exception, model: str = None) -> Exception | None:
             max_tokens=max_tokens,
             model=model
         )
-    if (
-        t == "google.api_core.exceptions.InvalidArgument"
-        and "The input token count exceeds the maximum number of tokens allowed" in msg
-    ):
-        if match := re.search(
-            r"The input token count exceeds the maximum number of tokens allowed (\d+)",
-            msg
-        ):
-            max_tokens = int(match.group(1))
-        return LLMContextLengthExceededError(
-            actual_tokens=actual_tokens,
-            max_tokens=max_tokens,
-            model=model
-        )
+    if t == "google.genai.errors.ClientError":
+
+        if "429" in msg and "RESOURCE_EXHAUSTED" in msg:
+            # google.genai.errors.ClientError: 429 RESOURCE_EXHAUSTED.
+            # {'error': {'code': 429,
+            # 'message': 'You exceeded your current quota, please check your plan and billing details.
+            # For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits.
+            # To monitor your current usage, head to: https://ai.dev/rate-limit.
+            # ...
+            # Quota exceeded for metric:
+            # generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count,
+            # limit: 1000000, model: gemini-3-flash
+            # Please retry in 59.119769634s.
+            return LLMQuotaExceededError(details=msg)
+
+        if "input token count" in msg and "exceeds the maximum number of tokens allowed" in msg:
+            # ai studio
+            if match := re.search(
+                r"input token count exceeds the maximum number of tokens allowed (\d+)",
+                msg
+            ):
+                max_tokens = int(match.group(1))
+            # vertex
+            elif match := re.search(
+                r"input token count \((\d+)\) exceeds the maximum number of tokens allowed \((\d+)\)",
+                msg
+            ):
+                actual_tokens = int(match.group(1))
+                max_tokens = int(match.group(2))
+            return LLMContextLengthExceededError(
+                actual_tokens=actual_tokens,
+                max_tokens=max_tokens,
+                model=model
+            )
     return None
 
 

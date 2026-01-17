@@ -1,15 +1,15 @@
-
 from microcore._llm_functions import convert_exception
 from microcore import LLMContextLengthExceededError
 from httpx import Request, Response
 from openai import BadRequestError as OpenAIBadRequestError
 from anthropic import BadRequestError as AnthropicBadRequestError
-from google.api_core.exceptions import InvalidArgument
+import google.genai.errors
 
 
 def test_convert_unsupported_exception():
     class CustomException(Exception):
         pass
+
     e = CustomException("This is a custom exception message.")
     ce = convert_exception(e)
     assert ce is None
@@ -60,13 +60,37 @@ def test_openai_bad_request_context_length_exceeded():
     assert ce.model == 'my_model'
 
 
-def test_google_bad_request_context_length_exceeded():
-    error = InvalidArgument(
-        "The input token count exceeds the maximum number of tokens allowed 1048577."
+def test_google_ai_studio_bad_request_context_length_exceeded():
+    error = google.genai.errors.ClientError(
+        code=400,
+        response_json={
+            'error': {
+                'code': 400,
+                'message': 'The input token count exceeds the maximum number of tokens allowed 1048577.',
+                'status': 'INVALID_ARGUMENT'
+            }
+        }
     )
-
     ce = convert_exception(error, 'my_model')
     assert isinstance(ce, LLMContextLengthExceededError)
     assert ce.actual_tokens is None
     assert ce.max_tokens == 1048577
+    assert ce.model == 'my_model'
+
+
+def test_google_vertex_bad_request_context_length_exceeded():
+    error = google.genai.errors.ClientError(
+        code=400,
+        response_json={
+            'error': {
+                'code': 400,
+                'message': 'The input token count (1600009) exceeds the maximum number of tokens allowed (1048576).',
+                'status': 'INVALID_ARGUMENT'
+            }
+        }
+    )
+    ce = convert_exception(error, 'my_model')
+    assert isinstance(ce, LLMContextLengthExceededError)
+    assert ce.actual_tokens == 1600009
+    assert ce.max_tokens == 1048576
     assert ce.model == 'my_model'
