@@ -24,7 +24,7 @@ class ApiType(str, Enum):
     NONE = "none"
 
     @staticmethod
-    def is_local(api_type: Union[str,"ApiType"]) -> bool:
+    def is_local(api_type: Union[str, "ApiType"]) -> bool:
         """
         Check if the given API type is for local models (embedded in the application).
         Args:
@@ -35,12 +35,12 @@ class ApiType(str, Enum):
         return api_type in (ApiType.FUNCTION, ApiType.TRANSFORMERS, ApiType.NONE)
 
     @staticmethod
-    def major_remote()-> list["ApiType"]:
+    def major_remote() -> list["ApiType"]:
         """Get list of major remote API types"""
         return [ApiType.OPENAI, ApiType.GOOGLE, ApiType.ANTHROPIC]
 
     @staticmethod
-    def label_for(api_type: Union[str,"ApiType"]) -> str:
+    def label_for(api_type: Union[str, "ApiType"]) -> str:
         """
         Get human-readable label for the API type
         Args:
@@ -169,7 +169,10 @@ _API_PLATFORM_CUSTOM_LABELS: dict[ApiPlatform, str] = {
     ApiPlatform.OPENROUTER: "OpenRouter",
 }
 ANTHROPIC_API_PLATFORMS: list[ApiPlatform] = [ApiPlatform.ANTHROPIC]
-GOOGLE_API_PLATFORMS: list[ApiPlatform] = [ApiPlatform.GOOGLE_AI_STUDIO, ApiPlatform.GOOGLE_VERTEX_AI]
+GOOGLE_API_PLATFORMS: list[ApiPlatform] = [
+    ApiPlatform.GOOGLE_AI_STUDIO,
+    ApiPlatform.GOOGLE_VERTEX_AI
+]
 OPENAI_API_PLATFORMS: list[ApiPlatform] = [
     ApiPlatform.OPENAI,
     ApiPlatform.AZURE,
@@ -225,7 +228,7 @@ HIGH_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.XAI: "grok-4",  # I/O: $3 $15 /M tokens
     ApiPlatform.DEEPSEEK: "deepseek-chat",
     ApiPlatform.CEREBRAS: "gpt-oss-120b",  # I/O: $0.35/$0.75 /M tokens
-    ApiPlatform.GROQ: "openai/gpt-oss-120b", # I/O: $0.15/$0.60 /M tokens
+    ApiPlatform.GROQ: "openai/gpt-oss-120b",  # I/O: $0.15/$0.60 /M tokens
     ApiPlatform.FIREWORKS: "accounts/fireworks/models/kimi-k2-thinking",  # I/O: $0.60/$2.50 /M
 }
 LOW_END_MODELS: dict[ApiPlatform, str] = {
@@ -240,11 +243,12 @@ LOW_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.GROQ: "llama-3.1-8b-instant",    # I/O: $0.05/$0.08 /M tokens
     ApiPlatform.FIREWORKS: "accounts/fireworks/models/gpt-oss-20b"  # I/O: $0.07 / $0.30 /M tokens
 }
-MODEL_PRESETS: dict[ModelPreset, dict[ApiPlatform,str]] = {
+MODEL_PRESETS: dict[ModelPreset, dict[ApiPlatform, str]] = {
     ModelPreset.HIGH_END: HIGH_END_MODELS,
     ModelPreset.LOW_END: LOW_END_MODELS,
 }
 DEFAULT_MODELS: dict[ApiPlatform, str] = HIGH_END_MODELS
+
 
 def llm_api_base_required(api_type: ApiType, platform: ApiPlatform | None) -> bool:
     """

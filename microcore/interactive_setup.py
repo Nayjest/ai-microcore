@@ -26,7 +26,6 @@ def prompt_api_type(
     return ask_choose(question, api_types or ApiType.labels(ApiType.major_remote()))
 
 
-
 def prompt_api_platform(
     api_type: ApiType,
     question: str = "Select your LLM inference provider.",

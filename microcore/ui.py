@@ -186,7 +186,7 @@ def ask_choose(
         return variants[i]
 
 
-def ask_non_empty(msg, question_style = DEFAULT_QUESTION_STYLE) -> str:
+def ask_non_empty(msg, question_style: str = DEFAULT_QUESTION_STYLE) -> str:
     """
     Prompt the user for non-empty input via input().
     Retries indefinitely until a non-empty value is provided.
@@ -204,7 +204,7 @@ def ask_non_empty(msg, question_style = DEFAULT_QUESTION_STYLE) -> str:
     return value
 
 
-def ask(msg, question_style = DEFAULT_QUESTION_STYLE) -> str:
+def ask(msg, question_style: str = DEFAULT_QUESTION_STYLE) -> str:
     """
     Prompt the user for input via input().
     Args:

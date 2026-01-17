@@ -271,7 +271,7 @@ class LLMConfig(
             self.LLM_API_TYPE = ApiPlatform(self.LLM_API_PLATFORM).api_type()
 
     def _resolve_model(self):
-        if not self.LLM_API_PLATFORM in ApiPlatform:
+        if self.LLM_API_PLATFORM not in ApiPlatform:
             return
         platform = ApiPlatform(self.LLM_API_PLATFORM)
         if self.MODEL in ModelPreset:
