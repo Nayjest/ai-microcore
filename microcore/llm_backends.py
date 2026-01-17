@@ -100,6 +100,7 @@ class ApiPlatform(str, Enum):
     COHERE = "cohere"
     TOGETHER_AI = "together_ai"
     OPENROUTER = "openrouter"
+    PERPLEXITY = "perplexity"
 
     # Google
     GOOGLE_AI_STUDIO = "google_ai_studio"
@@ -187,6 +188,7 @@ OPENAI_API_PLATFORMS: list[ApiPlatform] = [
     ApiPlatform.COHERE,
     ApiPlatform.TOGETHER_AI,
     ApiPlatform.OPENROUTER,
+    ApiPlatform.PERPLEXITY,
 ]
 API_PLATFORMS_BY_API_TYPE: [dict[ApiType, list]] = {
     ApiType.OPENAI: OPENAI_API_PLATFORMS,
@@ -208,6 +210,7 @@ LLM_API_BASE_URLS = {
         ApiPlatform.COHERE: "https://api.cohere.ai/compatibility/v1",
         ApiPlatform.TOGETHER_AI: "https://api.together.xyz/v1",
         ApiPlatform.OPENROUTER: "https://openrouter.ai/api/v1",
+        ApiPlatform.PERPLEXITY: "https://api.perplexity.ai",
     },
     ApiType.ANTHROPIC: {
         ApiPlatform.ANTHROPIC: "https://api.anthropic.com/",
@@ -230,6 +233,7 @@ HIGH_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.CEREBRAS: "gpt-oss-120b",  # I/O: $0.35/$0.75 /M tokens
     ApiPlatform.GROQ: "openai/gpt-oss-120b",  # I/O: $0.15/$0.60 /M tokens
     ApiPlatform.FIREWORKS: "accounts/fireworks/models/kimi-k2-thinking",  # I/O: $0.60/$2.50 /M
+    ApiPlatform.PERPLEXITY: "sonar-deep-research",  # I/O: $2/$8 /M tokens
 }
 LOW_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.OPENAI: "gpt-5-nano",
@@ -241,7 +245,11 @@ LOW_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.DEEPSEEK: "deepseek-chat",
     ApiPlatform.CEREBRAS: "llama3.1-8b",  # I/O: $0.10/M tokens
     ApiPlatform.GROQ: "llama-3.1-8b-instant",    # I/O: $0.05/$0.08 /M tokens
-    ApiPlatform.FIREWORKS: "accounts/fireworks/models/gpt-oss-20b"  # I/O: $0.07 / $0.30 /M tokens
+    ApiPlatform.FIREWORKS: "accounts/fireworks/models/gpt-oss-20b",  # I/O: $0.07 / $0.30 /M tokens
+    ApiPlatform.PERPLEXITY: "sonar",  # I/O: $1/$1 /M tokens
+}
+MID_END_MODELS: dict[ApiPlatform, str] = {
+    ApiPlatform.PERPLEXITY: "sonar-pro",  # I/O: $3/$15 /M tokens
 }
 MODEL_PRESETS: dict[ModelPreset, dict[ApiPlatform, str]] = {
     ModelPreset.HIGH_END: HIGH_END_MODELS,
