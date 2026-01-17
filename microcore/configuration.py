@@ -299,7 +299,6 @@ class LLMConfig(
             api_type, self.LLM_API_PLATFORM = platform_by_api_base(self.LLM_API_BASE)
             if not self.LLM_API_TYPE:
                 self.LLM_API_TYPE = api_type
-
         if not self.LLM_API_TYPE:
             self._determine_api_type_by_platform()
 
@@ -338,7 +337,9 @@ class LLMConfig(
                 self.LLM_API_PLATFORM = ApiPlatform.GOOGLE_VERTEX_AI
 
             elif self.LLM_API_TYPE in DEFAULT_PLATFORMS:
-                self.LLM_API_PLATFORM = DEFAULT_PLATFORMS[self.LLM_API_TYPE]
+                # keep empty platform for OpenAI API with custom api_base URL
+                if not(self.LLM_API_BASE and self.LLM_API_TYPE == ApiType.OPENAI):
+                    self.LLM_API_PLATFORM = DEFAULT_PLATFORMS[self.LLM_API_TYPE]
 
         self._resolve_model()
 
