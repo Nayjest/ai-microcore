@@ -16,19 +16,21 @@ from dataclasses import dataclass
 from fnmatch import fnmatch
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Union, Callable
+from typing import Any, Union, Callable, TYPE_CHECKING
 
 import tiktoken
 from colorama import Fore
 
 from .message_types import MsgContentPart
-from .configuration import Config
 from .types import BadAIAnswer, BadAIJsonAnswer
 from .message_types import MsgContent, UserMsg, SysMsg, AssistantMsg
 from .json_parsing import parse_json
 
+if TYPE_CHECKING:
+    from .configuration import Config
 
-def is_chat_model(model: str, config: Config = None) -> bool:
+
+def is_chat_model(model: str, config: "Config" = None) -> bool:
     """
     Detects if model is chat model or text completion model.
     """

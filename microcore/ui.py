@@ -186,10 +186,32 @@ def ask_choose(
         return variants[i]
 
 
-def ask_non_empty(msg) -> str:
+def ask_non_empty(msg, question_style = DEFAULT_QUESTION_STYLE) -> str:
+    """
+    Prompt the user for non-empty input via input().
+    Retries indefinitely until a non-empty value is provided.
+    Args:
+        msg (str): The question to display to the user.
+        question_style (str): Style applied to the question text.
+    Returns:
+        str: The user's non-empty input.
+    """
     while True:
-        i = input(msg)
-        if i.strip():
+        value = ask(msg, question_style)
+        if value.strip():
             break
-        error("Empty input")
-    return i
+        error("Please provide a value")
+    return value
+
+
+def ask(msg, question_style = DEFAULT_QUESTION_STYLE) -> str:
+    """
+    Prompt the user for input via input().
+    Args:
+        msg (str): The question to display to the user.
+        question_style (str): Style applied to the question text.
+    Returns:
+        str: The user's input.
+    """
+    msg = f"{question_style}{msg}{reset}" if question_style else msg
+    return input(msg)
