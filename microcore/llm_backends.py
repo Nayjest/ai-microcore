@@ -201,7 +201,7 @@ LLM_API_BASE_URLS = {
         ApiPlatform.DEEPINFRA: "https://api.deepinfra.com/v1/openai",
         ApiPlatform.MISTRAL: "https://api.mistral.ai/v1",
         ApiPlatform.FIREWORKS: "https://api.fireworks.ai/inference/v1",
-        ApiPlatform.DEEPSEEK: "https://api.deepseek.ai/v1",
+        ApiPlatform.DEEPSEEK: "https://api.deepseek.com/v1",
         ApiPlatform.XAI: "https://api.x.ai/v1",
         ApiPlatform.CEREBRAS: "https://api.cerebras.ai/v1",
         ApiPlatform.GROQ: "https://api.groq.com/openai/v1",
