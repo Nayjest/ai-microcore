@@ -214,4 +214,6 @@ def ask(msg, question_style: str = DEFAULT_QUESTION_STYLE) -> str:
         str: The user's input.
     """
     msg = f"{question_style}{msg}{reset}" if question_style else msg
+    if not msg.endswith(" "):
+        msg += " "
     return input(msg)
