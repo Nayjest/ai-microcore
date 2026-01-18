@@ -15,6 +15,7 @@ from .file_cache import (
 )
 from ._env import env
 
+
 # pylint: disable=too-many-return-statements,too-many-branches
 def convert_exception(e: Exception, model: str = None) -> Exception | None:
     """

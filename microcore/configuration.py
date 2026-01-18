@@ -260,14 +260,14 @@ class LLMConfig(
             self.LLM_API_TYPE, self.LLM_API_PLATFORM = mapping[str(self.LLM_API_TYPE)]
 
     def _process_platform_as_api_type(self):
-        if self.LLM_API_TYPE and self.LLM_API_TYPE in ApiPlatform:
+        if self.LLM_API_TYPE in ApiPlatform:
             platform = ApiPlatform(self.LLM_API_TYPE)
             if api_type := platform.api_type():
                 self.LLM_API_TYPE = api_type
                 self.LLM_API_PLATFORM = platform
 
     def _determine_api_type_by_platform(self):
-        if self.LLM_API_PLATFORM and self.LLM_API_PLATFORM in ApiPlatform:
+        if self.LLM_API_PLATFORM in ApiPlatform:
             self.LLM_API_TYPE = ApiPlatform(self.LLM_API_PLATFORM).api_type()
 
     def _resolve_model(self):
@@ -292,7 +292,7 @@ class LLMConfig(
             return
 
         self._map_deprecated_api_types()
-        if self.LLM_API_TYPE and self.LLM_API_TYPE not in ApiType:
+        if self.LLM_API_TYPE not in ApiType:
             self._process_platform_as_api_type()
 
         if self.LLM_API_BASE and not self.LLM_API_PLATFORM:
@@ -401,7 +401,7 @@ class LLMConfig(
         if self.uses_local_model():
             self._validate_local_llm()
             return
-        if self.LLM_API_TYPE and self.LLM_API_TYPE not in ApiType:
+        if self.LLM_API_TYPE not in ApiType:
             details = ""
             if self.LLM_API_TYPE:
                 suggestion, dist = most_similar(str(self.LLM_API_TYPE), list(ApiType))

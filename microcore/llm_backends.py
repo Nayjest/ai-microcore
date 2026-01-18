@@ -1,9 +1,25 @@
 """LLM API types and platforms definitions"""
-from enum import Enum
+from enum import Enum, EnumMeta
 from typing import Iterable, Optional, Union
 
 
-class ApiType(str, Enum):
+class SafeStrEnum(EnumMeta):
+    """A metaclass for string Enums for Python < 3.12"""
+    def __contains__(cls, item):
+        """
+        Prevents exceptions when performing operations like None in MyEnum
+        for python versions < 3.12
+        """
+        try:
+            return super().__contains__(item)
+        except TypeError:
+            return False
+
+    def __str__(self):
+        return self.value
+
+
+class ApiType(str, Enum, metaclass=SafeStrEnum):
     """LLM API types"""
 
     OPENAI = "openai"
@@ -75,16 +91,13 @@ class ApiType(str, Enum):
         return self.value
 
 
-class ModelPreset(str, Enum):
+class ModelPreset(str, Enum, metaclass=SafeStrEnum):
     """Model presets."""
     HIGH_END = "high-end"
     LOW_END = "low-end"
 
-    def __str__(self):
-        return self.value
 
-
-class ApiPlatform(str, Enum):
+class ApiPlatform(str, Enum, metaclass=SafeStrEnum):
     """LLM platforms / Inference providers"""
     # OpenAI Compatible
     OPENAI = "openai"
@@ -152,9 +165,6 @@ class ApiPlatform(str, Enum):
     def default_api_base(self) -> Optional[str]:
         """Get default API base URL for the platform"""
         return LLM_API_BASE_URLS.get(self.api_type(), {}).get(self)
-
-    def __str__(self):
-        return self.value
 
 
 _API_PLATFORM_CUSTOM_LABELS: dict[ApiPlatform, str] = {
