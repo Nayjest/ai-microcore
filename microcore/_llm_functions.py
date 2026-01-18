@@ -5,7 +5,7 @@ from typing import Any
 
 from .utils import run_parallel, RETURN_EXCEPTION
 from .wrappers.llm_response_wrapper import LLMResponse, DictFromLLMResponse, ImageGenerationResponse
-from .types import TPrompt, LLMContextLengthExceededError, LLMQuotaExceededError
+from .types import TPrompt, LLMContextLengthExceededError, LLMQuotaExceededError, LLMAuthError
 from .file_cache import (
     cache_hit,
     load_cache,
@@ -25,6 +25,17 @@ def convert_exception(e: Exception, model: str = None) -> Exception | None:
     Returns:
         Converted exception or None if no conversion is possible
     """
+
+    def with_cause(new_exception: Exception) -> Exception:
+        """
+        Attach a cause to an exception without raising it.
+
+        Equivalent to `raise new_exc from cause` but returns the exception
+        instead of raising, preserving the exception chain for later use.
+        """
+        new_exception.__cause__ = e
+        return new_exception
+
     if not isinstance(e, Exception):
         return None
     t, msg = f"{type(e).__module__}.{type(e).__name__}", str(e)
@@ -38,13 +49,13 @@ def convert_exception(e: Exception, model: str = None) -> Exception | None:
             if match:
                 max_tokens = int(match.group(1))
                 actual_tokens = int(match.group(2))
-            return LLMContextLengthExceededError(
+            return with_cause(LLMContextLengthExceededError(
                 actual_tokens=actual_tokens,
                 max_tokens=max_tokens,
                 model=model
-            )
+            ))
         if "Please reduce the length of the messages or completion." in msg:  # Groq, no details
-            return LLMContextLengthExceededError(model=model)
+            return with_cause(LLMContextLengthExceededError(model=model))
 
         # x.ai grok-fast
         if (
@@ -59,11 +70,11 @@ def convert_exception(e: Exception, model: str = None) -> Exception | None:
             if match:
                 max_tokens = int(match.group(1))
                 actual_tokens = int(match.group(2))
-            return LLMContextLengthExceededError(
+            return with_cause(LLMContextLengthExceededError(
                 actual_tokens=actual_tokens,
                 max_tokens=max_tokens,
                 model=model
-            )
+            ))
 
         if "maximum context length" in msg:  # Mistral, # DeepSeek
             if match := re.search(
@@ -78,28 +89,28 @@ def convert_exception(e: Exception, model: str = None) -> Exception | None:
             ):  # DeepSeek
                 max_tokens = int(match.group(1))
                 actual_tokens = int(match.group(2))
-            return LLMContextLengthExceededError(
+            return with_cause(LLMContextLengthExceededError(
                 actual_tokens=actual_tokens,
                 max_tokens=max_tokens,
                 model=model
-            )
+            ))
         if "too_many_prompt_tokens" in msg:  # Perplexity
             if match := re.search(
                 r"User input tokens exceeds (\d+) tokens",
                 msg
             ):
                 max_tokens = int(match.group(1))
-            return LLMContextLengthExceededError(
+            return with_cause(LLMContextLengthExceededError(
                 actual_tokens=actual_tokens,
                 max_tokens=max_tokens,
                 model=model
-            )
+            ))
 
     if t == "openai.APIStatusError" and "413 Request Entity Too Large" in msg:  # Cerebras
-        return LLMContextLengthExceededError(model=model)
+        return with_cause(LLMContextLengthExceededError(model=model))
 
     if t == "openai.APIStatusError" and "Payload Too Large" in msg:  # Fireworks
-        return LLMContextLengthExceededError(model=model)
+        return with_cause(LLMContextLengthExceededError(model=model))
 
     if t == "anthropic.BadRequestError" and "prompt is too long:" in msg:
         if match := re.search(r"(\d+)\s+tokens\s+>\s+(\d+)\s+maximum", msg):
@@ -123,7 +134,7 @@ def convert_exception(e: Exception, model: str = None) -> Exception | None:
             # generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count,
             # limit: 1000000, model: gemini-3-flash
             # Please retry in 59.119769634s.
-            return LLMQuotaExceededError(details=msg)
+            return with_cause(LLMQuotaExceededError(details=msg))
 
         if "input token count" in msg and "exceeds the maximum number of tokens allowed" in msg:
             # ai studio
@@ -139,11 +150,22 @@ def convert_exception(e: Exception, model: str = None) -> Exception | None:
             ):
                 actual_tokens = int(match.group(1))
                 max_tokens = int(match.group(2))
-            return LLMContextLengthExceededError(
+            return with_cause(LLMContextLengthExceededError(
                 actual_tokens=actual_tokens,
                 max_tokens=max_tokens,
                 model=model
-            )
+            ))
+    if t in (
+        "openai.AuthenticationError",
+        "anthropic.AuthenticationError",
+        "google.auth.exceptions.MalformedError",  # Vertex AI, wrong service acc. json
+    ):
+        return with_cause(LLMAuthError(msg))
+    if t == "google.genai.errors.ClientError":
+        if "API_KEY_INVALID" in msg:
+            return with_cause(LLMAuthError(msg))
+        if "PERMISSION_DENIED" in msg:  # invalid project in service account json
+            return with_cause(LLMAuthError(msg))
     return None
 
 

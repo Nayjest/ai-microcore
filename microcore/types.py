@@ -64,3 +64,9 @@ class LLMQuotaExceededError(BadAIAnswer):
         details: str = None,
     ):
         super().__init__(message, details)
+
+
+class LLMAuthError(BadAIAnswer):
+    """
+    LLM authentication error
+    """
