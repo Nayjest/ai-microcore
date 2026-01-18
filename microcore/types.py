@@ -57,6 +57,7 @@ class LLMContextLengthExceededError(BadAIAnswer):
         self.max_tokens = max_tokens
         self.model = model
 
+
 class LLMQuotaExceededError(BadAIAnswer):
     def __init__(
         self,

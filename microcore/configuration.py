@@ -338,7 +338,7 @@ class LLMConfig(
 
             elif self.LLM_API_TYPE in DEFAULT_PLATFORMS:
                 # keep empty platform for OpenAI API with custom api_base URL
-                if not(self.LLM_API_BASE and self.LLM_API_TYPE == ApiType.OPENAI):
+                if not (self.LLM_API_BASE and self.LLM_API_TYPE == ApiType.OPENAI):
                     self.LLM_API_PLATFORM = DEFAULT_PLATFORMS[self.LLM_API_TYPE]
 
         self._resolve_model()

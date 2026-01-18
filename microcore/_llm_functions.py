@@ -124,16 +124,6 @@ def convert_exception(e: Exception, model: str = None) -> Exception | None:
     if t == "google.genai.errors.ClientError":
 
         if "429" in msg and "RESOURCE_EXHAUSTED" in msg:
-            # google.genai.errors.ClientError: 429 RESOURCE_EXHAUSTED.
-            # {'error': {'code': 429,
-            # 'message': 'You exceeded your current quota, please check your plan and billing details.
-            # For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits.
-            # To monitor your current usage, head to: https://ai.dev/rate-limit.
-            # ...
-            # Quota exceeded for metric:
-            # generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count,
-            # limit: 1000000, model: gemini-3-flash
-            # Please retry in 59.119769634s.
             return with_cause(LLMQuotaExceededError(details=msg))
 
         if "input token count" in msg and "exceeds the maximum number of tokens allowed" in msg:
@@ -145,7 +135,7 @@ def convert_exception(e: Exception, model: str = None) -> Exception | None:
                 max_tokens = int(match.group(1))
             # vertex
             elif match := re.search(
-                r"input token count \((\d+)\) exceeds the maximum number of tokens allowed \((\d+)\)",
+                r"input token count \((\d+)\) exceeds the maximum number of tokens allowed \((\d+)\)",  # noqa, pylint-disable=E501
                 msg
             ):
                 actual_tokens = int(match.group(1))
