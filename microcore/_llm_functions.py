@@ -234,7 +234,9 @@ def llm(
             except Exception as e:  # pylint: disable=W0718
                 converted_exception = convert_exception(e)
                 # If context length exceeded, or no tries left --> do not retry
-                if tries == 0 or isinstance(converted_exception, LLMContextLengthExceededError):
+                if (
+                    tries == 0 or isinstance(converted_exception, (LLMContextLengthExceededError, LLMAuthError))
+                ):
                     if converted_exception:
                         raise converted_exception from e
                     raise e
@@ -332,7 +334,7 @@ async def allm(
             except Exception as e:  # pylint: disable=W0718
                 converted_exception = convert_exception(e)
                 # If context length exceeded, or no tries left --> do not retry
-                if tries == 0 or isinstance(converted_exception, LLMContextLengthExceededError):
+                if tries == 0 or isinstance(converted_exception, (LLMContextLengthExceededError, LLMAuthError)):
                     if converted_exception:
                         raise converted_exception from e
                     raise e
