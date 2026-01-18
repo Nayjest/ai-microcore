@@ -1,10 +1,64 @@
 import os
 
-from .configuration import EmbeddingDbType, ApiType, Config
-from .ui import ask_choose, ask_non_empty, ask_yn, error, yellow
+from .configuration import (
+    EmbeddingDbType,
+    Config,
+)
+from .llm_backends import (
+    ApiPlatform,
+    ApiType,
+    llm_api_base_required,
+    llm_api_key_required,
+)
+from .ui import ask_choose, ask_non_empty, ask_yn, error, yellow, ask
 from ._env import configure
 from ._llm_functions import llm
 from .utils import file_link
+
+
+def prompt_api_type(
+    question: str = "Which language model API should be used?",
+    api_types: dict[ApiType, str] | list[str] = None
+) -> ApiType:
+    """
+    Prompt user to choose an LLM API type.
+    """
+    return ask_choose(question, api_types or ApiType.labels(ApiType.major_remote()))
+
+
+def prompt_api_platform(
+    api_type: ApiType,
+    question: str = "Select your LLM inference provider.",
+) -> ApiPlatform | None:
+    platforms: list = ApiPlatform.for_api_type(api_type)
+    if len(platforms) == 1:
+        return platforms[0]
+    platform_labels = ApiPlatform.labels(platforms)
+    if api_type == ApiType.OPENAI:
+        platform_labels["other"] = "Other"
+
+    result = ask_choose(question, platform_labels)
+    if result == "other":
+        return None
+    return result
+
+
+def prompt_api_key(
+    question: str = "Enter API Key:",
+) -> str:
+    """
+    Prompt user to enter an LLM API key.
+    """
+    return ask_non_empty(question).strip()
+
+
+def prompt_model_name(
+    question: str = "Enter model name:",
+) -> str:
+    """
+    Prompt user to enter an LLM model name.
+    """
+    return ask_non_empty(question).strip()
 
 
 def interactive_setup(
@@ -26,18 +80,44 @@ def interactive_setup(
     """
     raw_config = dict(defaults) if defaults else dict()
     if "LLM_API_TYPE" not in raw_config:
-        raw_config["LLM_API_TYPE"] = ask_choose(
-            "Choose LLM API Type:",
-            list(i.value for i in ApiType if not ApiType.is_local(i)),
-        )
-    if "LLM_API_KEY" not in raw_config:
-        raw_config["LLM_API_KEY"] = ask_non_empty("API Key: ").strip()
-    if "MODEL" not in raw_config:
-        raw_config["MODEL"] = ask_non_empty("Model Name: ").strip()
-    if "LLM_API_BASE" not in raw_config:
-        raw_config["LLM_API_BASE"] = input(
+        raw_config["LLM_API_TYPE"] = prompt_api_type()
+    api_type = raw_config["LLM_API_TYPE"]
+
+    if "LLM_API_PLATFORM" not in raw_config:
+        raw_config["LLM_API_PLATFORM"] = prompt_api_platform(api_type)
+    platform = raw_config["LLM_API_PLATFORM"]
+
+    if "LLM_API_BASE" not in raw_config and llm_api_base_required(api_type, platform):
+        raw_config["LLM_API_BASE"] = ask(
             "API Base URL (may be empty for some API types): "
         ).strip()
+
+    if platform == ApiPlatform.AZURE:
+        if "LLM_DEPLOYMENT_ID" not in raw_config:
+            raw_config["LLM_DEPLOYMENT_ID"] = ask_non_empty("Enter deployment ID:")
+        if "LLM_API_VERSION" not in raw_config:
+            raw_config["LLM_API_VERSION"] = ask_non_empty("Enter API version:")
+
+    if "LLM_API_KEY" not in raw_config and llm_api_key_required(api_type, platform):
+        raw_config["LLM_API_KEY"] = prompt_api_key()
+
+    if platform == ApiPlatform.GOOGLE_VERTEX_AI:
+        if "GOOGLE_CLOUD_SERVICE_ACCOUNT_JSON" not in raw_config:
+            raw_config["GOOGLE_CLOUD_SERVICE_ACCOUNT_JSON"] = ask_non_empty(
+                "Enter Google Cloud Service Account JSON:"
+            )
+        if "GOOGLE_CLOUD_PROJECT_ID" not in raw_config:
+            raw_config["GOOGLE_CLOUD_PROJECT_ID"] = ask(
+                "Enter Google Cloud Project ID:"
+            )
+        if "GOOGLE_CLOUD_LOCATION" not in raw_config:
+            raw_config["GOOGLE_CLOUD_LOCATION"] = ask(
+                "Enter Google Cloud Location (e.g. us-central1):"
+            )
+
+    if "MODEL" not in raw_config:
+        raw_config["MODEL"] = prompt_model_name()
+
     if extras:
         if isinstance(extras, list):
             extras = {

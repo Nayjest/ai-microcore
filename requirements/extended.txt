@@ -1,7 +1,6 @@
 -r min.txt
 chromadb>=1.0.9
 anthropic>=0.19.1,<1
-google-generativeai>=0.7.2,<1
-vertexai>=1.60.0,<2
+google-genai>=1.56,<2
 transformers>=4.43.3,<5
 qdrant-client>=1.14.2,<2

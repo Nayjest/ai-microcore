@@ -3,7 +3,7 @@ import json
 
 from colorama import Fore, init
 
-from .configuration import ApiType
+from .llm_backends import ApiPlatform
 from .utils import is_chat_model, is_notebook
 from ._env import env, config
 from ._prepare_llm_args import prompt_to_message_dicts, prepare_prompt
@@ -95,7 +95,7 @@ def _format_request_log_str(prompt, **kwargs) -> str:
 def _resolve_model(**kwargs):
     cfg = config()
     model = kwargs.get("model") or cfg.LLM_DEFAULT_ARGS.get("model") or cfg.MODEL
-    if cfg.LLM_API_TYPE == ApiType.AZURE:
+    if cfg.LLM_API_PLATFORM == ApiPlatform.AZURE:
         model = f"azure:{model}"
     return model
 

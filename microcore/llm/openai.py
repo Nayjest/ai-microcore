@@ -4,10 +4,10 @@ import base64
 import openai
 from openai.types import CompletionChoice, ImagesResponse
 
-from microcore.lm_client import BaseAIChatClient, BaseAsyncAIClient
-from microcore.message_types import TMsgContentPart
-
-from ..configuration import Config, ApiType
+from ..lm_client import BaseAIChatClient, BaseAsyncAIClient
+from ..message_types import TMsgContentPart
+from ..configuration import Config
+from ..llm_backends import ApiPlatform
 from .._prepare_llm_args import prepare_prompt
 from ..types import BadAIAnswer, TPrompt
 from ..wrappers.llm_response_wrapper import (
@@ -85,7 +85,7 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
 
     async def load_models(self) -> dict:
         models_iter = self.oai_client.models.list()
-        return {model.name: model for model in models_iter}
+        return {model.id: model async for model in models_iter}
 
 
 class OpenAIClient(BaseAIChatClient):
@@ -95,7 +95,7 @@ class OpenAIClient(BaseAIChatClient):
 
     def __init__(self, config: Config):
         super().__init__(config)
-        if config.LLM_API_TYPE == ApiType.AZURE:
+        if config.LLM_API_PLATFORM == ApiPlatform.AZURE:
             client_type = openai.AzureOpenAI
             async_client_type = openai.AsyncAzureOpenAI
             client_params = {
@@ -169,7 +169,7 @@ class OpenAIClient(BaseAIChatClient):
                 hidden_output_end=self.config.HIDDEN_OUTPUT_END,
             )
         choice = response.choices[0]
-        if is_chat or isinstance(choice, CompletionChoice):
+        if is_chat and not isinstance(choice, CompletionChoice):
             response_text = choice.message.content
         else:
             response_text = choice.text
@@ -267,7 +267,7 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
         "model",
         (
             args.get("deployment_id", config.LLM_DEPLOYMENT_ID or config.MODEL)
-            if config.LLM_API_TYPE == ApiType.AZURE
+            if config.LLM_API_PLATFORM == ApiPlatform.AZURE
             else config.MODEL
         ),
     )

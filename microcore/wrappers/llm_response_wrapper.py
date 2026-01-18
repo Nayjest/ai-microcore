@@ -1,8 +1,7 @@
 from typing import Any
 from typing import TYPE_CHECKING
 
-from microcore.images import FileImage, ImageInterface, ImageListInterface
-
+from ..images import FileImage, ImageInterface, ImageListInterface
 from ..types import BadAIAnswer, TPrompt
 from ..utils import (
     ExtendedString,

@@ -81,10 +81,15 @@ class GoogleClient(BaseAIChatClient):
             client_params["location"] = config.GOOGLE_CLOUD_LOCATION
 
         if creds_info := _load_service_account_info(config):
-            credentials = Credentials.from_service_account_info(
-                creds_info,
-                scopes=["https://www.googleapis.com/auth/cloud-platform"]
-            )
+            try:
+                credentials = Credentials.from_service_account_info(
+                    creds_info,
+                    scopes=["https://www.googleapis.com/auth/cloud-platform"]
+                )
+            except ValueError as e:
+                raise LLMCredentialError(
+                    f"Invalid service account info provided: {e}"
+                ) from e
             client_params["credentials"] = credentials
             if "project" not in client_params and creds_info.get("project_id"):
                 client_params["project"] = creds_info["project_id"]
