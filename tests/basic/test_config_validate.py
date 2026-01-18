@@ -28,7 +28,8 @@ def test_azure_no_deployment():  # noqa
     with pytest.raises(mc.LLMConfigError):
         mc.configure(
             USE_DOT_ENV=False,
-            LLM_API_TYPE=mc.ApiType.AZURE,
+            LLM_API_TYPE=mc.ApiType.OPENAI,
+            LLM_API_PLATFORM=mc.ApiPlatform.AZURE,
             LLM_API_KEY="123",
             LLM_API_VERSION="123",
             LLM_API_BASE="https://example.com",
@@ -42,7 +43,7 @@ def test_azure_ok():  # noqa
     os.environ.clear()
     mc.configure(
         USE_DOT_ENV=False,
-        LLM_API_TYPE=mc.ApiType.AZURE,
+        LLM_API_PLATFORM=mc.ApiPlatform.AZURE,
         LLM_API_KEY="123",
         LLM_DEPLOYMENT_ID="123",
         LLM_API_VERSION="123",
@@ -61,7 +62,7 @@ def test_azure_no_version():  # noqa
         mc.configure(
             LLM_DEPLOYMENT_ID="123",
             USE_DOT_ENV=False,
-            LLM_API_TYPE=mc.ApiType.AZURE,
+            LLM_API_PLATFORM=mc.ApiPlatform.AZURE,
             LLM_API_KEY="123",
             LLM_API_BASE="https://example.com",
         )

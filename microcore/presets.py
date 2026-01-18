@@ -1,6 +1,7 @@
 """Configuration presets collection."""
 
-from .configuration import PRINT_STREAM, DEFAULT_LOCAL_ENV_FILE, ApiType, EmbeddingDbType
+from .configuration import PRINT_STREAM, DEFAULT_LOCAL_ENV_FILE, EmbeddingDbType
+from .llm_backends import ApiType
 
 # Minimal handy configuration preset
 # for non-production usage (simple scripts, small experiments, etc.)

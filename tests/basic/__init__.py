@@ -13,7 +13,7 @@ def setup(request, mocker):
     mc.configure(
         USE_DOT_ENV=False,
         PROMPT_TEMPLATES_PATH="tests/basic/tpl",
-        LLM_API_TYPE=mc.ApiType.OPEN_AI,
+        LLM_API_TYPE=mc.ApiType.OPENAI,
         LLM_API_KEY="123",
     )
     yield

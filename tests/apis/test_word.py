@@ -7,10 +7,14 @@ from .setup_env import setup_env  # noqa
 def test_return_word(setup_env):  # noqa
     word = "UNICORN"
     prompt = (
-        "You are LLM subsystem of AI software.\n"
-        "Respond to following request in straightforward manner."
-        'Avoid any additional words like "sure", "here is my answer", etc (!).\n'
-        f"\nRequest: REPLAY WITH FOLLOWING WORD: {word}\nResponse:"
+        "Repeat the word exactly.\n"
+        "(!important: only the word, no additional text)\n"
+        "\n"
+        "Input: APPLE\n"
+        "Output: APPLE\n"
+        "\n"
+        f"Input: {word}\n"
+        f"Output: "
     )
 
     out = llm(prompt)

@@ -19,7 +19,6 @@ from ._env import configure, env, config, min_setup
 from .logging import use_logging
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg, PartialMsg
 from .configuration import (
-    ApiType,
     LLMApiBaseError,
     LLMApiDeploymentIdError,
     LLMApiKeyError,
@@ -29,6 +28,7 @@ from .configuration import (
     EmbeddingDbType,
     PRINT_STREAM,
 )
+from .llm_backends import ApiPlatform, ApiType
 from .types import BadAIJsonAnswer, BadAIAnswer, LLMContextLengthExceededError
 from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
@@ -194,6 +194,7 @@ __all__ = [
     "AssistantMsg",
     "PartialMsg",
     "ApiType",
+    "ApiPlatform",
     "EmbeddingDbType",
     "BadAIJsonAnswer",
     "PRINT_STREAM",
@@ -230,4 +231,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "5.0.0dev5"
+__version__ = "5.0.0dev6"

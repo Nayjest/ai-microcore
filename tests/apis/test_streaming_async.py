@@ -23,11 +23,11 @@ async def test_streaming_count_async_async(setup_env):  # noqa
     microcore.use_logging()
     out = []
 
-    async def ahandler(chunk):
+    async def async_handler(chunk):
         out.append(chunk)
 
     await microcore.allm(
         "Count from one to ten with english words (like one, two, ...)",
-        callbacks=[ahandler],
+        callbacks=[async_handler],
     )
     assert "six" in "".join(out).lower()

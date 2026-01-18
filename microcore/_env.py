@@ -11,11 +11,11 @@ import jinja2
 from .embedding_db import AbstractEmbeddingDB
 from .configuration import (
     Config,
-    ApiType,
     LLMConfigError,
     EmbeddingDbType,
     PRINT_STREAM,
 )
+from .llm_backends import ApiType
 from .presets import MIN_SETUP
 from .lm_client import BaseAIClient
 from .types import TplFunctionType, LLMAsyncFunctionType, LLMFunctionType
@@ -126,23 +126,11 @@ class Env:
             self.llm_function, self.llm_async_function = make_anthropic_llm_functions(
                 self.config
             )
-        elif self.config.LLM_API_TYPE == ApiType.GOOGLE_VERTEX_AI:
-            try:
-                from .llm.google_vertex_ai import (
-                    make_llm_functions as make_google_vertex_llm_functions,
-                )
-            except ModuleNotFoundError as e:
-                raise ModuleNotFoundError(
-                    "To use the Google Vertex language models, "
-                    "you need to install the `vertexai` package "
-                    "and authenticate with Google Cloud cli."
-                    "Run `pip install vertexai`."
-                ) from e
-            (
-                self.llm_function,
-                self.llm_async_function,
-            ) = make_google_vertex_llm_functions(self.config)
-        elif self.config.LLM_API_TYPE in (ApiType.GOOGLE, ApiType.GOOGLE_AI_STUDIO):
+        elif self.config.LLM_API_TYPE in (
+            ApiType.GOOGLE,
+            ApiType.GOOGLE_AI_STUDIO,  # @deprecated
+            ApiType.GOOGLE_VERTEX_AI  # @deprecated
+        ):
             try:
                 from .llm.google_genai import GoogleClient
             except ModuleNotFoundError as e:
