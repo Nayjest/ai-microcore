@@ -292,7 +292,7 @@ class LLMConfig(
             return
 
         self._map_deprecated_api_types()
-        if self.LLM_API_TYPE not in ApiType:
+        if self.LLM_API_TYPE and self.LLM_API_TYPE not in ApiType:
             self._process_platform_as_api_type()
 
         if self.LLM_API_BASE and not self.LLM_API_PLATFORM:
@@ -360,43 +360,7 @@ class LLMConfig(
                     "MODEL should be provided for local transformers models"
                 )
 
-    def validate(self):
-        """
-        Validate LLM configuration
-
-        Raises:
-            LLMConfigError
-        """
-        if self.LLM_API_TYPE == ApiType.NONE:
-            return
-        if self.uses_local_model():
-            self._validate_local_llm()
-            return
-        if self.LLM_API_TYPE not in ApiType:
-            details = ""
-            if self.LLM_API_TYPE:
-                suggestion, dist = most_similar(str(self.LLM_API_TYPE), [i for i in ApiType])
-                if dist < max(len(suggestion) // 2, len(str(self.LLM_API_TYPE)) // 2):
-                    details = f". Did you mean '{suggestion}'?"
-            raise LLMConfigError(
-                f"Language model API type '{self.LLM_API_TYPE}' is not recognized{details}"
-            )
-
-        if self.LLM_API_PLATFORM and self.LLM_API_PLATFORM not in ApiPlatform:
-            details = ""
-            suggestion, dist = most_similar(str(self.LLM_API_PLATFORM), [i for i in ApiPlatform])
-            if dist < max(len(suggestion) // 2, len(str(self.LLM_API_PLATFORM)) // 2):
-                details = f". Did you mean '{suggestion}'?"
-
-            raise LLMConfigError(
-                f"LLM Platform '{self.LLM_API_PLATFORM}' is not recognized{details}"
-            )
-
-        if self.INFERENCE_FUNC:
-            raise LLMConfigError(
-                "INFERENCE_FUNC should be provided only for local models"
-            )
-
+    def _validate_api_credentials(self):
         if self.LLM_API_TYPE == ApiType.GOOGLE:
             if (
                 not self.GOOGLE_CLOUD_SERVICE_ACCOUNT
@@ -409,6 +373,10 @@ class LLMConfig(
                     "GOOGLE_CLOUD_SERVICE_ACCOUNT_JSON (service account JSON content), "
                     "or LLM_API_KEY (for Gemini Developer API only, not Vertex AI)"
                 )
+        elif self.LLM_API_TYPE == ApiType.ANTHROPIC:
+            if not self.LLM_API_KEY:
+                raise LLMApiKeyError()
+
         elif self.LLM_API_TYPE == ApiType.OPENAI:
             if self.LLM_API_PLATFORM == ApiPlatform.AZURE:
                 if not self.LLM_API_BASE:
@@ -420,6 +388,44 @@ class LLMConfig(
 
             if not self.LLM_API_KEY:
                 raise LLMApiKeyError()
+
+    def validate(self):
+        """
+        Validate LLM configuration
+
+        Raises:
+            LLMConfigError
+        """
+        if self.LLM_API_TYPE == ApiType.NONE:
+            return
+        if self.uses_local_model():
+            self._validate_local_llm()
+            return
+        if self.LLM_API_TYPE and self.LLM_API_TYPE not in ApiType:
+            details = ""
+            if self.LLM_API_TYPE:
+                suggestion, dist = most_similar(str(self.LLM_API_TYPE), list(ApiType))
+                if dist < max(len(suggestion) // 2, len(str(self.LLM_API_TYPE)) // 2):
+                    details = f". Did you mean '{suggestion}'?"
+            raise LLMConfigError(
+                f"Language model API type '{self.LLM_API_TYPE}' is not recognized{details}"
+            )
+
+        if self.LLM_API_PLATFORM and self.LLM_API_PLATFORM not in ApiPlatform:
+            details = ""
+            suggestion, dist = most_similar(str(self.LLM_API_PLATFORM), list(ApiPlatform))
+            if dist < max(len(suggestion) // 2, len(str(self.LLM_API_PLATFORM)) // 2):
+                details = f". Did you mean '{suggestion}'?"
+
+            raise LLMConfigError(
+                f"LLM Platform '{self.LLM_API_PLATFORM}' is not recognized{details}"
+            )
+
+        if self.INFERENCE_FUNC:
+            raise LLMConfigError(
+                "INFERENCE_FUNC should be provided only for local models"
+            )
+        self._validate_api_credentials()
         if self.MODEL in ModelPreset:
             raise LLMConfigError(
                 f"Model is set to preset value '{self.MODEL}', "

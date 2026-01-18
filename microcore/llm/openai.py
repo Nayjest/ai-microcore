@@ -85,7 +85,7 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
 
     async def load_models(self) -> dict:
         models_iter = self.oai_client.models.list()
-        return {model.name: model for model in models_iter}
+        return {model.id: model async for model in models_iter}
 
 
 class OpenAIClient(BaseAIChatClient):
@@ -169,7 +169,7 @@ class OpenAIClient(BaseAIChatClient):
                 hidden_output_end=self.config.HIDDEN_OUTPUT_END,
             )
         choice = response.choices[0]
-        if is_chat or isinstance(choice, CompletionChoice):
+        if is_chat and not isinstance(choice, CompletionChoice):
             response_text = choice.message.content
         else:
             response_text = choice.text

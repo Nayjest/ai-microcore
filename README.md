@@ -13,7 +13,7 @@
 
 **MicroCore** is a collection of python adapters for Large Language Models
 and Vector Databases / Semantic Search APIs allowing to 
-communicate with these services in a convenient way, making them easily switchable 
+communicate with these services in a convenient way, make them easily switchable 
 and separate business logic from the implementation details.
 
 It defines interfaces for features typically used in AI applications,
