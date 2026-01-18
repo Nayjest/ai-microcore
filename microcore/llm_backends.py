@@ -3,23 +3,22 @@ from enum import Enum, EnumMeta
 from typing import Iterable, Optional, Union
 
 
-class SafeStrEnum(EnumMeta):
-    """A metaclass for string Enums for Python < 3.12"""
+class SafeEnumMeta(EnumMeta):
+    """A metaclass for Enums that handles `in` checks safely for Python < 3.12"""
     def __contains__(cls, item):
-        """
-        Prevents exceptions when performing operations like None in MyEnum
-        for python versions < 3.12
-        """
         try:
             return super().__contains__(item)
         except TypeError:
             return False
 
+
+class SafeStrEnum(str, Enum, metaclass=SafeEnumMeta):
+    """String Enum with safe `in` checks for Python < 3.12"""
     def __str__(self):
         return self.value
 
 
-class ApiType(str, Enum, metaclass=SafeStrEnum):
+class ApiType(SafeStrEnum):
     """LLM API types"""
 
     OPENAI = "openai"
@@ -91,13 +90,13 @@ class ApiType(str, Enum, metaclass=SafeStrEnum):
         return self.value
 
 
-class ModelPreset(str, Enum, metaclass=SafeStrEnum):
+class ModelPreset(SafeStrEnum):
     """Model presets."""
     HIGH_END = "high-end"
     LOW_END = "low-end"
 
 
-class ApiPlatform(str, Enum, metaclass=SafeStrEnum):
+class ApiPlatform(SafeStrEnum):
     """LLM platforms / Inference providers"""
     # OpenAI Compatible
     OPENAI = "openai"
