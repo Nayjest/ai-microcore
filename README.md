@@ -261,7 +261,7 @@ LLM Microcore supports all models & API providers having OpenAI API.
 ## 🖼️ Examples
 
 #### [Code review tool](https://github.com/llm-microcore/microcore/blob/main/examples/code-review-tool)
-Performs code review by LLM for changes in git .patch files in any programming languages.
+Performs a code review by LLM for changes in git .patch files in any programming languages.
 
 #### [Image analysis](https://colab.research.google.com/drive/1qTJ51wxCv3VlyqLt3M8OZ7183YXPFpic) (Google Colab)
 Determine the number of petals and the color of the flower from a photo (gpt-4-turbo)
@@ -283,7 +283,7 @@ Text generation using HF/Transformers model locally (example with Qwen 3 0.6B).
 @TODO
 
 ## 🤖 AI Modules
-**This is experimental feature.**
+**This is an experimental feature.**
 
 Tweaks the Python import system to provide automatic setup of MicroCore environment
 based on metadata in module docstrings.
