@@ -15,7 +15,7 @@ from .file_cache import (
 )
 from ._env import env
 
-
+# pylint: disable=too-many-return-statements,too-many-branches
 def convert_exception(e: Exception, model: str = None) -> Exception | None:
     """
     Convert LLM exceptions microcore-specific exceptions if possible.
@@ -135,7 +135,8 @@ def convert_exception(e: Exception, model: str = None) -> Exception | None:
                 max_tokens = int(match.group(1))
             # vertex
             elif match := re.search(
-                r"input token count \((\d+)\) exceeds the maximum number of tokens allowed \((\d+)\)",  # noqa, pylint-disable=E501
+                r"input token count \((\d+)\) "
+                r"exceeds the maximum number of tokens allowed \((\d+)\)",
                 msg
             ):
                 actual_tokens = int(match.group(1))

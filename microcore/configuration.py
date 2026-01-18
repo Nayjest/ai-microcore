@@ -260,14 +260,14 @@ class LLMConfig(
             self.LLM_API_TYPE, self.LLM_API_PLATFORM = mapping[str(self.LLM_API_TYPE)]
 
     def _process_platform_as_api_type(self):
-        if self.LLM_API_TYPE in ApiPlatform:
+        if self.LLM_API_TYPE and self.LLM_API_TYPE in ApiPlatform:
             platform = ApiPlatform(self.LLM_API_TYPE)
             if api_type := platform.api_type():
                 self.LLM_API_TYPE = api_type
                 self.LLM_API_PLATFORM = platform
 
     def _determine_api_type_by_platform(self):
-        if self.LLM_API_PLATFORM in ApiPlatform:
+        if self.LLM_API_PLATFORM and self.LLM_API_PLATFORM in ApiPlatform:
             self.LLM_API_TYPE = ApiPlatform(self.LLM_API_PLATFORM).api_type()
 
     def _resolve_model(self):
