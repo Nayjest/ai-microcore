@@ -188,7 +188,7 @@ class LLMConfig(
     """
     See `ApiType`.
     To use services that is not listed in `ApiType`,
-    but provides OpenAPI interface, use `ApiType.OPENAI`"""
+    but provides OpenAI interface, use `ApiType.OPENAI`"""
     LLM_API_PLATFORM: str = from_env()
     """
     LLM API Platform / Inference Provider.
