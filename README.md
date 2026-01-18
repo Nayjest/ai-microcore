@@ -122,7 +122,7 @@ In order to use vector database functions with ChromaDB, you need to install the
 pip install chromadb
 ```
 By default, MicroCore will use ChromaDB PersistentClient (if the corresponding package is installed).
-Alternatively, you can run Chroma as separate service and configure MicroCore to use HttpClient:
+Alternatively, you can run Chroma as a separate service and configure MicroCore to use HttpClient:
 
 ```python
 from microcore import configure

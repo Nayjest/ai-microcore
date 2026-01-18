@@ -29,7 +29,7 @@ def test_azure_no_deployment():  # noqa
         mc.configure(
             USE_DOT_ENV=False,
             LLM_API_TYPE=mc.ApiType.OPENAI,
-            LLM_API_PLATFORM=mc.ApiType.AZURE,
+            LLM_API_PLATFORM=mc.ApiPlatform.AZURE,
             LLM_API_KEY="123",
             LLM_API_VERSION="123",
             LLM_API_BASE="https://example.com",

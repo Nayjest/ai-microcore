@@ -116,11 +116,11 @@ def convert_exception(e: Exception, model: str = None) -> Exception | None:
         if match := re.search(r"(\d+)\s+tokens\s+>\s+(\d+)\s+maximum", msg):
             max_tokens = int(match.group(2))
             actual_tokens = int(match.group(1))
-        return LLMContextLengthExceededError(
+        return with_cause(LLMContextLengthExceededError(
             actual_tokens=actual_tokens,
             max_tokens=max_tokens,
             model=model
-        )
+        ))
     if t == "google.genai.errors.ClientError":
 
         if "429" in msg and "RESOURCE_EXHAUSTED" in msg:

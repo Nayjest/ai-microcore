@@ -71,3 +71,9 @@ class LLMAuthError(BadAIAnswer):
     """
     LLM authentication error
     """
+    def __init__(
+        self,
+        message: str = "LLM authentication error",
+        details: str = None,
+    ):
+        super().__init__(message, details)
