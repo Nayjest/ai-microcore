@@ -272,13 +272,13 @@ def llm_api_base_required(api_type: ApiType, platform: ApiPlatform | None) -> bo
 
 def llm_api_key_required(api_type: ApiType | str, platform: ApiPlatform | None) -> bool:
     """
-    Determine if the given API type and platform require an API base URL.
+    Determine if the given API type and platform require an API key.
     """
     if ApiType.is_local(api_type):
         return False
     if platform == ApiPlatform.GOOGLE_VERTEX_AI:
         return False
-    return False
+    return True
 
 
 def platform_by_api_base(api_base: str) -> tuple[Optional[ApiType], Optional[ApiPlatform]]:

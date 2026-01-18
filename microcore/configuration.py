@@ -251,7 +251,7 @@ class LLMConfig(
             self.LLM_API_TYPE = ApiType.OPENAI
 
         mapping = {
-            str(ApiType.AZURE): (ApiType.AZURE, ApiPlatform.AZURE),
+            str(ApiType.AZURE): (ApiType.OPENAI, ApiPlatform.AZURE),
             str(ApiType.GOOGLE_AI_STUDIO): (ApiType.GOOGLE, ApiPlatform.GOOGLE_AI_STUDIO),
             str(ApiType.ANYSCALE): (ApiType.OPENAI, ApiPlatform.ANYSCALE),
             str(ApiType.DEEP_INFRA): (ApiType.OPENAI, ApiPlatform.DEEPINFRA),
@@ -315,7 +315,7 @@ class LLMConfig(
         if not self.LLM_API_BASE:
             self._use_default_platform_api_base()
 
-        if self.LLM_API_PLATFORM == ApiType.AZURE:
+        if self.LLM_API_PLATFORM == ApiPlatform.AZURE:
             self.LLM_API_VERSION = self.LLM_API_VERSION or self.OPENAI_API_VERSION
             self.LLM_DEPLOYMENT_ID = self.LLM_DEPLOYMENT_ID or self.AZURE_DEPLOYMENT_ID
 
