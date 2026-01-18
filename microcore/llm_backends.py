@@ -199,7 +199,7 @@ OPENAI_API_PLATFORMS: list[ApiPlatform] = [
     ApiPlatform.OPENROUTER,
     ApiPlatform.PERPLEXITY,
 ]
-API_PLATFORMS_BY_API_TYPE: [dict[ApiType, list]] = {
+API_PLATFORMS_BY_API_TYPE: dict[ApiType, list] = {
     ApiType.OPENAI: OPENAI_API_PLATFORMS,
     ApiType.GOOGLE: GOOGLE_API_PLATFORMS,
     ApiType.ANTHROPIC: ANTHROPIC_API_PLATFORMS,
