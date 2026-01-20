@@ -4,7 +4,10 @@ Message classes for OpenAI-like Chat APIs.
 import abc
 from enum import Enum
 from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import ClassVar, Any
+
+from pydantic import GetCoreSchemaHandler
+from pydantic_core import core_schema
 
 
 class Role(str, Enum):
@@ -23,19 +26,30 @@ DEFAULT_MESSAGE_ROLE = Role.USER
 """Default role for messages if not specified (USER)."""
 
 
-class MsgContentPart:
+class _PydanticPassthrough:
+    """
+    Mixin that allows Pydantic to accept instances of this class without transformation.
+    """
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler  # pylint: disable=unused-argument
+    ) -> core_schema.CoreSchema:
+        return core_schema.any_schema()
+
+
+class MsgContentPart(_PydanticPassthrough):
     """
     Base class for individual parts of multipart message content.
     """
 
 
-class MsgContent:
+class MsgContent(_PydanticPassthrough):
     """
     Base class for message content.
     """
 
 
-class MsgMultipartContent(MsgContent,  abc.ABC):
+class MsgMultipartContent(MsgContent, abc.ABC):
     """
     Abstract base class for multipart message content.
     """
@@ -55,7 +69,7 @@ TMsgContent = str | MsgContent | list[TMsgContentPart]
 
 
 @dataclass
-class Msg:
+class Msg(_PydanticPassthrough):
     """
     Represents a message in a chat conversation.
     """
