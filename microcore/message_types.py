@@ -32,7 +32,7 @@ class _PydanticPassthrough:
     """
     @classmethod
     def __get_pydantic_core_schema__(
-        cls, source_type: Any, handler: GetCoreSchemaHandler
+        cls, source_type: Any, handler: GetCoreSchemaHandler  # pylint: disable=unused-argument
     ) -> core_schema.CoreSchema:
         return core_schema.any_schema()
 
