@@ -163,8 +163,9 @@ class AsyncGoogleClient(BaseAsyncAIClient):
     def __init__(self, client: GoogleClient):
         self.sync_client = client
 
-    async def load_models(self) -> dict:
-        raise NotImplementedError
+    async def load_models(self, **kwargs) -> dict:
+        models = await self.sync_client.genai_client.aio.models.list(**kwargs)
+        return {model.name: model for model in models}
 
     async def generate(
         self,

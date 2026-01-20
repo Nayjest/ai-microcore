@@ -42,8 +42,7 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
         config = self.sync_client.config
         args, options = _prepare_llm_arguments(config, kwargs)
         if is_image_model(args["model"]):
-            # Note: image generation is synchronous
-            return _generate_image(
+            return await _generate_image_async(
                 prompt,
                 args,
                 self.oai_client,
@@ -294,12 +293,8 @@ def _oai_image_response_to_images(response: ImagesResponse) -> list[Image]:
     return images
 
 
-def _generate_image(
-    prompt,
-    args,
-    connection: openai.OpenAI | openai.AsyncOpenAI,
-    options
-) -> ImageGenerationResponse | None:
+def _prepare_image_generation(prompt, args):
+    """Prepare prompt and images for image generation (shared logic)."""
     def convert_input_image(image: ImageInterface):
         if isinstance(image, FileImage):
             return open(image.file, "rb")
@@ -333,6 +328,32 @@ def _generate_image(
     if save and args.get("response_format", "b64_json") != "b64_json":
         raise ValueError("Only 'b64_json' response format is supported.")
 
+    return prompt, images, save
+
+
+def _image_generation_response(
+        response: ImagesResponse,
+        save: bool,
+        options: dict,
+) -> ImageGenerationResponse | None:
+    check_for_errors(response)
+    images = _oai_image_response_to_images(response)
+    response_attrs = response.__dict__.copy()
+    result = make_image_generation_response(images, save, response_attrs)
+    for cb in options["callbacks"]:
+        cb(result)
+    return result
+
+
+def _generate_image(
+    prompt,
+    args,
+    connection: openai.OpenAI,
+    options
+) -> ImageGenerationResponse | None:
+    """Synchronous version of image generation."""
+    prompt, images, save = _prepare_image_generation(prompt, args)
+
     if not images:
         response: ImagesResponse = connection.images.generate(prompt=prompt, **args)
     else:
@@ -341,10 +362,24 @@ def _generate_image(
             prompt=prompt,
             **args
         )
-    check_for_errors(response)
-    images = _oai_image_response_to_images(response)
-    response_attrs = response.__dict__.copy()
-    result = make_image_generation_response(images, save, response_attrs)
-    for cb in options["callbacks"]:
-        cb(result)
-    return result
+    return _image_generation_response(response, save, options)
+
+
+async def _generate_image_async(
+    prompt,
+    args,
+    connection: openai.AsyncOpenAI,
+    options
+) -> ImageGenerationResponse | None:
+    """Asynchronous version of image generation."""
+    prompt, images, save = _prepare_image_generation(prompt, args)
+
+    if not images:
+        response: ImagesResponse = await connection.images.generate(prompt=prompt, **args)
+    else:
+        response: ImagesResponse = await connection.images.edit(
+            image=images,
+            prompt=prompt,
+            **args
+        )
+    return _image_generation_response(response, save, options)

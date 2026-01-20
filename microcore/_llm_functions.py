@@ -267,9 +267,7 @@ def llm(
             save_cache(cache_name, response)
     [h(response) for h in env().llm_after_handlers]
     if tries > 0:
-        retry_params = dict(**kwargs)
-        retry_params["retries"] = tries - 1
-        setattr(response, "_retry_callback", lambda: llm(prompt, **retry_params))
+        setattr(response, "_retry_callback", lambda: llm(prompt, retries=tries - 1, **kwargs))
     if parse_json:
         parsing_params = parse_json if isinstance(parse_json, dict) else {}
         return response.parse_json(**parsing_params)
@@ -294,6 +292,13 @@ async def allm(
         parse_json (bool|dict):
             If True, parses response as JSON,
             alternatively non-empty dict can be used as parse_json arguments.
+            Default is False (no parsing).
+        file_cache (bool | str):
+            If True or non-empty string, enables file caching of LLM responses.
+            If string, it will be used as cache prefix.
+            When enabled, identical requests with identical parameters
+            will return cached responses instead of making new API calls.
+            Default is False (no caching).
         **kwargs: Parameters supported by the LLM API.
 
             See parameters supported by the OpenAI:
@@ -376,6 +381,7 @@ async def allm(
                 return await allm(
                     prompt, retries=tries - 1, parse_json=parse_json, **kwargs
                 )
+            raise e
     return response
 
 
