@@ -269,11 +269,11 @@ class Storage:
                     os.rename(self.path / file_name, self.path / fn_incremented)
         (self.path / file_name).parent.mkdir(parents=True, exist_ok=True)
         if isinstance(content, bytes):
-            with (self.path / file_name).open(mode="ab" if append else "wb") as file:
-                file.write(content)
+            with (self.path / file_name).open(mode="ab" if append else "wb") as f:
+                f.write(content)
         else:
-            with (self.path / file_name).open(mode="a" if append else "w", encoding=encoding) as file:
-                file.write(content)
+            with (self.path / file_name).open(mode="a" if append else "w", encoding=encoding) as f:
+                f.write(content)
         return file_name
 
     def clean(self, path: str | Path):

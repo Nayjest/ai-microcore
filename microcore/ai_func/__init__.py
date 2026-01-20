@@ -190,10 +190,7 @@ def extract_tag_tool_params(
     if len(tags) > 1:
         if raise_errors:
             raise ValueError("Response contains multiple tags when only one expected")
-        else:
-            logging.warning(
-                "Response contains multiple tags, but only the first one will be used."
-            )
+        logging.warning("Response contains multiple tags, but only the first one will be used.")
     tag, attrs, content = tags[0]
     return tag, [content], attrs
 
