@@ -4,25 +4,25 @@ dotenv.load_dotenv(pathlib.Path(__file__).parent / '.env', override=True)
 configs = {  # See https://github.com/Nayjest/ai-microcore?tab=readme-ov-file#%EF%B8%8F-configuring
     "gpt-5": {
         "model": "gpt-5",
-        "api_type": mc.ApiType.OPEN_AI,
+        "api_type": mc.ApiType.OPENAI,
         "api_key": os.getenv("OPENAI_API_KEY"),
         "api_base": "https://api.openai.com/v1",
     },
     "grok-4": {
         "model": "grok-4-latest",
-        "api_type": mc.ApiType.OPEN_AI,
+        "api_type": mc.ApiType.OPENAI,
         "api_key": os.getenv("XAI_API_KEY"),
         "api_base": "https://api.x.ai/v1",
     },
     "deepseek-chat": {
         "model": "deepseek-chat",
-        "api_type": mc.ApiType.OPEN_AI,
+        "api_type": mc.ApiType.OPENAI,
         "api_key": os.getenv("DEEPSEEK_API_KEY"),
         "api_base": "https://api.deepseek.com/v1",
     },
     "gemini-2.5-pro": {
         "model": "gemini-2.5-pro",
-        "api_type": mc.ApiType.GOOGLE_AI_STUDIO,
+        "api_type": mc.ApiType.GOOGLE,
         "api_key": os.getenv("GOOGLE_API_KEY"),
         "api_base": "https://generativelanguage.googleapis.com/v1alpha",
     },

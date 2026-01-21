@@ -1,11 +1,43 @@
 import dataclasses
+import json
 
 from colorama import Fore, init
 
-from .configuration import ApiType
+from .llm_backends import ApiPlatform
 from .utils import is_chat_model, is_notebook
 from ._env import env, config
-from ._prepare_llm_args import prepare_chat_messages, prepare_prompt
+from ._prepare_llm_args import prompt_to_message_dicts, prepare_prompt
+
+
+def _serialize_message_content_blocks(content: list | str) -> str:
+    """
+    Serializes message content blocks into a single string
+    specifically for logging.
+    """
+    if isinstance(content, list):
+        content_str = ""
+        for i, item in enumerate(content):
+            num = i + 1
+            if isinstance(item, str):
+                item_str = item
+            elif isinstance(item, dict):
+                try:
+                    item_str = json.dumps(
+                        item,
+                        ensure_ascii=False,
+                        indent=2
+                    )
+                except TypeError:
+                    item_str = repr(item)
+            else:
+                item_str = repr(item)
+            content_str += f"[Content-Part #{num}]:\n{item_str}\n"
+        if content_str.endswith("\n"):
+            content_str = content_str[:-1]
+        return content_str
+    if not isinstance(content, str):
+        content = _serialize_message_content_blocks([content])
+    return content
 
 
 def _format_request_log_str(prompt, **kwargs) -> str:
@@ -17,12 +49,13 @@ def _format_request_log_str(prompt, **kwargs) -> str:
         + (" " if LoggingConfig.DENSE else "\n")
     )
     if is_chat_model(model, env().config):
-        for msg in prepare_chat_messages(prompt):
+        for msg in prompt_to_message_dicts(prompt):
             role, content = (
                 (msg["role"], msg["content"])
                 if isinstance(msg, dict)
                 else dataclasses.astuple(msg)
             )
+            content = _serialize_message_content_blocks(content)
             nl2 = "\n" if LoggingConfig.DENSE else nl + LoggingConfig.INDENT
             content = (" " if LoggingConfig.DENSE else nl2) + nl2.join(
                 content.split("\n")
@@ -62,7 +95,7 @@ def _format_request_log_str(prompt, **kwargs) -> str:
 def _resolve_model(**kwargs):
     cfg = config()
     model = kwargs.get("model") or cfg.LLM_DEFAULT_ARGS.get("model") or cfg.MODEL
-    if cfg.LLM_API_TYPE == ApiType.AZURE:
+    if cfg.LLM_API_PLATFORM == ApiPlatform.AZURE:
         model = f"azure:{model}"
     return model
 

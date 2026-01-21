@@ -1,11 +1,16 @@
-"""Message classes for OpenAI Chat API"""
-
+"""
+Message classes for OpenAI-like Chat APIs.
+"""
+import abc
 from enum import Enum
 from dataclasses import dataclass, field
 from typing import ClassVar
 
 
 class Role(str, Enum):
+    """
+    Enum representing the possible roles in a chat message.
+    """
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
@@ -15,12 +20,47 @@ class Role(str, Enum):
 
 
 DEFAULT_MESSAGE_ROLE = Role.USER
+"""Default role for messages if not specified (USER)."""
+
+
+class MsgContentPart:
+    """
+    Base class for individual parts of multipart message content.
+    """
+
+
+class MsgContent:
+    """
+    Base class for message content.
+    """
+
+
+class MsgMultipartContent(MsgContent,  abc.ABC):
+    """
+    Abstract base class for multipart message content.
+    """
+    @abc.abstractmethod
+    def parts(self) -> list[MsgContentPart]:
+        """
+        Returns the list of content parts.
+        """
+        raise NotImplementedError()
+
+
+TMsgContentPart = str | dict | MsgContentPart
+"""Type alias for a single content part: string, dictionary, or MsgContentPart."""
+
+TMsgContent = str | MsgContent | list[TMsgContentPart]
+"""Type alias for message content: string, MsgContent, or list of content parts."""
 
 
 @dataclass
 class Msg:
+    """
+    Represents a message in a chat conversation.
+    """
     role: str = field(default=DEFAULT_MESSAGE_ROLE)
-    content: str = field(default="")
+    content: TMsgContent = field(default="")
 
     DICT_FACTORY: ClassVar = dict
 
@@ -28,22 +68,27 @@ class Msg:
         return str(self.content)
 
     def strip(self):
-        self.content = self.content.strip()
+        """Strips whitespace from the content if it is a string."""
+        if isinstance(self.content, str):
+            self.content = self.content.strip()
         return self
 
 
 @dataclass
 class SysMsg(Msg):
+    """System message."""
     role: str = field(default=Role.SYSTEM, init=False)
 
 
 @dataclass
 class UserMsg(Msg):
+    """User message."""
     role: str = field(default=Role.USER, init=False)
 
 
 @dataclass
 class AssistantMsg(Msg):
+    """Assistant message."""
     role: str = field(default=Role.ASSISTANT, init=False)
 
 

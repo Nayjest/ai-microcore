@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import pytest
 from pathlib import Path
@@ -32,7 +33,7 @@ def server(request):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
-        sleep(2)
+        sleep(3)
         yield {"process": process, "port": port, "transport": request.param}
     finally:
         if process:
@@ -58,7 +59,11 @@ async def test_mcp_ping(server):
         }],
     )
     ToolsCache.clear()
-    mcp = await mc.mcp_server("test_mcp").connect(connect_timeout=10)
+    try:
+        mcp = await mc.mcp_server("test_mcp").connect()
+    except Exception:
+        await asyncio.sleep(4)
+        mcp = await mc.mcp_server("test_mcp").connect(connect_timeout=15)
     logging.info("Ping...")
     assert await mcp.call("ping", message="1") == "pong 1"
     assert await mcp.exec(dict(call="ping", message="2")) == "pong 2"

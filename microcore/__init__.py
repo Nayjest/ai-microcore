@@ -12,19 +12,24 @@ from . import mcp
 from . import ui
 from . import tokenizing
 from . import presets
+from . import file_cache
 from .embedding_db import SearchResult, AbstractEmbeddingDB, SearchResults
 from .file_storage import storage
 from ._env import configure, env, config, min_setup
 from .logging import use_logging
 from .message_types import UserMsg, AssistantMsg, SysMsg, Msg, PartialMsg
 from .configuration import (
-    ApiType,
+    LLMApiBaseError,
+    LLMApiDeploymentIdError,
+    LLMApiKeyError,
+    LLMApiVersionError,
     LLMConfigError,
     Config,
     EmbeddingDbType,
     PRINT_STREAM,
 )
-from .types import BadAIJsonAnswer, BadAIAnswer
+from .llm_backends import ApiPlatform, ApiType
+from .types import BadAIJsonAnswer, BadAIAnswer, LLMContextLengthExceededError
 from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
 from ._llm_functions import llm, allm, llm_parallel
@@ -67,6 +72,15 @@ def use_model(name: str):
     """Switches language model"""
     config().MODEL = name
     config().LLM_DEFAULT_ARGS["model"] = name
+
+
+def model_names() -> list[str]:
+    """
+    Return a list of available model names from the default LLM client.
+    """
+    if env().default_client is None:
+        raise ValueError("No default LLM client supporting models list configured.")
+    return env().default_client.model_names()
 
 
 def validate_config():
@@ -180,12 +194,18 @@ __all__ = [
     "AssistantMsg",
     "PartialMsg",
     "ApiType",
+    "ApiPlatform",
     "EmbeddingDbType",
     "BadAIJsonAnswer",
     "PRINT_STREAM",
     "presets",
     "BadAIAnswer",
+    "LLMApiBaseError",
+    "LLMApiDeploymentIdError",
+    "LLMApiKeyError",
+    "LLMApiVersionError",
     "LLMConfigError",
+    "LLMContextLengthExceededError",
     "LLMResponse",
     "PromptWrapper",
     "parse",
@@ -194,6 +214,7 @@ __all__ = [
     "dedent",
     # submodules
     "embedding_db",
+    "file_cache",
     "file_storage",
     "message_types",
     "utils",
@@ -206,7 +227,8 @@ __all__ = [
     "tokenizing",
     "Metrics",
     "interactive_setup",
+    "model_names",
     # "wrappers",
 ]
 
-__version__ = "4.4.4"
+__version__ = "5.0.0dev6"

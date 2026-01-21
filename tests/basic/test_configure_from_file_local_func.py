@@ -1,5 +1,5 @@
-import pytest
 from pathlib import Path
+import pytest
 from microcore import LLMConfigError, llm, allm, configure, ApiType
 
 

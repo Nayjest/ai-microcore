@@ -34,6 +34,7 @@ test:
 	$(TEST)
 tests: test
 
+# Test on real API services using .env.test.* files
 testapi:
 	$(TEST) tests/apis
 testapis: testapi

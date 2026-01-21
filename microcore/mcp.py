@@ -252,8 +252,10 @@ class Tool:
         return t
 
     def describe(self, syntax: AiFuncSyntax = None) -> str:
-        syntax = syntax or AiFuncSyntax.DEFAULT
-        tpl_file = f"ai-func.{syntax}.j2" if syntax in AiFuncSyntax else syntax
+        syntax = syntax or env().config.DEFAULT_AI_FUNCTION_SYNTAX
+        tpl_file = f"ai-func.{syntax}.j2" if syntax in [
+            str(e) for e in AiFuncSyntax
+        ] else syntax
         metadata = self._get_metadata()
         return env().tpl_function(tpl_file, **metadata)
 
@@ -272,7 +274,7 @@ class Tool:
         )
 
     def __str__(self):
-        return self.describe(syntax=AiFuncSyntax.DEFAULT)
+        return self.describe(syntax=env().config.DEFAULT_AI_FUNCTION_SYNTAX)
 
 
 class Tools(dict[str, Tool]):

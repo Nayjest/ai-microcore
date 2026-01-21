@@ -1,8 +1,14 @@
 from typing import Any
 from typing import TYPE_CHECKING
 
+from ..images import FileImage, ImageInterface, ImageListInterface
 from ..types import BadAIAnswer, TPrompt
-from ..utils import ExtendedString, ConvertableToMessage, extract_number
+from ..utils import (
+    ExtendedString,
+    ConvertableToMessage,
+    extract_number,
+    file_link,
+)
 from ..message_types import Role, AssistantMsg
 
 if TYPE_CHECKING:
@@ -38,17 +44,18 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
     content: str
     prompt: TPrompt
     gen_duration: float
+    from_file_cache: bool = False
 
-    def __new__(cls, string: str, attrs: dict = None):
+    def __new__(cls, string: str, attrs: dict = None, **kwargs):
         attrs = {
-            **(attrs or {}),
             "role": Role.ASSISTANT,
             "content": str(string),
             "prompt": None,
             # generation duration in seconds (float), used in metrics
             "gen_duration": None,
+            **(attrs or {}),
         }
-        obj = ExtendedString.__new__(cls, string, attrs)
+        obj = ExtendedString.__new__(cls, string, attrs, **kwargs)
         return obj
 
     def parse_json(
@@ -94,8 +101,77 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
         return await mcp.exec(self)
 
     def is_tool_call(self):
-        from .._env import env
-        return self.parse_json(
-            raise_errors=False,
-            required_fields=[env().config.AI_SYNTAX_FUNCTION_NAME_FIELD],
-        ) is not False
+        from ..ai_func import extract_tool_params
+        return bool(extract_tool_params(self))
+
+    def as_tool_call(
+        self,
+        toolset=None,
+    ) -> tuple[str, list, dict] | None:
+        """
+        Extracts tool call from the LLM response.
+        Args:
+            toolset: Optional ToolSet to use for extraction.
+            If not provided, uses default extractor.
+        """
+        from ..ai_func import extract_tool_params, ToolSet
+        if isinstance(toolset, ToolSet):
+            return toolset.extract_tool_params(self)
+        return extract_tool_params(self)
+
+
+# pylint: disable=too-many-ancestors
+class ImageGenerationResponse(LLMResponse, ImageListInterface, ImageInterface):  #
+
+    _images: list[ImageInterface]
+
+    def images(self) -> list[ImageInterface]:
+        return self._images
+
+    def image(self):
+        return self._images[0] if self._images else None
+
+    def mime_type(self) -> str | None:
+        return self.image().mime_type() if self.image() else None
+
+    def get_bytes(self) -> bytes | None:
+        return self.image().get_bytes() if self.image() else None
+
+    def __new__(cls, str_repr: str = "<images>", images: list[ImageInterface] = None, **kwargs):
+        images = images or []
+        obj = LLMResponse.__new__(cls, str_repr, _images=images, **kwargs)
+        return obj
+
+    def display(self, **kwargs):
+        for i in self.images():
+            i.display(**kwargs)
+        return self
+
+
+class StoredImageGenerationResponse(ImageGenerationResponse):
+
+    _images: list[FileImage]
+
+    def __new__(cls, str_repr: str = "<images>", images: list[FileImage] = None, **kwargs):
+        images = images or []
+        if len(images) == 1:
+            str_repr = file_link(images[0].file)
+        elif len(images) > 1:
+            str_repr = "\n".join(
+                file_link(i.file) for i in images
+            )
+        obj = ImageGenerationResponse.__new__(
+            cls,
+            images=images,
+            str_repr=str_repr,
+            **kwargs
+        )
+        return obj
+
+    @property
+    def file(self) -> str | None:
+        return self._images[0].file if self._images else None
+
+    @property
+    def files(self) -> list[str]:
+        return [img.file for img in self._images]

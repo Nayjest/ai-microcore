@@ -1,14 +1,15 @@
-<p align="right"> 
-    <a href="https://github.com/Nayjest/ai-microcore/releases" target="_blank"><img src="https://img.shields.io/github/v/release/Nayjest/ai-microcore.svg" alt="Release Notes"></a>
-    <a href="https://app.codacy.com/gh/Nayjest/ai-microcore/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade" target="_blank"><img src="https://app.codacy.com/project/badge/Grade/441d03416bc048828c649129530dcbc3" alt="Code Quality"></a>
-    <a href="https://github.com/Nayjest/ai-microcore/actions/workflows/pylint.yml" target="_blank"><img src="https://github.com/Nayjest/ai-microcore/actions/workflows/pylint.yml/badge.svg" alt="Pylint"></a>
-    <img src="https://raw.githubusercontent.com/Nayjest/ai-microcore/main/coverage.svg" alt="Code Coverage">
-    <a href="https://github.com/Nayjest/ai-microcore/actions/workflows/tests.yml" target="_blank"><img src="https://github.com/Nayjest/ai-microcore/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
-    <a href="https://github.com/Nayjest/ai-microcore/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/static/v1?label=license&message=MIT&color=d08aff" alt="License"></a>
+# AI MicroCore: A Minimalistic Foundation for AI Applications
+
+<p align="center"> 
+  <a href="https://pypi.org/project/ai-microcore/" target="_blank"><img src="https://img.shields.io/github/v/release/Nayjest/ai-microcore.svg" alt="Release Notes"></a>
+  <a href="https://app.codacy.com/gh/Nayjest/ai-microcore/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade" target="_blank"><img src="https://app.codacy.com/project/badge/Grade/441d03416bc048828c649129530dcbc3" alt="Code Quality"></a>
+  <a href="https://github.com/Nayjest/ai-microcore/actions/workflows/pylint.yml" target="_blank"><img src="https://github.com/Nayjest/ai-microcore/actions/workflows/pylint.yml/badge.svg" alt="Pylint"></a>
+  <a href="https://github.com/Nayjest/ai-microcore/actions/workflows/tests.yml" target="_blank"><img src="https://github.com/Nayjest/ai-microcore/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+  <img src="https://raw.githubusercontent.com/Nayjest/ai-microcore/main/coverage.svg" alt="Code Coverage">
+  <a href="https://github.com/vshymanskyy/StandWithUkraine/blob/main/README.md" target="_blank"><img src="https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/refs/heads/main/badges/StandWithUkraine.svg" alt="Stand With Ukraine"></a>
+  <a href="https://github.com/Nayjest/ai-microcore/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/static/v1?label=license&message=MIT&color=d08aff" alt="License"></a>
 </p>
 
-
-# AI MicroCore: A Minimalistic Foundation for AI Applications
 
 **MicroCore** is a collection of python adapters for Large Language Models
 and Vector Databases / Semantic Search APIs allowing to 
@@ -19,7 +20,7 @@ It defines interfaces for features typically used in AI applications,
 which allows you to keep your application as simple as possible and try various models & services
 without need to change your application code.
 
-You even can switch between text completion and chat completion models only using configuration.
+You can even switch between text completion and chat completion models only using configuration.
 
 Thanks to LLM-agnostic MCP integration,
 **MicroCore** connects MCP tools to any language models easily,
@@ -71,7 +72,7 @@ Similarity search features will work out of the box if you have the `chromadb` p
 There are a few options available for configuring microcore:
 
 -   Use `microcore.configure(**params)`
-    <br>💡 <small>All configuration options should be available in IDE autocompletion tooltips</small>
+    <br>💡 <small>All configuration options appear in IDE autocompletion tooltips</small>
 -   Create a `.env` file in your project root; examples: [basic.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.example), [Mistral Large.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.mistral.example), [Anthropic Claude 3 Opus.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.anthropic.example), [Gemini on Vertex AI.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.google-vertex-gemini.example), [Gemini on AI Studio.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.gemini.example)
 -   Use a custom configuration file: `mc.configure(DOT_ENV_FILE='dev-config.ini')`
 -   Define OS environment variables
@@ -79,7 +80,7 @@ There are a few options available for configuring microcore:
 For the full list of available configuration options, you may also check [`microcore/config.py`](https://github.com/Nayjest/ai-microcore/blob/main/microcore/configuration.py#L175).
 
 ### Installing vendor-specific packages
-For the models working not via OpenAI API, you may need to install additional packages:
+For models working not via OpenAI API, you may need to install additional packages:
 #### Anthropic Claude 3
 ```bash
 pip install anthropic
@@ -92,13 +93,14 @@ pip install google-generativeai
 ```bash
 pip install vertexai
 ```
-📌Additonaly for working through [Vertex AI](https://cloud.google.com/vertex-ai) you need to
+📌Additionally for working through [Vertex AI](https://cloud.google.com/vertex-ai) you need to
 [install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install)
 and [configure the authorization](https://cloud.google.com/sdk/docs/authorizing).
 
 #### Local language models via Hugging Face Transformers
 
-You will need to install transformers and deep learning library of your choice (PyTorch, TensorFlow, Flax, etc).
+You will need to install transformers and a deep learning library of your choice
+(PyTorch, TensorFlow, Flax, etc).
 
 See [transformers installation](https://huggingface.co/docs/transformers/installation).
 
@@ -114,13 +116,13 @@ See [transformers installation](https://huggingface.co/docs/transformers/install
 Vector database functions are available via `microcore.texts`.
 
 #### ChromaDB
-Default vector database is [Chroma](https://www.trychroma.com/).
+The default vector database is [Chroma](https://www.trychroma.com/).
 In order to use vector database functions with ChromaDB, you need to install the `chromadb` package:
 ```bash
 pip install chromadb
 ```
-By default, MicroCore will use ChromaDB PersistentClient (if corresponding package is installed).
-Alternatively, you can run Chroma as separate service and configure MicroCore to use HttpClient:
+By default, MicroCore will use ChromaDB PersistentClient (if the corresponding package is installed).
+Alternatively, you can run Chroma as a separate service and configure MicroCore to use HttpClient:
 
 ```python
 from microcore import configure
@@ -143,7 +145,7 @@ configure(
     EMBEDDING_DB_TYPE=EmbeddingDbType.QDRANT,
     EMBEDDING_DB_HOST="localhost",
     EMBEDDING_DB_PORT="6333",
-    EMBEDDING_DB_SIZE=384,  # dimentions quantity in used SentenceTransformer model
+    EMBEDDING_DB_SIZE=384,  # number of dimensions in the SentenceTransformer model
     EMBEDDING_DB_FUNCTION=SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2"),
 )
 ```
@@ -166,7 +168,7 @@ use_logging()
 # Basic usage
 ai_response = llm('What is your model name?')
 
-# You also may pass a list of strings as prompt
+# You may also pass a list of strings as prompt
 # - For chat completion models elements are treated as separate messages
 # - For completion LLMs elements are treated as text lines
 llm(['1+2', '='])
@@ -259,16 +261,20 @@ LLM Microcore supports all models & API providers having OpenAI API.
 ## 🖼️ Examples
 
 #### [Code review tool](https://github.com/llm-microcore/microcore/blob/main/examples/code-review-tool)
-Performs code review by LLM for changes in git .patch files in any programming languages.
+Performs a code review by LLM for changes in git .patch files in any programming languages.
 
 #### [Image analysis](https://colab.research.google.com/drive/1qTJ51wxCv3VlyqLt3M8OZ7183YXPFpic) (Google Colab)
 Determine the number of petals and the color of the flower from a photo (gpt-4-turbo)
 
-#### [Banchmark LLMs on math problems](https://www.kaggle.com/code/nayjest/gigabenchmark-llm-accuracy-math-problems) (Kaggle Notebook)
+#### [Benchmark LLMs on math problems](https://www.kaggle.com/code/nayjest/gigabenchmark-llm-accuracy-math-problems) (Kaggle Notebook)
 Benchmark accuracy of 20+ state of the art models on solving olympiad math problems. Inferencing local language models via HuggingFace Transformers, parallel inference.
 
 #### [Generate meme image](https://github.com/Nayjest/ai-microcore/blob/main/examples/generate_meme_image.py)
 Simple example demonstrating image generation using [OpenAI GPT Image](https://platform.openai.com/docs/guides/image-generation?image-generation-model=gpt-image-1) model.
+
+
+#### [Local inference with PyTorch / Transformers](https://github.com/Nayjest/ai-microcore/blob/main/examples/pytorch_transformers.py)
+Text generation using HF/Transformers model locally (example with Qwen 3 0.6B).
  
 #### [Other examples](https://github.com/llm-microcore/microcore/tree/main/examples)
 
@@ -277,7 +283,7 @@ Simple example demonstrating image generation using [OpenAI GPT Image](https://p
 @TODO
 
 ## 🤖 AI Modules
-**This is experimental feature.**
+**This is an experimental feature.**
 
 Tweaks the Python import system to provide automatic setup of MicroCore environment
 based on metadata in module docstrings.
@@ -297,4 +303,4 @@ Please see [CONTRIBUTING](https://github.com/Nayjest/ai-microcore/blob/main/CONT
 ## 📝 License
 
 Licensed under the [MIT License](https://github.com/Nayjest/ai-microcore/blob/main/LICENSE)
-© 2023 [Vitalii Stepanenko](mailto:mail@vitaliy.in)
+© 2023–2026 [Vitalii Stepanenko](mailto:mail@vitaliy.in)

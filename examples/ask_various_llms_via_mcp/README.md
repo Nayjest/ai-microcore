@@ -17,13 +17,13 @@ mcp = fastmcp.FastMCP("Ask LLMs via MCP", host="0.0.0.0", port=8001)
 configs = {  # See https://github.com/Nayjest/ai-microcore?tab=readme-ov-file#%EF%B8%8F-configuring
     "gpt5": {
         "model": "gpt-5",
-        "api_type": mc.ApiType.OPEN_AI,
+        "api_type": mc.ApiType.OPENAI,
         "api_key": os.getenv("OPENAI_API_KEY"),
         "api_base": "https://api.openai.com/v1",
     },
     "gemini": {
         "model": "gemini-1.5-flash",
-        "api_type": mc.ApiType.GOOGLE_AI_STUDIO,
+        "api_type": mc.ApiType.GOOGLE,
         "api_key": os.getenv("GOOGLE_API_KEY"),
         "api_base": "https://generativelanguage.googleapis.com/v1alpha",
     },
