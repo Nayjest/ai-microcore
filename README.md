@@ -273,7 +273,7 @@ Text generation using HF/Transformers model locally (example with Qwen 3 0.6B).
 
 ## Python functions as AI tools
 *Usage Example*:
-```pathon
+```python
 from microcore.ai_func import ai_func
 
 @ai_func
@@ -313,7 +313,6 @@ Returns:
 {
   "call": "search_products",
   "query": <str>,
-  "category": <str> (default = "all"),
   "category": <str> (default = "all"),
   "max_results": <int> (default = 10),
   "in_stock_only": <bool> (default = False)
