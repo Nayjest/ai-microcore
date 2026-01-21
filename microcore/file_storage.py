@@ -1,5 +1,15 @@
 """
-File storage functions
+File storage functionality.
+
+
+Provides a Storage class for file operations within a configured storage directory.
+Supports automatic file numbering, backups, JSON serialization, encoding detection,
+file copying, directory listing, etc.
+
+Usage:
+    from microcore import storage
+    storage.write("data.txt", "content")
+    content = storage.read("data.txt")
 """
 
 import fnmatch
@@ -15,6 +25,7 @@ from ._env import config
 from .utils import file_link, list_files
 
 _missing = object()
+"""Sentinel value to distinguish between None and 'not provided'."""
 
 
 @dataclass
