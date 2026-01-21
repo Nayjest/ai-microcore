@@ -87,7 +87,7 @@ class FileImage(ImageInterface):
 
 
 class FileImageList(ImageListInterface):
-    files: list[str] | None
+    files: list[str] | None = None
 
     def images(self) -> list[FileImage]:
         if not self.files:

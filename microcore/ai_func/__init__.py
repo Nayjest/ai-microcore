@@ -80,7 +80,7 @@ def func_metadata(func, name=None) -> Dict[str, Any]:
 
     # Add descriptions from parsed docstring to parameters
     for param in parsed_docstring.params:
-        if param.arg_name in metadata.get("args", []):
+        if param.arg_name in metadata.get("args", {}):
             metadata["args"][param.arg_name]["docstr"] = param.description
 
     return metadata
@@ -190,6 +190,7 @@ def extract_tag_tool_params(
     if len(tags) > 1:
         if raise_errors:
             raise ValueError("Response contains multiple tags when only one expected")
+        logging.warning("Response contains multiple tags, but only the first one will be used.")
     tag, attrs, content = tags[0]
     return tag, [content], attrs
 
