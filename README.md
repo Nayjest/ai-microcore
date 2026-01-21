@@ -81,21 +81,14 @@ For the full list of available configuration options, you may also check [`micro
 
 ### Installing vendor-specific packages
 For models working not via OpenAI API, you may need to install additional packages:
-#### Anthropic Claude 3
+#### Anthropic Claude
 ```bash
 pip install anthropic
 ```
-#### Google Gemini via AI Studio
+#### Google Gemini via AI Studio or Vertex AI
 ```bash
-pip install google-generativeai
+pip install google-genai
 ```
-#### Google Gemini via Vertex AI
-```bash
-pip install vertexai
-```
-📌Additionally for working through [Vertex AI](https://cloud.google.com/vertex-ai) you need to
-[install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install)
-and [configure the authorization](https://cloud.google.com/sdk/docs/authorizing).
 
 #### Local language models via Hugging Face Transformers
 
@@ -172,7 +165,7 @@ ai_response = llm('What is your model name?')
 # - For chat completion models elements are treated as separate messages
 # - For completion LLMs elements are treated as text lines
 llm(['1+2', '='])
-llm('1+2=', model='gpt-4')
+llm('1+2=', model='gpt-5.2')
 
 # To specify a message role, you can use dictionary or classes
 llm(dict(role='system', content='1+2='))
@@ -279,8 +272,53 @@ Text generation using HF/Transformers model locally (example with Qwen 3 0.6B).
 #### [Other examples](https://github.com/llm-microcore/microcore/tree/main/examples)
 
 ## Python functions as AI tools
+*Usage Example*:
+```python
+from microcore.ai_func import ai_func
 
-@TODO
+@ai_func
+def search_products(
+    query: str,
+    category: str = "all",
+    max_results: int = 10,
+    in_stock_only: bool = False
+):
+    """
+    Search for products in the catalog.
+
+    Args:
+        query: Search terms to find matching products
+        category: Product category to filter by (e.g., "electronics", "clothing")
+        max_results: Maximum number of results to return
+        in_stock_only: If True, only return products currently in stock
+
+    Returns:
+        List of matching products with name, price, and availability
+    """
+    # Implementation would go here
+    pass
+```
+*Output*:
+```
+# Search for products in the catalog.
+
+Args:
+    query: Search terms to find matching products
+    category: Product category to filter by (e.g., "electronics", "clothing")
+    max_results: Maximum number of results to return
+    in_stock_only: If True, only return products currently in stock
+
+Returns:
+    List of matching products with name, price, and availability
+{
+  "call": "search_products",
+  "query": <str>,
+  "category": <str> (default = "all"),
+  "max_results": <int> (default = 10),
+  "in_stock_only": <bool> (default = False)
+}
+
+```
 
 ## 🤖 AI Modules
 **This is an experimental feature.**
