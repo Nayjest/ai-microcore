@@ -379,7 +379,11 @@ async def allm(
                 if file_cache:
                     delete_cache(cache_name)
                 return await allm(
-                    prompt, retries=tries - 1, parse_json=parse_json, **kwargs
+                    prompt,
+                    retries=tries - 1,
+                    parse_json=parse_json,
+                    file_cache=file_cache,
+                    **kwargs
                 )
             raise e
     return response
