@@ -224,8 +224,6 @@ class Storage:
         if isinstance(content, bytes):
             if encoding is not None:
                 logging.warning("Encoding is ignored when writing bytes content")
-            if append:
-                raise ValueError("Cannot append bytes content")
 
         if rewrite_existing is None:
             rewrite_existing = True
