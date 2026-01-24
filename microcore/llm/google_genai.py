@@ -222,6 +222,7 @@ class _GenerationContext:
         model_name = kwargs.pop("model", client.config.MODEL)
         callbacks = prepare_callbacks(client.config, kwargs, set_stream=False)
         is_image = is_image_model(model_name)
+        stream = kwargs.pop("stream", False) or (callbacks and not is_image)
         return _GenerationContext(
             model_name=model_name,
             save=kwargs.pop("save", True),
@@ -231,7 +232,7 @@ class _GenerationContext:
             genai_client=client.genai_client,
             config=client.config,
             is_image_model=is_image,
-            stream=callbacks and not is_image
+            stream=stream,
         )
 
 
