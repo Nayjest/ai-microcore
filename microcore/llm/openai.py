@@ -1,11 +1,12 @@
 import asyncio
 import base64
+from typing import Any
 
 import openai
 from openai.types import CompletionChoice, ImagesResponse
 
 from ..lm_client import BaseAIChatClient, BaseAsyncAIClient
-from ..message_types import TMsgContentPart
+from ..message_types import TMsgContentPart, TMsgContent
 from ..configuration import Config
 from ..llm_backends import ApiPlatform
 from .._prepare_llm_args import prepare_prompt
@@ -131,6 +132,18 @@ class OpenAIClient(BaseAIChatClient):
         if isinstance(img := content_part, ImageInterface):
             return image_to_oai(img)
         return content_part
+
+    def _convert_message_content(self, message_content: TMsgContent) -> Any:
+        """
+        Convert the message content into a format suitable for the LLM inference chat API.
+        """
+        if isinstance(message_content, str):
+            # Prevent conversion of string content into dict(type=text, text=...)
+            # because Azure OpenAI fails with Error 400
+            # when passing "azure_search" data source like following:
+            # llm(..., extra_body={"data_sources"=[{"type": "azure_search",...}]})
+            return message_content
+        return super()._convert_message_content(message_content)
 
     def load_models(self, **kwargs) -> dict:
         models_iter = self.oai_client.models.list(**kwargs)
