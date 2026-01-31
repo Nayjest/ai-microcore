@@ -151,18 +151,6 @@ class _AnthropicEnvVars:
 
 
 @dataclass
-class _GoogleVertexAiEnvVars:
-    """@deprecated, use _GoogleGenAiEnvVars instead"""
-    GOOGLE_VERTEX_ACCESS_TOKEN: str = from_env()
-    GOOGLE_VERTEX_PROJECT_ID: str = from_env()
-    GOOGLE_VERTEX_LOCATION: str = from_env()
-    GOOGLE_VERTEX_GCLOUD_AUTH: bool = from_env(dtype=bool)
-
-    GOOGLE_VERTEX_RESPONSE_VALIDATION: bool = from_env(dtype=bool, default=False)
-    GOOGLE_GEMINI_SAFETY_SETTINGS: dict = from_env(dtype=dict)
-
-
-@dataclass
 class _GoogleGenAiEnvVars:
     # see https://docs.cloud.google.com/docs/authentication/application-default-credentials
     GOOGLE_CLOUD_SERVICE_ACCOUNT: str = from_env()  # # file path (standard GCP name)
