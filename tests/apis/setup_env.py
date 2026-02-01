@@ -1,11 +1,10 @@
-import sys
-import asyncio
-import glob
 import os
+import glob
 import logging
+
 from colorama import Fore as c
 import pytest
-import microcore
+import microcore as mc
 
 envs = glob.glob(".env.test.*")
 # envs = ['.env.test.openai.low-end']
@@ -25,9 +24,13 @@ def setup_env(request):
     }
     os.environ.clear()
     os.environ.update(critical_vars)
-    microcore.configure(
+    mc.configure(
         USE_DOT_ENV=True,
         DOT_ENV_FILE=request.param,
+        HTTP_HEADERS={
+            "X-Client": "AI MicroCore",
+            "X-Client-Version": mc.__version__,
+        },
     )
     yield
     os.environ.clear()

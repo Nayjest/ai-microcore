@@ -204,6 +204,9 @@ class LLMConfig(
     i. e. temperature, max_tokens, etc.
     """
 
+    HTTP_HEADERS: dict = from_env(dtype=dict)
+    """Additional HTTP headers to add to LLM API requests"""
+
     AZURE_DEPLOYMENT_ID: str = from_env()
 
     INFERENCE_FUNC: Union[Callable, str] = from_env()
@@ -332,6 +335,8 @@ class LLMConfig(
         self._resolve_model()
 
     def _validate_local_llm(self):
+        if self.HTTP_HEADERS:
+            logging.warning("HTTP_HEADERS will be ignored for local models")
         if self.CHAT_MODE is None:
             logging.warning(
                 "When using local models, "
