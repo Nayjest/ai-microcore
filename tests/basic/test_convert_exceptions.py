@@ -40,13 +40,13 @@ def test_anthropic_bad_request_context_length_exceeded():
 
 def test_openai_bad_request_context_length_exceeded():
     error = OpenAIBadRequestError(
-        "Error code: 400 - {'error': {'message': \"This model's maximum context length is 16385 tokens. However, your messages resulted in 600007 tokens. Please reduce the length of the messages.\", 'type': 'invalid_request_error', 'param': 'messages', 'code': 'context_length_exceeded'}}",
+        "Error code: 400 - {'error': {'message': \"This model's maximum context length is 16385 tokens. However, your messages resulted in 600007 tokens. Please reduce the length of the messages.\", 'type': 'invalid_request_error', 'param': 'messages', 'code': 'context_length_exceeded'}}",  # noqa: E501
         response=Response(
             status_code=400,
             request=Request('POST', 'https://api.openai.com/v1/chat/completions')
         ),
         body={
-            'message': "This model's maximum context length is 16385 tokens. However, your messages resulted in 600007 tokens. Please reduce the length of the messages.",
+            'message': "This model's maximum context length is 16385 tokens. However, your messages resulted in 600007 tokens. Please reduce the length of the messages.",  # noqa: E501
             'type': 'invalid_request_error',
             'param': 'messages',
             'code': 'context_length_exceeded'
@@ -66,7 +66,7 @@ def test_google_ai_studio_bad_request_context_length_exceeded():
         response_json={
             'error': {
                 'code': 400,
-                'message': 'The input token count exceeds the maximum number of tokens allowed 1048577.',
+                'message': 'The input token count exceeds the maximum number of tokens allowed 1048577.',  # noqa: E501
                 'status': 'INVALID_ARGUMENT'
             }
         }
@@ -84,7 +84,7 @@ def test_google_vertex_bad_request_context_length_exceeded():
         response_json={
             'error': {
                 'code': 400,
-                'message': 'The input token count (1600009) exceeds the maximum number of tokens allowed (1048576).',
+                'message': 'The input token count (1600009) exceeds the maximum number of tokens allowed (1048576).',  # noqa: E501
                 'status': 'INVALID_ARGUMENT'
             }
         }

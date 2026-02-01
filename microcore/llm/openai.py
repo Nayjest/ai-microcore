@@ -1,3 +1,6 @@
+"""
+OpenAI LLM client implementation.
+"""
 import asyncio
 import base64
 from typing import Any
@@ -112,6 +115,11 @@ class OpenAIClient(BaseAIChatClient):
                 "base_url": config.LLM_API_BASE,
                 **config.INIT_PARAMS,
             }
+        if config.HTTP_HEADERS:
+            if "default_headers" not in client_params:  # maybe set in INIT_PARAMS
+                client_params["default_headers"] = {}
+            client_params["default_headers"].update(config.HTTP_HEADERS)
+
         self.oai_client = client_type(**client_params)
         self.aio = AsyncOpenAIClient(
             oai_connection=async_client_type(**client_params),

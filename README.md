@@ -271,6 +271,13 @@ Text generation using HF/Transformers model locally (example with Qwen 3 0.6B).
  
 #### [Other examples](https://github.com/llm-microcore/microcore/tree/main/examples)
 
+## 📚 Guides & Reference<a id="-guides--reference"></a>
+
+For more detailed information, check out these articles:
+
+- [Custom HTTP Headers](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/http_headers.md)
+- [File Cache](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/file_cache.md)
+
 ## Python functions as AI tools
 *Usage Example*:
 ```python
