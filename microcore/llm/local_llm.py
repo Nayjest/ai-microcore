@@ -93,7 +93,15 @@ def make_llm_functions(
             response = inference_fn(prompt, **args)
             for cb in options["callbacks"]:
                 if inspect.iscoroutinefunction(cb):
-                    asyncio.run(cb(response))
+                    try:
+                        loop = asyncio.get_running_loop()
+                        if loop.is_running():
+                            with _sync_await() as sa:
+                                sa(cb(response))
+                        else:
+                            loop.run_until_complete(cb(response))
+                    except RuntimeError:
+                        asyncio.run(cb(response))
                 else:
                     cb(response)
             if not isinstance(response, LLMResponse):
