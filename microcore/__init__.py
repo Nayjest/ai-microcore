@@ -231,4 +231,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "5.1.0"
+__version__ = "5.1.1"
