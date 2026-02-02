@@ -1,5 +1,5 @@
 """
-Example of a Telegram Bot with shot memory (shared among all dialogues).
+Example of a Telegram Bot with short memory (shared among all dialogues).
 Requirements:
 - pip install pyTelegramBotAPI
 - provide a TELEGRAM_BOT_TOKEN environment variable (you may use .env file)

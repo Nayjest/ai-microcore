@@ -63,6 +63,7 @@ def _load_service_account_info(config: Config) -> Optional[dict]:
             )
     return None
 
+
 def inject_headers(headers: Mapping[str,str], params: dict) -> None:
     """
     Inject extra HTTP headers into the params dictionary for Google GenAI client.
@@ -264,7 +265,7 @@ class _GenerationContext:
 
 def _google_image_response_to_images(response: genai.types.GenerateContentResponse) -> list[Image]:
     images = []
-    for i, part in enumerate(response.parts):
+    for part in response.parts:
         if part.inline_data:
             image_bytes = part.inline_data.data
             img = Image(image_bytes, mime_type=part.inline_data.mime_type)
