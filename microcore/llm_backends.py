@@ -9,7 +9,7 @@ class SafeEnumMeta(EnumMeta):
         try:
             return super().__contains__(item)
         except TypeError:
-            return item in (member.value for member in cls)
+            return item in cls._value2member_map_
 
 
 class SafeStrEnum(str, Enum, metaclass=SafeEnumMeta):
