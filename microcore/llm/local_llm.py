@@ -41,11 +41,11 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
 
 
 def make_llm_functions(
-    config: Config, overriden_inference_func: callable = None
+    config: Config, overridden_inference_func: callable = None
 ) -> tuple[LLMFunctionType, LLMAsyncFunctionType]:
     try:
         inference_fn = resolve_callable(
-            overriden_inference_func or config.INFERENCE_FUNC
+            overridden_inference_func or config.INFERENCE_FUNC
         )
     except ValueError as e:
         raise LLMConfigError(f"Invalid inference function, {e}") from e
