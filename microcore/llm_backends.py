@@ -166,6 +166,7 @@ class ApiPlatform(SafeStrEnum):
         return LLM_API_BASE_URLS.get(self.api_type(), {}).get(self)
 
 
+# Human-readable labels for API platforms not following val.replace('_', ' ').title() pattern
 _API_PLATFORM_CUSTOM_LABELS: dict[ApiPlatform, str] = {
     ApiPlatform.OPENAI: "OpenAI",
     ApiPlatform.GOOGLE_AI_STUDIO: "Google AI Studio",
