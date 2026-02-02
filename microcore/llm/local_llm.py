@@ -41,11 +41,11 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
 
 
 def make_llm_functions(
-    config: Config, overriden_inference_func: callable = None
+    config: Config, overridden_inference_func: callable = None
 ) -> tuple[LLMFunctionType, LLMAsyncFunctionType]:
     try:
         inference_fn = resolve_callable(
-            overriden_inference_func or config.INFERENCE_FUNC
+            overridden_inference_func or config.INFERENCE_FUNC
         )
     except ValueError as e:
         raise LLMConfigError(f"Invalid inference function, {e}") from e
@@ -61,7 +61,10 @@ def make_llm_functions(
             )
             response = await inference_fn(prompt, **args)
             for cb in options["callbacks"]:
-                cb(response)
+                if inspect.iscoroutinefunction(cb):
+                    await cb(response)
+                else:
+                    cb(response)
             if not isinstance(response, LLMResponse):
                 response = LLMResponse(response)
             return response
@@ -89,7 +92,18 @@ def make_llm_functions(
             )
             response = inference_fn(prompt, **args)
             for cb in options["callbacks"]:
-                cb(response)
+                if inspect.iscoroutinefunction(cb):
+                    try:
+                        loop = asyncio.get_running_loop()
+                        if loop.is_running():
+                            with _sync_await() as sa:
+                                sa(cb(response))
+                        else:
+                            loop.run_until_complete(cb(response))
+                    except RuntimeError:
+                        asyncio.run(cb(response))
+                else:
+                    cb(response)
             if not isinstance(response, LLMResponse):
                 response = LLMResponse(response)
             return response
