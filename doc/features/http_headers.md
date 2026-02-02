@@ -29,6 +29,7 @@ Or via environment variable (JSON format):
 ```bash
 HTTP_HEADERS='{"X-Client": "MyApp", "X-Trace-ID": "abc123"}'
 ```
+
 > **Note:** ⚠️ HTTP headers are ignored when using local models.
 > If you configure `HTTP_HEADERS` with `ApiType.FUNCTION` or `ApiType.TRANSFORMERS`, you'll get a warning.
 
@@ -36,6 +37,7 @@ HTTP_HEADERS='{"X-Client": "MyApp", "X-Trace-ID": "abc123"}'
 
 Headers can be injected dynamically for specific requests using the `extra_headers` parameter in the `llm` function.
 These headers merge with and override global headers if there are key conflicts.
+
 ```python
 from microcore import llm
 res = llm("Hello there!", extra_headers={"Helicone-Session-Id": "123"})
@@ -44,6 +46,7 @@ res = llm("Hello there!", extra_headers={"Helicone-Session-Id": "123"})
 > **Note**: Headers provided via `extra_headers` will override any conflicting keys defined in the global `HTTP_HEADERS` configuration for that specific request.
 
 > **Note**: When using ApiType.GOOGLE, custom headers also may be set using `http_options` parameter. In case if both are provided, MicroCore merges them, with `extra_headers` taking precedence on key conflicts.
+
 ## Supported Backends
 
 Custom headers are supported for all major remote API backends:
