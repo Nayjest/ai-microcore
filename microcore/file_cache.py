@@ -1,6 +1,6 @@
 """
 A lightweight general-purpose file-based caching system for Python objects
-designed for cross-cutting concern within the ai-microcore horizontal functionality.
+designed for cross-cutting concerns within the ai-microcore horizontal functionality.
 
 Target applications: rapid prototyping, R&D, and AI experiments.
 

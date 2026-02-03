@@ -28,7 +28,7 @@ from ._env import env
 # pylint: disable=too-many-return-statements,too-many-branches
 def convert_exception(e: Exception, model: str = None) -> Exception | None:
     """
-    Convert LLM exceptions microcore-specific exceptions if possible.
+    Convert LLM exceptions to microcore-specific exceptions if possible.
     Args:
         e (Exception): Original exception
         model (str): LLM model name, used for better error messages

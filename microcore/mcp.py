@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -217,7 +217,7 @@ class Tool:
         description: str = field(default="")
         type: str = field(default="string")
         required: bool = field(default=...)
-        default: any = field(default=...)
+        default: Any = field(default=...)
 
         def __post_init__(self):
             if self.required is ...:

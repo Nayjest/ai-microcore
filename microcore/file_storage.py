@@ -226,7 +226,7 @@ class Storage:
         Returns:
             str | os.PathLike: The actual file name used for writing.
                 (may differ from `name` argument
-                if rewrite_existing: False is used)
+                if rewrite_existing=False is used)
         """
         if content == _missing:
             content = name
