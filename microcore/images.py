@@ -114,5 +114,5 @@ class Image(ImageInterface):
         from .file_storage import storage
         actual_fn = storage.write(file_path, self.get_bytes(), rewrite_existing=False)
         actual_fn = storage.abs_path(actual_fn)
-        logging.info(f"Image saved to %s", file_link(actual_fn))
+        logging.info("Image saved to %s", file_link(actual_fn))
         return actual_fn
