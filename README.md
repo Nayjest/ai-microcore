@@ -220,7 +220,7 @@ Find most similar text
 ### texts.get_all(self, collection: str) -> list[str]
 Return collection of texts
 
-### texts.save(collection: str, text: str, metadata: dict = None))
+### texts.save(collection: str, text: str, metadata: dict = None)
 Store text and related metadata in embeddings database
 
 ### texts.save_many(collection: str, items: list[tuple[str, dict] | str])

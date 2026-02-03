@@ -175,7 +175,7 @@ class LLMConfig(
     LLM_API_TYPE: str = from_env()
     """
     See `ApiType`.
-    To use services that is not listed in `ApiType`,
+    To use services that are not listed in `ApiType`,
     but provides OpenAI interface, use `ApiType.OPENAI`"""
     LLM_API_PLATFORM: str = from_env()
     """

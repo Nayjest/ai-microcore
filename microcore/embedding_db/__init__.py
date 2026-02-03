@@ -30,7 +30,7 @@ class SearchResults(list):
         )
         if verbose and removed:
             logging.info(
-                "For fitting %d records to %d tokens, %d records was removed",
+                "For fitting %d records to %d tokens, %d records were removed",
                 len(self),
                 max_tokens,
                 removed,
@@ -175,7 +175,7 @@ class AbstractEmbeddingDB(ABC):
 
     def has_content(self, collection: str) -> bool:
         """
-        Check if the collection exists anf contains any documents
+        Check if the collection exists and contains any documents
 
         Returns:
             True if collection exists and contains documents, False otherwise
