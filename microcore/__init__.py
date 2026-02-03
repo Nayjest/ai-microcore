@@ -3,7 +3,7 @@
 
 **microcore** is a collection of python adapters for Large Language Models
 and Semantic Search APIs allowing to
-communicate with these services convenient way, make it easily switchable
+communicate with these services in a convenient way, make it easily switchable
 and separate business logic from implementation details.
 """
 
