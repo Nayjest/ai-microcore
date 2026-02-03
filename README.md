@@ -234,9 +234,9 @@ Clear collection
 MI-MicroCore supports major API providers via various chat completion / text completion APIs.
 
 Tested with the following services:
-- [OpenAI](https://openai.com)                                                                                                        All chat and text completion models |
+- [OpenAI](https://openai.com)
 - [Anthropic](https://anthropic.com)  (via Anthropic API and via OpenAI API)
-- [MistralAI](https://mistral.ai)                                                          |                                                                                                                          All Mistral models |
+- [MistralAI](https://mistral.ai)
 - [Google AI Studio](https://aistudio.google.com/) (via Google GenAI API and via OpenAI API)
 - [Google Vertex AI](https://cloud.google.com/vertex-ai?hl=en)
 - [xAI](https://x.ai/)
@@ -251,7 +251,7 @@ Tested with the following services:
 - [Deep Infra](https://deepinfra.com)
 - [Anyscale](https://anyscale.com)
 - [Groq](https://groq.com/)
-- [Fireworks](fireworks.ai)
+- [Fireworks](https://fireworks.ai)
 - [Together AI](https://www.together.ai/inference)
 - [OpenRouter](https://openrouter.ai/)
 - [01.AI](https://www.01.ai/)
