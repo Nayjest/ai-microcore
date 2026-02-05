@@ -54,6 +54,7 @@ authors = [
 ]
 maintainers = [
     { name = "Vitalii Stepanenko", email = "mail@vitaliy.in" },
+    { name = "Dariia Stepanenko", email = "zozulinadarina97@gmail.com"},
 ]
 license = { file = "LICENSE" }
 
