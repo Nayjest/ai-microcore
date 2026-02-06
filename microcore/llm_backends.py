@@ -234,7 +234,7 @@ DEFAULT_PLATFORMS = {
 
 HIGH_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.OPENAI: "gpt-5.2",
-    ApiPlatform.ANTHROPIC: "claude-opus-4-5",
+    ApiPlatform.ANTHROPIC: "claude-opus-4-6",
     ApiPlatform.GOOGLE_AI_STUDIO: "gemini-2.5-pro",
     ApiPlatform.GOOGLE_VERTEX_AI: "gemini-2.5-pro",
     ApiPlatform.MISTRAL: "mistral-large-latest",
