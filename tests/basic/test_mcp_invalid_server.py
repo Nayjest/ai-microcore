@@ -6,7 +6,6 @@ servers_cfg = [
 ]
 
 
-@pytest.mark.asyncio
 async def test_bad_mcp():
     mc.configure(
         LLM_API_TYPE=mc.ApiType.NONE,

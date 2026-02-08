@@ -1,16 +1,13 @@
-import pytest
 import microcore as mc
 from microcore.mcp import ToolsCache
 
 
-@pytest.mark.asyncio
 async def test_mcp_precache():
     mc.configure(MCP_SERVERS=['https://time.mcp.inevitable.fyi/mcp'], VALIDATE_CONFIG=False)
     await mc.env().mcp_registry.precache_tools(connect_timeout=70)
     assert len(mc.mcp_server("time.mcp.inevitable.fyi").get_tools_cache()) >= 1
 
 
-@pytest.mark.asyncio
 async def test_mcp_update_tools_cache():
     mc.configure(MCP_SERVERS=[dict(
         name='test2',
@@ -26,7 +23,6 @@ async def test_mcp_update_tools_cache():
     assert mc.mcp.server('test2').get_tools_cache() is None
 
 
-@pytest.mark.asyncio
 async def test_mcp_time():
     mc.configure(MCP_SERVERS=['https://time.mcp.inevitable.fyi/mcp'], VALIDATE_CONFIG=False)
     mcp: mc.mcp.MCPConnection = await mc.mcp_server("time.mcp.inevitable.fyi").connect(
