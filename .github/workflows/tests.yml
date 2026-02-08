@@ -44,7 +44,7 @@ jobs:
       with:
         output: 'coverage.svg'
     - name: Commit coverage badge
-      if: matrix.python-version == '3.13' && (
+      if: matrix.python-version == '3.12' && (
         (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
         (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
         )
