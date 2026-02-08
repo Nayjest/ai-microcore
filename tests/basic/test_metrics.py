@@ -7,7 +7,6 @@ from . import setup  # noqa
 
 
 
-@pytest.mark.asyncio
 async def test_metrics(setup):
     with Metrics() as m:
         assert mc.llm("ok", model="gpt-4") == "ok"

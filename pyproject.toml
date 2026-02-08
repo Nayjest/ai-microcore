@@ -68,6 +68,7 @@ name = "microcore"
 minversion = "6.0"
 #addopts = "--cov=microcore --cov-report=xml:coverage.xml --cov-report=term"
 addopts = "-vv --capture=no --log-cli-level=INFO"
+asyncio_mode = "auto"
 testpaths = [
     "tests/basic",
 ]

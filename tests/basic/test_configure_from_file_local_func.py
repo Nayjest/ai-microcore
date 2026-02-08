@@ -12,7 +12,6 @@ def test_configure_non_existing():
         configure("tests/basic/config/non-existing")
 
 
-@pytest.mark.asyncio
 async def test_configure_from_file():
     c = configure("tests/basic/config/custom_func.ini")
     assert c.LLM_API_TYPE == ApiType.FUNCTION

@@ -46,7 +46,6 @@ def server(request):
                 logging.error(f"Server stderr: {stderr.decode()}")
 
 
-@pytest.mark.asyncio
 async def test_mcp_ping(server):
     logging.info(
         f"Testing MCP server with transport: {server['transport']} on port {server['port']}"

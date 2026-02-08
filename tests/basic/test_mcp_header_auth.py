@@ -66,7 +66,6 @@ class TestHeaderAuth:
 
         assert request.headers["Authorization"] == "Bearer new_token"
 
-    @pytest.mark.asyncio
     async def test_integration_with_httpx_client(self):
         """Test integration with httpx.Client (mock test)."""
         auth = HeaderAuth("X-API-Key", "test-key-123")
