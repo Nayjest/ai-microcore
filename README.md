@@ -77,25 +77,19 @@ There are a few options available for configuring microcore:
 -   Use a custom configuration file: `mc.configure(DOT_ENV_FILE='dev-config.ini')`
 -   Define OS environment variables
 
-For the full list of available configuration options, you may also check [`microcore/config.py`](https://github.com/Nayjest/ai-microcore/blob/main/microcore/configuration.py#L175).
+For the full list of available configuration options, you may also check
+[`microcore/configuration.py`](https://github.com/Nayjest/ai-microcore/blob/main/microcore/configuration.py#L175).
 
 ### Installing vendor-specific packages
 For models working not via OpenAI API, you may need to install additional packages:
-#### Anthropic Claude 3
+#### Anthropic Claude
 ```bash
 pip install anthropic
 ```
-#### Google Gemini via AI Studio
+#### Google Gemini via AI Studio or Vertex AI
 ```bash
-pip install google-generativeai
+pip install google-genai
 ```
-#### Google Gemini via Vertex AI
-```bash
-pip install vertexai
-```
-📌Additionally for working through [Vertex AI](https://cloud.google.com/vertex-ai) you need to
-[install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install)
-and [configure the authorization](https://cloud.google.com/sdk/docs/authorizing).
 
 #### Local language models via Hugging Face Transformers
 
@@ -172,7 +166,7 @@ ai_response = llm('What is your model name?')
 # - For chat completion models elements are treated as separate messages
 # - For completion LLMs elements are treated as text lines
 llm(['1+2', '='])
-llm('1+2=', model='gpt-4')
+llm('1+2=', model='gpt-5.2')
 
 # To specify a message role, you can use dictionary or classes
 llm(dict(role='system', content='1+2='))
@@ -226,7 +220,7 @@ Find most similar text
 ### texts.get_all(self, collection: str) -> list[str]
 Return collection of texts
 
-### texts.save(collection: str, text: str, metadata: dict = None))
+### texts.save(collection: str, text: str, metadata: dict = None)
 Store text and related metadata in embeddings database
 
 ### texts.save_many(collection: str, items: list[tuple[str, dict] | str])
@@ -237,22 +231,32 @@ Clear collection
 
 ## API providers and models support
 
-LLM Microcore supports all models & API providers having OpenAI API.
+MI-MicroCore supports major API providers via various chat completion / text completion APIs.
 
-### List of API providers and models tested with LLM Microcore:
+Tested with the following services:
+- [OpenAI](https://openai.com)
+- [Anthropic](https://anthropic.com)  (via Anthropic API and via OpenAI API)
+- [MistralAI](https://mistral.ai)
+- [Google AI Studio](https://aistudio.google.com/) (via Google GenAI API and via OpenAI API)
+- [Google Vertex AI](https://cloud.google.com/vertex-ai?hl=en)
+- [xAI](https://x.ai/)
+- [Microsoft Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service)
+- [Perplexity](https://www.perplexity.ai/api-platform)
+- [DeepSeek](https://www.deepseek.ai/)
+- [Cohere](https://cohere.com/)
+- [RunPod](https://www.runpod.io/) (via OpenAI API)
+- [Cerebras](https://www.cerebras.ai/)
+- [HuggingFace Inference API](https://huggingface.co/inference-api)
+- [AI21 Studio](https://www.ai21.com/studio)
+- [Deep Infra](https://deepinfra.com)
+- [Anyscale](https://anyscale.com)
+- [Groq](https://groq.com/)
+- [Fireworks](https://fireworks.ai)
+- [Together AI](https://www.together.ai/inference)
+- [OpenRouter](https://openrouter.ai/)
+- [01.AI](https://www.01.ai/)
 
-| API Provider                                                                             |                                                                                                                                      Models |
-|------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------:|
-| [OpenAI](https://openai.com)                                                             |                                    All GPT-4 and GTP-3.5-Turbo models<br/>all text completion models (davinci, gpt-3.5-turbo-instruct, etc) |
-| [Microsoft Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |                                                                                                            All OpenAI models, Mistral Large |
-| [Anthropic](https://anthropic.com)                                                       |                                                                                                                             Claude 3 models |
-| [MistralAI](https://mistral.ai)                                                          |                                                                                                                          All Mistral models |
-| [Google AI Studio](https://aistudio.google.com/)                             |                                                                                                                        Google Gemini models |
-| [Google Vertex AI](https://cloud.google.com/vertex-ai?hl=en)                             |                                                   Gemini Pro & [other models](https://cloud.google.com/vertex-ai/docs/start/explore-models) |
-| [Deep Infra](https://deepinfra.com)                                                      | deepinfra/airoboros-70b<br/>jondurbin/airoboros-l2-70b-gpt4-1.4.1<br/>meta-llama/Llama-2-70b-chat-hf<br/>and other models having OpenAI API |
-| [Anyscale](https://anyscale.com)                                                         |                                           meta-llama/Llama-2-70b-chat-hf<br/>meta-llama/Llama-2-13b-chat-hf<br/>meta-llama/Llama-7b-chat-hf |
-| [Groq](https://groq.com/)                                                         |                                           LLaMA2 70b<br>Mixtral 8x7b<br>Gemma 7b |
-| [Fireworks](fireworks.ai)                                                         |                                           [Over 50 open-source language models](https://fireworks.ai/models?show=All) |
+And more via Google / Anthropic / OpenAI API.
 
 ## Supported local language model APIs:
 - HuggingFace [Transformers](https://huggingface.co/docs/transformers/index) (see configuration examples [here](https://github.com/Nayjest/ai-microcore/blob/main/tests/local/test_transformers.py)).
@@ -278,9 +282,61 @@ Text generation using HF/Transformers model locally (example with Qwen 3 0.6B).
  
 #### [Other examples](https://github.com/llm-microcore/microcore/tree/main/examples)
 
-## Python functions as AI tools
+## 📚 Guides & Reference<a id="-guides--reference"></a>
 
-@TODO
+For more detailed information, check out these articles:
+
+- [Custom HTTP Headers](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/http_headers.md)
+- [File Cache](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/file_cache.md)
+
+## Python functions as AI tools
+*Usage Example*:
+```python
+from microcore.ai_func import ai_func
+
+@ai_func
+def search_products(
+    query: str,
+    category: str = "all",
+    max_results: int = 10,
+    in_stock_only: bool = False
+):
+    """
+    Search for products in the catalog.
+
+    Args:
+        query: Search terms to find matching products
+        category: Product category to filter by (e.g., "electronics", "clothing")
+        max_results: Maximum number of results to return
+        in_stock_only: If True, only return products currently in stock
+
+    Returns:
+        List of matching products with name, price, and availability
+    """
+    # Implementation would go here
+    pass
+```
+*Output*:
+```
+# Search for products in the catalog.
+
+Args:
+    query: Search terms to find matching products
+    category: Product category to filter by (e.g., "electronics", "clothing")
+    max_results: Maximum number of results to return
+    in_stock_only: If True, only return products currently in stock
+
+Returns:
+    List of matching products with name, price, and availability
+{
+  "call": "search_products",
+  "query": <str>,
+  "category": <str> (default = "all"),
+  "max_results": <int> (default = 10),
+  "in_stock_only": <bool> (default = False)
+}
+
+```
 
 ## 🤖 AI Modules
 **This is an experimental feature.**

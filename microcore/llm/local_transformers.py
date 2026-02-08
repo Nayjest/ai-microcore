@@ -235,8 +235,6 @@ def make_llm_functions(
             )
             if kwargs.pop("continue_last_message", False) and ending:
                 prompt = prompt[: -len(ending)]
-        if seed := kwargs.pop("seed", None):
-            torch.manual_seed(seed)
         args = {**transformers_model_args, **kwargs}
         always_clear_mem and clear_mem()
         if use_pipeline:

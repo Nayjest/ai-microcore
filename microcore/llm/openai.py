@@ -1,11 +1,15 @@
+"""
+OpenAI LLM client implementation.
+"""
 import asyncio
 import base64
+from typing import Any
 
 import openai
 from openai.types import CompletionChoice, ImagesResponse
 
 from ..lm_client import BaseAIChatClient, BaseAsyncAIClient
-from ..message_types import TMsgContentPart
+from ..message_types import TMsgContentPart, TMsgContent
 from ..configuration import Config
 from ..llm_backends import ApiPlatform
 from .._prepare_llm_args import prepare_prompt
@@ -42,8 +46,7 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
         config = self.sync_client.config
         args, options = _prepare_llm_arguments(config, kwargs)
         if is_image_model(args["model"]):
-            # Note: image generation is synchronous
-            return _generate_image(
+            return await _generate_image_async(
                 prompt,
                 args,
                 self.oai_client,
@@ -112,6 +115,11 @@ class OpenAIClient(BaseAIChatClient):
                 "base_url": config.LLM_API_BASE,
                 **config.INIT_PARAMS,
             }
+        if config.HTTP_HEADERS:
+            if "default_headers" not in client_params:  # maybe set in INIT_PARAMS
+                client_params["default_headers"] = {}
+            client_params["default_headers"].update(config.HTTP_HEADERS)
+
         self.oai_client = client_type(**client_params)
         self.aio = AsyncOpenAIClient(
             oai_connection=async_client_type(**client_params),
@@ -132,6 +140,18 @@ class OpenAIClient(BaseAIChatClient):
         if isinstance(img := content_part, ImageInterface):
             return image_to_oai(img)
         return content_part
+
+    def _convert_message_content(self, message_content: TMsgContent) -> Any:
+        """
+        Convert the message content into a format suitable for the LLM inference chat API.
+        """
+        if isinstance(message_content, str):
+            # Prevent conversion of string content into dict(type=text, text=...)
+            # because Azure OpenAI fails with Error 400
+            # when passing "azure_search" data source like following:
+            # llm(..., extra_body={"data_sources"=[{"type": "azure_search",...}]})
+            return message_content
+        return super()._convert_message_content(message_content)
 
     def load_models(self, **kwargs) -> dict:
         models_iter = self.oai_client.models.list(**kwargs)
@@ -294,12 +314,8 @@ def _oai_image_response_to_images(response: ImagesResponse) -> list[Image]:
     return images
 
 
-def _generate_image(
-    prompt,
-    args,
-    connection: openai.OpenAI | openai.AsyncOpenAI,
-    options
-) -> ImageGenerationResponse | None:
+def _prepare_image_generation(prompt, args):
+    """Prepare prompt and images for image generation (shared logic)."""
     def convert_input_image(image: ImageInterface):
         if isinstance(image, FileImage):
             return open(image.file, "rb")
@@ -333,6 +349,32 @@ def _generate_image(
     if save and args.get("response_format", "b64_json") != "b64_json":
         raise ValueError("Only 'b64_json' response format is supported.")
 
+    return prompt, images, save
+
+
+def _image_generation_response(
+        response: ImagesResponse,
+        save: bool,
+        options: dict,
+) -> ImageGenerationResponse | None:
+    check_for_errors(response)
+    images = _oai_image_response_to_images(response)
+    response_attrs = response.__dict__.copy()
+    result = make_image_generation_response(images, save, response_attrs)
+    for cb in options["callbacks"]:
+        cb(result)
+    return result
+
+
+def _generate_image(
+    prompt,
+    args,
+    connection: openai.OpenAI,
+    options
+) -> ImageGenerationResponse | None:
+    """Synchronous version of image generation."""
+    prompt, images, save = _prepare_image_generation(prompt, args)
+
     if not images:
         response: ImagesResponse = connection.images.generate(prompt=prompt, **args)
     else:
@@ -341,10 +383,24 @@ def _generate_image(
             prompt=prompt,
             **args
         )
-    check_for_errors(response)
-    images = _oai_image_response_to_images(response)
-    response_attrs = response.__dict__.copy()
-    result = make_image_generation_response(images, save, response_attrs)
-    for cb in options["callbacks"]:
-        cb(result)
-    return result
+    return _image_generation_response(response, save, options)
+
+
+async def _generate_image_async(
+    prompt,
+    args,
+    connection: openai.AsyncOpenAI,
+    options
+) -> ImageGenerationResponse | None:
+    """Asynchronous version of image generation."""
+    prompt, images, save = _prepare_image_generation(prompt, args)
+
+    if not images:
+        response: ImagesResponse = await connection.images.generate(prompt=prompt, **args)
+    else:
+        response: ImagesResponse = await connection.images.edit(
+            image=images,
+            prompt=prompt,
+            **args
+        )
+    return _image_generation_response(response, save, options)

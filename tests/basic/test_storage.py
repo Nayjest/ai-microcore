@@ -208,3 +208,11 @@ def test_read_json_default():
     }
     with pytest.raises(FileNotFoundError):
         mc.storage.read_json("non_existing_file")
+
+def test_append_bytes():
+    mc.storage.delete("tests_tmp")
+    mc.storage.write("tests_tmp/test.bin", b"hello", append=False)
+    mc.storage.write("tests_tmp/test.bin", b" world", append=True)
+    content = mc.storage.read("tests_tmp/test.bin", binary=True)
+    assert content == b"hello world"
+    mc.storage.delete("tests_tmp")

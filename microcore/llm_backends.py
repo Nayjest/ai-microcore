@@ -9,7 +9,7 @@ class SafeEnumMeta(EnumMeta):
         try:
             return super().__contains__(item)
         except TypeError:
-            return False
+            return item in cls._value2member_map_
 
 
 class SafeStrEnum(str, Enum, metaclass=SafeEnumMeta):
@@ -166,6 +166,7 @@ class ApiPlatform(SafeStrEnum):
         return LLM_API_BASE_URLS.get(self.api_type(), {}).get(self)
 
 
+# Human-readable labels for API platforms not following val.replace('_', ' ').title() pattern
 _API_PLATFORM_CUSTOM_LABELS: dict[ApiPlatform, str] = {
     ApiPlatform.OPENAI: "OpenAI",
     ApiPlatform.GOOGLE_AI_STUDIO: "Google AI Studio",
@@ -233,7 +234,7 @@ DEFAULT_PLATFORMS = {
 
 HIGH_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.OPENAI: "gpt-5.2",
-    ApiPlatform.ANTHROPIC: "claude-opus-4-5",
+    ApiPlatform.ANTHROPIC: "claude-opus-4-6",
     ApiPlatform.GOOGLE_AI_STUDIO: "gemini-2.5-pro",
     ApiPlatform.GOOGLE_VERTEX_AI: "gemini-2.5-pro",
     ApiPlatform.MISTRAL: "mistral-large-latest",

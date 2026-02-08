@@ -3,7 +3,7 @@
 
 **microcore** is a collection of python adapters for Large Language Models
 and Semantic Search APIs allowing to
-communicate with these services convenient way, make it easily switchable
+communicate with these services in a convenient way, make it easily switchable
 and separate business logic from implementation details.
 """
 
@@ -79,7 +79,7 @@ def model_names() -> list[str]:
     Return a list of available model names from the default LLM client.
     """
     if env().default_client is None:
-        raise ValueError("No default LLM client supporting models list configured.")
+        raise ValueError("No default LLM client is configured.")
     return env().default_client.model_names()
 
 
@@ -231,4 +231,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "5.0.0dev6"
+__version__ = "5.2.0"

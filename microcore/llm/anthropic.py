@@ -96,16 +96,18 @@ def _extract_sys_msg(prepared_messages: list[dict]) -> tuple[str, list[dict]]:
 
 
 def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctionType]:
-    sync_client = anthropic.Anthropic(
-        api_key=config.LLM_API_KEY,
-        base_url=config.LLM_API_BASE,
+    client_params = {
+        "api_key": config.LLM_API_KEY,
+        "base_url": config.LLM_API_BASE,
         **config.INIT_PARAMS,
-    )
-    async_client = anthropic.AsyncAnthropic(
-        api_key=config.LLM_API_KEY,
-        base_url=config.LLM_API_BASE,
-        **config.INIT_PARAMS,
-    )
+    }
+    if config.HTTP_HEADERS:
+        if "default_headers" not in client_params:
+            client_params["default_headers"] = {}
+        client_params["default_headers"].update(config.HTTP_HEADERS)
+
+    sync_client = anthropic.Anthropic(**client_params)
+    async_client = anthropic.AsyncAnthropic(**client_params)
 
     async def allm(prompt, **kwargs):
         args, options = _prepare_llm_arguments(config, kwargs)

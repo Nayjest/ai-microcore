@@ -1,3 +1,4 @@
+import asyncio
 import microcore.python as py
 
 
@@ -16,3 +17,13 @@ def test_error():
     """, traceback=False, log_errors=False)
     assert o == ""
     assert e == "SyntaxError: invalid syntax"
+
+
+async def test_python_exec_inline():
+    async def fn(a):
+        await asyncio.sleep(0.001)
+        print("some output")
+        return a * 2
+
+    res, out, errors = await py.execute_inline("fn(3)")
+    assert (6, "some output", None) == (res, out, errors)

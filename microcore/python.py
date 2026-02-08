@@ -1,8 +1,12 @@
+import asyncio
 import logging
 import random
 import subprocess
 import sys
+import inspect
+from typing import Any
 from datetime import datetime
+from io import StringIO
 
 from .file_storage import storage
 from .utils import file_link, dedent
@@ -66,3 +70,24 @@ def execute(
         stderr = stderr.splitlines()[-1].lstrip()
 
     return stdout, stderr
+
+
+async def execute_inline(
+    program: str, namespace: dict = None
+) -> tuple[Any, str, Exception | None]:
+    """Eval program inline, capturing result, stdout, and errors."""
+    if namespace is None:
+        frame = inspect.currentframe().f_back
+        namespace = {**frame.f_globals, **frame.f_locals}
+
+    buf, sys.stdout, result, error = StringIO(), (old := sys.stdout), None, None
+    sys.stdout = buf
+    try:
+        result = eval(program, namespace)  # pylint: disable=eval-used
+        if asyncio.iscoroutine(result):
+            result = await result
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        error = e
+    finally:
+        sys.stdout = old
+    return result, buf.getvalue().strip(), error

@@ -1,5 +1,15 @@
 """
-File storage functions
+File storage functionality.
+
+
+Provides a Storage class for file operations within a configured storage directory.
+Supports automatic file numbering, backups, JSON serialization, encoding detection,
+file copying, directory listing, etc.
+
+Usage:
+    from microcore import storage
+    storage.write("data.txt", "content")
+    content = storage.read("data.txt")
 """
 
 import fnmatch
@@ -15,6 +25,7 @@ from ._env import config
 from .utils import file_link, list_files
 
 _missing = object()
+"""Sentinel value to distinguish between None and 'not provided'."""
 
 
 @dataclass
@@ -215,7 +226,7 @@ class Storage:
         Returns:
             str | os.PathLike: The actual file name used for writing.
                 (may differ from `name` argument
-                if rewrite_existing: False is used)
+                if rewrite_existing=False is used)
         """
         if content == _missing:
             content = name
@@ -224,8 +235,6 @@ class Storage:
         if isinstance(content, bytes):
             if encoding is not None:
                 logging.warning("Encoding is ignored when writing bytes content")
-            if append:
-                raise ValueError("Cannot append bytes content")
 
         if rewrite_existing is None:
             rewrite_existing = True
@@ -268,18 +277,12 @@ class Storage:
                 if file_name != fn_incremented:
                     os.rename(self.path / file_name, self.path / fn_incremented)
         (self.path / file_name).parent.mkdir(parents=True, exist_ok=True)
-        if append:
-            with (self.path / file_name).open(
-                mode="a",
-                encoding=encoding if not isinstance(content, bytes) else None,
-            ) as file:
-                file.write(content)
+        if isinstance(content, bytes):
+            with (self.path / file_name).open(mode="ab" if append else "wb") as f:
+                f.write(content)
         else:
-            if isinstance(content, bytes):
-                with (self.path / file_name).open(mode="wb") as file:
-                    file.write(content)
-            else:
-                (self.path / file_name).write_text(content, encoding=encoding)
+            with (self.path / file_name).open(mode="a" if append else "w", encoding=encoding) as f:
+                f.write(content)
         return file_name
 
     def clean(self, path: str | Path):

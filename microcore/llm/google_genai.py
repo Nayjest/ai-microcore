@@ -1,10 +1,14 @@
+"""
+Client for Google GenAI SDK to interact with Google Gemini models.
+"""
 import asyncio
 import json
-from typing import Any, Optional
+from typing import Any, Optional, Mapping
 from dataclasses import dataclass
 
 from google import genai
 from google.genai import types
+from google.genai.types import HttpOptions
 from google.oauth2.service_account import Credentials
 
 from ..configuration import Config, LLMCredentialError
@@ -60,6 +64,23 @@ def _load_service_account_info(config: Config) -> Optional[dict]:
     return None
 
 
+def inject_headers(headers: Mapping[str,str], params: dict) -> None:
+    """
+    Inject extra HTTP headers into the params dictionary for Google GenAI client.
+    """
+    if "http_options" not in params:
+        params["http_options"] = {}
+    http_options = params["http_options"]
+    if isinstance(http_options, dict):
+        if "headers" not in http_options:
+            http_options["headers"] = {}
+        http_options["headers"].update(headers)
+    elif isinstance(http_options, HttpOptions):
+        if http_options.headers is None:
+            http_options.headers = {}
+        http_options.headers.update(headers)
+
+
 class GoogleClient(BaseAIChatClient):
     """
     Client for Google GenAI SDK to interact with Google Gemini models.
@@ -70,6 +91,9 @@ class GoogleClient(BaseAIChatClient):
     def __init__(self, config: Config):
         super().__init__(config)
         client_params = {**config.INIT_PARAMS}
+
+        if config.HTTP_HEADERS:
+            inject_headers(config.HTTP_HEADERS, client_params)
 
         if config.GOOGLE_GENAI_USE_VERTEXAI is not None:
             client_params["vertexai"] = config.GOOGLE_GENAI_USE_VERTEXAI
@@ -163,8 +187,9 @@ class AsyncGoogleClient(BaseAsyncAIClient):
     def __init__(self, client: GoogleClient):
         self.sync_client = client
 
-    async def load_models(self) -> dict:
-        raise NotImplementedError
+    async def load_models(self, **kwargs) -> dict:
+        models = await self.sync_client.genai_client.aio.models.list(**kwargs)
+        return {model.name: model for model in models}
 
     async def generate(
         self,
@@ -221,6 +246,10 @@ class _GenerationContext:
         model_name = kwargs.pop("model", client.config.MODEL)
         callbacks = prepare_callbacks(client.config, kwargs, set_stream=False)
         is_image = is_image_model(model_name)
+        stream = kwargs.pop("stream", False) or (callbacks and not is_image)
+        if "extra_headers" in kwargs:  # OpenAI compatible extra headers injection
+            extra_headers = kwargs.pop("extra_headers")
+            inject_headers(extra_headers, kwargs)
         return _GenerationContext(
             model_name=model_name,
             save=kwargs.pop("save", True),
@@ -230,13 +259,13 @@ class _GenerationContext:
             genai_client=client.genai_client,
             config=client.config,
             is_image_model=is_image,
-            stream=callbacks and not is_image
+            stream=stream,
         )
 
 
 def _google_image_response_to_images(response: genai.types.GenerateContentResponse) -> list[Image]:
     images = []
-    for i, part in enumerate(response.parts):
+    for part in response.parts:
         if part.inline_data:
             image_bytes = part.inline_data.data
             img = Image(image_bytes, mime_type=part.inline_data.mime_type)
