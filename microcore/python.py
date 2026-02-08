@@ -83,10 +83,10 @@ async def execute_inline(
     buf, sys.stdout, result, error = StringIO(), (old := sys.stdout), None, None
     sys.stdout = buf
     try:
-        result = eval(program, namespace)
+        result = eval(program, namespace)  # pylint: disable=eval-used
         if asyncio.iscoroutine(result):
             result = await result
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         error = e
     finally:
         sys.stdout = old
