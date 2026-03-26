@@ -10,11 +10,14 @@ from ._env import env
 
 
 class AIModuleConfig(BaseModel):
+    """
+    Configuration for an AI module, read from the module's docstring.
+    """
     ai_module: str = Field(description="Programmatic name of the AI module")
     tpl_path: str = Field(
         default="",
         description="Path to the templates directory within the module, "
-                    "relative to the module's root."
+                    "relative to the module's root. "
                     "If not specified, defaults to the module's root directory."
     )
     tpl_prefix: Optional[str] = Field(
@@ -32,10 +35,17 @@ class AIModuleConfig(BaseModel):
         description="Whether to load templates from this module. "
                     "Set to false to skip loading templates even if tpl_path is specified."
     )
-    package_name: str = Field()
+    package_name: str = Field(
+        description="The name of python package which is AI module, "
+                    "automatically set when reading configuration."
+    )
 
     @staticmethod
     def read(module: ModuleType) -> Optional["AIModuleConfig"]:
+        """
+        Reads AI module configuration from the module's docstring
+        if it contains 'ai_module' key.
+        """
         if module.__doc__ and "ai_module" in module.__doc__:
             data = yaml.safe_load(module.__doc__)
             return AIModuleConfig(**data, package_name=module.__name__)
@@ -52,6 +62,7 @@ def _custom_import(name, global_vars=None, local_vars=None, fromlist=(), level=0
 
 
 def _register_module_tpl_loader(config: AIModuleConfig) -> None:
+    """Registers a Jinja template loader for the given AI module config."""
     if config.use_templates:
         pkg_loader = PackageLoader(config.package_name, config.tpl_path)
         if config.use_tpl_prefix:
@@ -60,6 +71,11 @@ def _register_module_tpl_loader(config: AIModuleConfig) -> None:
 
 
 def register_module_tpl_loaders() -> None:
+    """
+    When env is recreated (during configure() call, etc.),
+    all previously registered Jinja loaders are cleared and need to be re-registered
+    using this function.
+    """
     for module_config in _ai_modules.values():
         _register_module_tpl_loader(module_config)
 
