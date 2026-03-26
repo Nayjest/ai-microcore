@@ -13,7 +13,7 @@ class PromptWrapper(ExtendedString, ConvertableToMessage):
     for enhanced functionality.
     """
 
-    tpl_file: str | None
+    tpl_file: str | None = None
     tpl_vars: dict | None = None
 
     def __new__(
