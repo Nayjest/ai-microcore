@@ -1,4 +1,4 @@
-FROM python:3.13.8-slim AS mc
+FROM python:3.13.12-slim AS mc
 ENV I_AM_INSIDE_DOCKER_CONTAINER=true
 RUN apt update \
     && apt install -y --no-install-recommends \

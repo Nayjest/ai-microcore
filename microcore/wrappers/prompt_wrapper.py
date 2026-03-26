@@ -13,6 +13,21 @@ class PromptWrapper(ExtendedString, ConvertableToMessage):
     for enhanced functionality.
     """
 
+    tpl_file: str | None
+    tpl_vars: dict | None = None
+
+    def __new__(
+        cls,
+        string: str,
+        attrs: dict = None,
+        tpl_file: str | None = None,
+        tpl_vars: dict | None = None,
+        **kwargs,
+    ):
+        return ExtendedString.__new__(
+            cls, string, attrs=attrs, **kwargs, tpl_file=tpl_file, tpl_vars=tpl_vars
+        )
+
     def to_llm(self, **kwargs) -> Union[str, "LLMResponse"]:
         """
         Send prompt to Large Language Model, see `llm`

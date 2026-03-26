@@ -47,7 +47,7 @@ def tpl(
     rendered = env().tpl_function(file, **kwargs)
     if sanitize_utf8:
         rendered = rendered.encode('utf-8', errors='replace').decode('utf-8')
-    return PromptWrapper(rendered, kwargs)
+    return PromptWrapper(rendered, tpl_vars=kwargs, tpl_file=file)
 
 
 def prompt(
@@ -62,7 +62,7 @@ def prompt(
     rendered = env().jinja_env.from_string(template_str).render(**kwargs)
     if sanitize_utf8:
         rendered = rendered.encode('utf-8', errors='replace').decode('utf-8')
-    return PromptWrapper(rendered, kwargs)
+    return PromptWrapper(rendered, tpl_vars=kwargs, tpl_file=None)
 
 
 fmt = prompt
@@ -231,4 +231,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "5.3.0"
+__version__ = "6.0.0"
