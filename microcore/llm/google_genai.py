@@ -174,7 +174,12 @@ class GoogleClient(BaseAIChatClient):
                     response_attrs["response"] = response
                     response_attrs["api_type"] = ApiType.GOOGLE
                     return make_image_generation_response(images, ctx.save, response_attrs)
-                return LLMResponse(response.text, response.__dict__)
+                return LLMResponse(
+                    response.text,
+                    response.__dict__,
+                    response=response,
+                    api_type=ApiType.GOOGLE
+                )
             else:
                 response_iterator = ctx.genai_client.models.generate_content_stream(
                     model=ctx.model_name,
