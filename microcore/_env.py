@@ -1,6 +1,8 @@
 """
 MicroCore environment object / initialization.
 """
+
+import sys
 import os.path
 from dataclasses import dataclass, field, asdict, fields
 from importlib.util import find_spec
@@ -65,6 +67,10 @@ class Env:
         """Initialize Jinja2 environment and template function for templates rendering."""
         self.jinja_env = make_jinja2_env(self)
         self.tpl_function = make_tpl_function(self)
+
+        if 'microcore.ai_modules' in sys.modules:
+            from .ai_modules import register_module_tpl_loaders
+            register_module_tpl_loaders()
 
     @property
     def mcp_registry(self) -> "MCPRegistry":

@@ -1,18 +1,25 @@
 import logging
 import asyncio
 import anthropic
-from anthropic.types import ContentBlockDeltaEvent
+from anthropic.types import ContentBlockDeltaEvent, SignatureDelta, ThinkingDelta
 
 from ..configuration import Config
 from .._prepare_llm_args import prompt_to_message_dicts
 from ..message_types import Role
 from ..types import LLMAsyncFunctionType, LLMFunctionType
 from ..wrappers.llm_response_wrapper import LLMResponse
+from ..llm_backends import ApiType
 from .shared import prepare_callbacks
 
 
-def _get_chunk_text(chunk):
-    return isinstance(chunk, ContentBlockDeltaEvent) and chunk.delta.text or ""
+def _get_chunk_text(chunk) -> str:
+    if not isinstance(chunk, ContentBlockDeltaEvent):
+        return ""
+    if isinstance(chunk.delta, ThinkingDelta):
+        return ""
+    if isinstance(chunk.delta, SignatureDelta):
+        return ""
+    return chunk.delta.text or ""
 
 
 async def _a_process_streamed_response(response, callbacks: list[callable]):
@@ -25,7 +32,7 @@ async def _a_process_streamed_response(response, callbacks: list[callable]):
                     await cb(text_chunk)
                 else:
                     cb(text_chunk)
-    return LLMResponse(response_text, {})
+    return LLMResponse(response_text, api_type=ApiType.ANTHROPIC)
 
 
 def _process_streamed_response(response, callbacks: list[callable]):
@@ -34,7 +41,7 @@ def _process_streamed_response(response, callbacks: list[callable]):
         if text_chunk := _get_chunk_text(chunk):
             response_text += text_chunk
             [cb(text_chunk) for cb in callbacks]
-    return LLMResponse(response_text, {})
+    return LLMResponse(response_text, api_type=ApiType.ANTHROPIC)
 
 
 def _prepare_llm_arguments(config: Config, kwargs: dict):
@@ -123,7 +130,12 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
                 await cb(response.content[0].text)
             else:
                 cb(response.content[0].text)
-        return LLMResponse(response.content[0].text, response.__dict__)
+        return LLMResponse(
+            response.content[0].text,
+            response.__dict__,
+            api_type=ApiType.ANTHROPIC,
+            response=response,
+        )
 
     def llm(prompt, **kwargs):
         args, options = _prepare_llm_arguments(config, kwargs)
@@ -136,6 +148,11 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
 
         for cb in options["callbacks"]:
             cb(response.content[0].text)
-        return LLMResponse(response.content[0].text, response.__dict__)
+        return LLMResponse(
+            response.content[0].text,
+            response.__dict__,
+            api_type=ApiType.ANTHROPIC,
+            response=response,
+        )
 
     return llm, allm

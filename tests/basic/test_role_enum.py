@@ -11,7 +11,7 @@ def test_role():
     assert isinstance(Role.USER, Role)
     assert isinstance(Role.USER, str)
     assert (Role.USER + 'str') == "userstr"
-    assert ','.join(Role) == "system,user,assistant"
+    assert ','.join(Role) == "system,user,assistant,tool"
 
 
 def test___str__():
