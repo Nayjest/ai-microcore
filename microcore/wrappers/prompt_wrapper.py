@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, Optional
 
 from .._llm_functions import allm, llm
 from ..utils import ExtendedString, ConvertableToMessage
@@ -13,15 +13,15 @@ class PromptWrapper(ExtendedString, ConvertableToMessage):
     for enhanced functionality.
     """
 
-    tpl_file: str | None = None
-    tpl_vars: dict | None = None
+    tpl_file: Optional[str] = None
+    tpl_vars: Optional[dict] = None
 
     def __new__(
         cls,
         string: str,
-        attrs: dict = None,
-        tpl_file: str | None = None,
-        tpl_vars: dict | None = None,
+        attrs: Optional[dict] = None,
+        tpl_file: Optional[str] = None,
+        tpl_vars: Optional[dict] = None,
         **kwargs,
     ):
         return ExtendedString.__new__(
