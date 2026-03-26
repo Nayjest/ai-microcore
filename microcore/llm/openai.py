@@ -298,7 +298,12 @@ def _process_streamed_response(
                         continue
             response_text += text_chunk
             [cb(text_chunk) for cb in callbacks]
-    return LLMResponse(response_text, {})
+    return LLMResponse(
+        response_text,
+        attrs=response.__dict__,
+        response=response,
+        api_type=ApiType.OPENAI
+    )
 
 
 def _prepare_llm_arguments(config: Config, kwargs: dict):
