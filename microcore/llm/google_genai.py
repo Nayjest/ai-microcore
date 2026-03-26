@@ -23,6 +23,7 @@ from ..utils import is_image_model
 from .shared import make_image_generation_response, prepare_callbacks
 from ..lm_client import BaseAsyncAIClient, BaseAIChatClient
 from ..images import Image, ImageInterface
+from ..llm_backends import ApiType
 
 
 def _load_service_account_info(config: Config) -> Optional[dict]:
@@ -64,7 +65,7 @@ def _load_service_account_info(config: Config) -> Optional[dict]:
     return None
 
 
-def inject_headers(headers: Mapping[str,str], params: dict) -> None:
+def inject_headers(headers: Mapping[str, str], params: dict) -> None:
     """
     Inject extra HTTP headers into the params dictionary for Google GenAI client.
     """
@@ -169,7 +170,10 @@ class GoogleClient(BaseAIChatClient):
                     )
                 if ctx.is_image_model:
                     images = _google_image_response_to_images(response)
-                    return make_image_generation_response(images, ctx.save, response.__dict__)
+                    response_attrs = response.__dict__.copy()
+                    response_attrs["response"] = response
+                    response_attrs["api_type"] = ApiType.GOOGLE
+                    return make_image_generation_response(images, ctx.save, response_attrs)
                 return LLMResponse(response.text, response.__dict__)
             else:
                 response_iterator = ctx.genai_client.models.generate_content_stream(
@@ -207,8 +211,16 @@ class AsyncGoogleClient(BaseAsyncAIClient):
                     )
                 if ctx.is_image_model:
                     images = _google_image_response_to_images(response)
-                    return make_image_generation_response(images, ctx.save, response.__dict__)
-                return LLMResponse(response.text, response.__dict__)
+                    response_attrs = response.__dict__.copy()
+                    response_attrs["response"] = response
+                    response_attrs["api_type"] = ApiType.GOOGLE
+                    return make_image_generation_response(images, ctx.save, response_attrs)
+                return LLMResponse(
+                    response.text,
+                    response.__dict__,
+                    response=response,
+                    api_type=ApiType.GOOGLE
+                )
             else:
                 response_iterator = await ctx.genai_client.aio.models.generate_content_stream(
                     model=ctx.model_name,
@@ -296,7 +308,12 @@ async def _a_process_streamed_response(response, callbacks: list[callable]):
                     await cb(text_chunk)
                 else:
                     cb(text_chunk)
-    return LLMResponse(response_text, {})
+    return LLMResponse(
+        response_text,
+        vars(response) if hasattr(response, '__dict__') else {},
+        api_type=ApiType.GOOGLE,
+        response=response,
+    )
 
 
 def _process_streamed_response(response, callbacks: list[callable]):
@@ -305,4 +322,9 @@ def _process_streamed_response(response, callbacks: list[callable]):
         if text_chunk := chunk.text:
             response_text += text_chunk
             [cb(text_chunk) for cb in callbacks]
-    return LLMResponse(response_text, {})
+    return LLMResponse(
+        response_text,
+        response.__dict__.copy(),
+        response=response,
+        api_type=ApiType.GOOGLE
+    )

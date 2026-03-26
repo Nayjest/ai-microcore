@@ -11,7 +11,7 @@ from openai.types import CompletionChoice, ImagesResponse
 from ..lm_client import BaseAIChatClient, BaseAsyncAIClient
 from ..message_types import TMsgContentPart, TMsgContent
 from ..configuration import Config
-from ..llm_backends import ApiPlatform
+from ..llm_backends import ApiType, ApiPlatform
 from .._prepare_llm_args import prepare_prompt
 from ..types import BadAIAnswer, TPrompt
 from ..wrappers.llm_response_wrapper import (
@@ -66,7 +66,7 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
                     hidden_output_begin=config.HIDDEN_OUTPUT_BEGIN,
                     hidden_output_end=config.HIDDEN_OUTPUT_END,
                 )
-            response_text = response.choices[0].message.content
+            response_text: str = response.choices[0].message.content or ""
             if config.hiding_output():
                 response_text = self.sync_client.remove_hidden_output(response_text)
             for cb in options["callbacks"]:
@@ -74,7 +74,12 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
                     await cb(response_text)
                 else:
                     cb(response_text)
-            return LLMResponse(response_text, response.__dict__)
+            return LLMResponse(
+                response_text,
+                response.__dict__,
+                response=response,
+                api_type=ApiType.OPENAI,
+            )
 
         response = await self.oai_client.completions.create(
             prompt=prepare_prompt(prompt), **args
@@ -84,7 +89,12 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
             return await _a_process_streamed_response(
                 response, options["callbacks"], chat_model_used=False
             )
-        return LLMResponse(response.choices[0].text, response.__dict__)
+        return LLMResponse(
+            response.choices[0].text,
+            response.__dict__,
+            response=response,
+            api_type=ApiType.OPENAI,
+        )
 
     async def load_models(self) -> dict:
         models_iter = self.oai_client.models.list()
@@ -198,7 +208,12 @@ class OpenAIClient(BaseAIChatClient):
             response_text = self.remove_hidden_output(response_text)
         for cb in options["callbacks"]:
             cb(response_text)
-        return LLMResponse(response_text, response.__dict__)
+        return LLMResponse(
+            response_text,
+            response.__dict__,
+            response=response,
+            api_type=ApiType.OPENAI,
+        )
 
 
 def image_to_oai(img: ImageInterface) -> dict:
@@ -251,7 +266,12 @@ async def _a_process_streamed_response(
                     await cb(text_chunk)
                 else:
                     cb(text_chunk)
-    return LLMResponse(response_text, {})
+    return LLMResponse(
+        response_text,
+        attrs=response.__dict__,
+        response=response,
+        api_type=ApiType.OPENAI
+    )
 
 
 def _process_streamed_response(
@@ -359,8 +379,15 @@ def _image_generation_response(
 ) -> ImageGenerationResponse | None:
     check_for_errors(response)
     images = _oai_image_response_to_images(response)
-    response_attrs = response.__dict__.copy()
-    result = make_image_generation_response(images, save, response_attrs)
+    result = make_image_generation_response(
+        images,
+        save,
+        {
+            **response.__dict__,
+            "api_type": ApiType.OPENAI,
+            "response": response,
+        }
+    )
     for cb in options["callbacks"]:
         cb(result)
     return result

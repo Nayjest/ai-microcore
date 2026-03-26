@@ -15,8 +15,9 @@ async def test_llm_mocked_parrot(setup):
     assert mc.llm("ok") == "completion:ok"
     assert mc.llm("ok", model="chat-llama") == "ok"
     assert await mc.allm("ok", model="gpt-4") == "ok"
-    assert await mc.allm("ok", model="gpt-3.5-instruct") == "completion:ok"
-
+    res = await mc.allm("ok", model="gpt-3.5-instruct")
+    assert res == "completion:ok"
+    assert res.response.choices[0]["text"] == "completion:ok"
 
 @pytest.mark.asyncio
 async def test_llm_no_streaming(setup):
@@ -26,8 +27,10 @@ async def test_llm_no_streaming(setup):
         nonlocal t
         t += text
 
-    mc.llm("ok", model="gpt-4", stream=False, callback=fn)
+    res = mc.llm("ok", model="gpt-4", stream=False, callback=fn)
     assert t == "ok"
+    assert res == "ok"
+    assert res.response
 
     def afn(text):
         nonlocal t
