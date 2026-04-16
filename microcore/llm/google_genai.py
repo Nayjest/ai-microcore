@@ -267,6 +267,9 @@ class _GenerationContext:
         if "extra_headers" in kwargs:  # OpenAI compatible extra headers injection
             extra_headers = kwargs.pop("extra_headers")
             inject_headers(extra_headers, kwargs)
+
+        kwargs.pop("stream_options", None)
+
         return _GenerationContext(
             model_name=model_name,
             save=kwargs.pop("save", True),
@@ -329,7 +332,7 @@ def _process_streamed_response(response, callbacks: list[callable]):
             [cb(text_chunk) for cb in callbacks]
     return LLMResponse(
         response_text,
-        response.__dict__.copy(),
+        vars(response) if hasattr(response, "__dict__") else {},
         response=response,
         api_type=ApiType.GOOGLE
     )
