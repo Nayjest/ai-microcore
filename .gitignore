@@ -2,6 +2,7 @@ __pycache__
 .idea
 .aico
 venv
+.venv
 .env
 .env.override
 *.env.test.*

@@ -310,9 +310,9 @@ def _convert_message_roles(messages: list[dict]):
     # GenAI chat roles are user | model (OpenAI: developer/tool/function → user).
     for m in messages:
         r = m.get("role")
-        if r in (Role.SYSTEM, "system", "developer", "function", Role.TOOL, "tool"):
+        if r in (Role.SYSTEM, "developer", "function", Role.TOOL):
             m["role"] = "user"
-        elif r in (Role.ASSISTANT, "assistant"):
+        elif r in (Role.ASSISTANT):
             m["role"] = "model"
     return messages
 
