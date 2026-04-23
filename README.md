@@ -91,6 +91,30 @@ pip install anthropic
 pip install google-genai
 ```
 
+#### Microsoft Azure OpenAI with Entra ID (no API key)
+
+Install ships with `azure-identity`. For `LLM_API_PLATFORM=azure` and Entra, set the usual Azure
+fields (`LLM_API_BASE`, `LLM_DEPLOYMENT_ID`, `LLM_API_VERSION`, `MODEL`, …) plus:
+
+| Variable | Role |
+|----------|------|
+| `LLM_AZURE_USE_ENTRA_ID` | Boolean env flag (same rules as other `dtype=bool` fields): parsed to `True`/`False` via `get_bool_from_env`; see `TRUE_VALUES` in [`microcore/configuration.py`](microcore/configuration.py). In `configure()` use Python `True` / `False`. |
+| `LLM_AZURE_ENTRA_CREDENTIAL` | `default` (DefaultAzureCredential) or `managed_identity` (ManagedIdentityCredential). |
+| `LLM_AZURE_ENTRA_SCOPE` | OAuth scope for the token. Defaults to `https://ai.azure.com/.default` (typical for Azure AI Foundry). Classic `*.openai.azure.com` resources often need `https://cognitiveservices.azure.com/.default`. |
+
+User-assigned managed identity: set `AZURE_CLIENT_ID` to the identity’s client id (standard Azure
+SDK variable) when using `LLM_AZURE_ENTRA_CREDENTIAL=managed_identity`.
+
+These variables follow the same **priority** as the rest of MicroCore: arguments to `configure()`
+override `.env`, which overrides bare process environment.
+
+Inference with Entra requires **RBAC on the AI resource** (for example **Cognitive Services User**
+at resource scope; for some deployments **Cognitive Services OpenAI User** applies).
+Owner/Contributor does not substitute for these roles. Role assignments can take several minutes
+to propagate.
+
+Microsoft guide: [Configure Microsoft Entra ID for Azure AI Foundry models](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/configure-entra-id?tabs=python&pivots=ai-foundry-portal).
+
 #### Local language models via Hugging Face Transformers
 
 You will need to install transformers and a deep learning library of your choice

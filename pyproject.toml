@@ -47,6 +47,7 @@ dependencies = [
     "docstring_parser~=0.16.0",
     "httpx~=0.28.1",
     "pydantic~=2.12.5",
+    "azure-identity>=1.17.0,<2",
 ]
 requires-python = ">=3.10"
 

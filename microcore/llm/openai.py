@@ -3,9 +3,15 @@ OpenAI LLM client implementation.
 """
 import asyncio
 import base64
+import os
 from typing import Any
 
 import openai
+from azure.identity import (
+    DefaultAzureCredential,
+    ManagedIdentityCredential,
+    get_bearer_token_provider,
+)
 from openai.types import CompletionChoice, ImagesResponse
 
 from ..lm_client import BaseAIChatClient, BaseAsyncAIClient
@@ -111,12 +117,30 @@ class OpenAIClient(BaseAIChatClient):
         if config.LLM_API_PLATFORM == ApiPlatform.AZURE:
             client_type = openai.AzureOpenAI
             async_client_type = openai.AsyncAzureOpenAI
-            client_params = {
-                "api_key": config.LLM_API_KEY,
-                "azure_endpoint": config.LLM_API_BASE,
-                "api_version": config.LLM_API_VERSION,
-                **config.INIT_PARAMS,
-            }
+            if config.LLM_AZURE_USE_ENTRA_ID:
+                mode = (config.LLM_AZURE_ENTRA_CREDENTIAL or "default").strip().lower()
+                if mode == "managed_identity":
+                    entra_credential = ManagedIdentityCredential(
+                        client_id=os.environ.get("AZURE_CLIENT_ID") or None
+                    )
+                else:
+                    entra_credential = DefaultAzureCredential()
+                token_provider = get_bearer_token_provider(
+                    entra_credential, config.LLM_AZURE_ENTRA_SCOPE
+                )
+                client_params = {
+                    "azure_endpoint": config.LLM_API_BASE,
+                    "api_version": config.LLM_API_VERSION,
+                    "azure_ad_token_provider": token_provider,
+                    **config.INIT_PARAMS,
+                }
+            else:
+                client_params = {
+                    "api_key": config.LLM_API_KEY,
+                    "azure_endpoint": config.LLM_API_BASE,
+                    "api_version": config.LLM_API_VERSION,
+                    **config.INIT_PARAMS,
+                }
         else:
             client_type = openai.OpenAI
             async_client_type = openai.AsyncOpenAI

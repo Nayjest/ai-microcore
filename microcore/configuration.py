@@ -209,6 +209,40 @@ class LLMConfig(
 
     AZURE_DEPLOYMENT_ID: str = from_env()
 
+    LLM_AZURE_USE_ENTRA_ID: bool = from_env(default=False, dtype=bool)
+    """
+    Use Microsoft Entra ID (Managed Identity / DefaultAzureCredential) instead of
+    ``LLM_API_KEY`` for Azure OpenAI and Foundry inference. Requires RBAC on the
+    resource (typically **Cognitive Services User**; classic Azure OpenAI may use
+    **Cognitive Services OpenAI User** — assign per Microsoft guidance for your resource type).
+
+    Read like other ``LLM_*`` fields: ``configure()`` / ``.env`` / process environment, using the
+    usual priority (see README). From the environment the value is parsed to ``bool`` with
+    ``get_bool_from_env`` (truthy strings are those in ``TRUE_VALUES`` in this module).
+    """
+
+    LLM_AZURE_ENTRA_SCOPE: str = from_env(default="https://ai.azure.com/.default")
+    """
+    OAuth scope for the access token when using ``get_bearer_token_provider``.
+
+    * **Azure AI Foundry** (portal / ``ai.azure.com`` flows): typically
+      ``https://ai.azure.com/.default`` (this default when unset).
+    * **Classic Azure OpenAI** (resource ``*.openai.azure.com``): Microsoft often documents
+      ``https://cognitiveservices.azure.com/.default`` — set ``LLM_AZURE_ENTRA_SCOPE`` if the
+      default token is rejected.
+
+    Same configuration priority as other ``LLM_*`` options.
+    """
+
+    LLM_AZURE_ENTRA_CREDENTIAL: str = from_env(default="default")
+    """
+    ``default`` — :class:`~azure.identity.DefaultAzureCredential`;
+    ``managed_identity`` — :class:`~azure.identity.ManagedIdentityCredential`
+    (set ``AZURE_CLIENT_ID`` for a user-assigned identity).
+
+    Same configuration priority as other ``LLM_*`` options.
+    """
+
     INFERENCE_FUNC: Union[Callable, str] = from_env()
     """Inference function for local models"""
     CHAT_MODE: bool = from_env(dtype=bool)
@@ -309,6 +343,8 @@ class LLMConfig(
         if self.LLM_API_PLATFORM == ApiPlatform.AZURE:
             self.LLM_API_VERSION = self.LLM_API_VERSION or self.OPENAI_API_VERSION
             self.LLM_DEPLOYMENT_ID = self.LLM_DEPLOYMENT_ID or self.AZURE_DEPLOYMENT_ID
+            if self.LLM_AZURE_USE_ENTRA_ID and not (self.LLM_AZURE_ENTRA_SCOPE or "").strip():
+                self.LLM_AZURE_ENTRA_SCOPE = "https://ai.azure.com/.default"
 
         elif self.LLM_API_TYPE == ApiType.ANTHROPIC:
             self.LLM_API_KEY = self.LLM_API_KEY or self.ANTHROPIC_API_KEY
@@ -378,8 +414,15 @@ class LLMConfig(
                     raise LLMApiDeploymentIdError()
                 if not self.LLM_API_VERSION:
                     raise LLMApiVersionError()
-
-            if not self.LLM_API_KEY:
+                if self.LLM_AZURE_USE_ENTRA_ID:
+                    cred = (self.LLM_AZURE_ENTRA_CREDENTIAL or "default").strip().lower()
+                    if cred not in ("default", "managed_identity"):
+                        raise LLMConfigError(
+                            "LLM_AZURE_ENTRA_CREDENTIAL must be 'default' or 'managed_identity'"
+                        )
+                elif not self.LLM_API_KEY:
+                    raise LLMApiKeyError()
+            elif not self.LLM_API_KEY:
                 raise LLMApiKeyError()
 
     def validate(self):
