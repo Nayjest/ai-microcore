@@ -135,8 +135,13 @@ class GoogleClient(BaseAIChatClient):
         return _convert_message_roles(messages)
 
     def _convert_message(self, message: dict) -> dict | Any:
-        message["parts"] = self._convert_message_content(message.pop("content"))
-        return message
+        # OpenAI-shaped messages (lm-proxy / ChatBox): only role + parts are valid for GenAI.
+        role = message.get("role") or "user"
+        content = message.pop("content", None)
+        if content is None:
+            content = ""
+        parts = super()._convert_message_content(content)
+        return {"role": role, "parts": parts}
 
     def _convert_message_content_part(
         self,
@@ -152,6 +157,14 @@ class GoogleClient(BaseAIChatClient):
             return types.Part.from_bytes(data=img.get_bytes(), mime_type=img.mime_type())
         if isinstance(content_part, str):
             return types.Part(text=content_part)
+        if isinstance(content_part, dict):
+            # OpenAI: {"type":"text","text":"..."}; GenAI Part has no "type".
+            t = content_part.get("type")
+            text = content_part.get("text")
+            if text is None and isinstance(content_part.get("content"), str):
+                text = content_part["content"]
+            if t == "text" or (t is None and (text is not None or "text" in content_part)):
+                return types.Part(text="" if text is None else str(text))
         return content_part
 
     def generate(
@@ -294,15 +307,13 @@ def _google_image_response_to_images(response: genai.types.GenerateContentRespon
 
 
 def _convert_message_roles(messages: list[dict]):
-    """
-    Convert roles to Google Vertex roles
-    (system,user,assistant) -> (user, model).
-    """
-    for msg in messages:
-        if msg["role"] == Role.SYSTEM:
-            msg["role"] = "user"
-        elif msg["role"] == Role.ASSISTANT:
-            msg["role"] = "model"
+    # GenAI chat roles are user | model (OpenAI: developer/tool/function → user).
+    for m in messages:
+        r = m.get("role")
+        if r in (Role.SYSTEM, "developer", "function", Role.TOOL):
+            m["role"] = "user"
+        elif r == Role.ASSISTANT:
+            m["role"] = "model"
     return messages
 
 
