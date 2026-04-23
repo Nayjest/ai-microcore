@@ -312,7 +312,7 @@ def _convert_message_roles(messages: list[dict]):
         r = m.get("role")
         if r in (Role.SYSTEM, "developer", "function", Role.TOOL):
             m["role"] = "user"
-        elif r in (Role.ASSISTANT):
+        elif r == Role.ASSISTANT:
             m["role"] = "model"
     return messages
 
