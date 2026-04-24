@@ -93,7 +93,7 @@ pip install google-genai
 
 #### Microsoft Azure OpenAI with Entra ID (no API key)
 
-Install ships with `azure-identity`. For `LLM_API_PLATFORM=azure` and Entra, set the usual Azure
+Install the optional extra `pip install 'ai-microcore[azure]'` (adds `azure-identity`). For `LLM_API_PLATFORM=azure` and Entra, set the usual Azure
 fields (`LLM_API_BASE`, `LLM_DEPLOYMENT_ID`, `LLM_API_VERSION`, `MODEL`, …) plus:
 
 | Variable | Role |

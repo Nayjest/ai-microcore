@@ -7,16 +7,11 @@ import os
 from typing import Any
 
 import openai
-from azure.identity import (
-    DefaultAzureCredential,
-    ManagedIdentityCredential,
-    get_bearer_token_provider,
-)
 from openai.types import CompletionChoice, ImagesResponse
 
 from ..lm_client import BaseAIChatClient, BaseAsyncAIClient
 from ..message_types import TMsgContentPart, TMsgContent
-from ..configuration import Config
+from ..configuration import Config, LLMConfigError
 from ..llm_backends import ApiType, ApiPlatform
 from .._prepare_llm_args import prepare_prompt
 from ..types import BadAIAnswer, TPrompt
@@ -118,6 +113,17 @@ class OpenAIClient(BaseAIChatClient):
             client_type = openai.AzureOpenAI
             async_client_type = openai.AsyncAzureOpenAI
             if config.LLM_AZURE_USE_ENTRA_ID:
+                try:
+                    from azure.identity import (
+                        DefaultAzureCredential,
+                        ManagedIdentityCredential,
+                        get_bearer_token_provider,
+                    )
+                except ModuleNotFoundError as e:
+                    raise LLMConfigError(
+                        "Azure Entra ID requires the azure-identity package. "
+                        "Install with: pip install 'ai-microcore[azure]'"
+                    ) from e
                 mode = (config.LLM_AZURE_ENTRA_CREDENTIAL or "default").strip().lower()
                 if mode == "managed_identity":
                     entra_credential = ManagedIdentityCredential(
