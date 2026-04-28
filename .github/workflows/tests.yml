@@ -15,9 +15,11 @@ on:
 
 jobs:
   build:
-    if: github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip ci]')
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      IS_MAIN_PUSH: ${{ matrix.python-version == '3.11' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     strategy:
       fail-fast: false
       matrix:
@@ -44,21 +46,12 @@ jobs:
         pip install genbadge[coverage]
         genbadge coverage -i coverage.xml -o coverage.svg
     - name: Validate coverage badge output
-      if: matrix.python-version == '3.11' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: env.IS_MAIN_PUSH == 'true'
       run: |
-        python3 <<'PY'
-        import os, sys
-        p = "coverage.svg"
-        if not os.path.isfile(p):
-            sys.exit("coverage.svg missing")
-        n = os.path.getsize(p)
-        if n < 120:
-            sys.exit(f"coverage.svg too small ({n} bytes), genbadge likely failed silently")
-        with open(p, "rb") as f:
-            head = f.read(4096)
-        if b"<svg" not in head.lower():
-            sys.exit("coverage.svg does not start with an SVG document")
-        PY
+        f=coverage.svg
+        s=$(wc -c < "$f" 2>/dev/null) || s=0
+        [ "$s" -ge 120 ] || { echo "$f missing or too small ($s B)"; exit 1; }
+        head -c 4096 "$f" | grep -qiF '<svg' || { echo "$f: not an SVG"; exit 1; }
     - name: Upload coverage badge artifact
       if: success() && matrix.python-version == '3.11' && github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: actions/upload-artifact@v4
