@@ -15,7 +15,7 @@ on:
 
 jobs:
   build:
-    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    if: github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip ci]')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -80,23 +80,22 @@ jobs:
     permissions:
       contents: write
     steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: coverage-badge
+        fetch-depth: 1
+        token: ${{ secrets.GITHUB_TOKEN }}
+        # persist-credentials intentionally true (default) — git push relies on it
     - uses: actions/download-artifact@v4
       with:
         name: coverage-badge
         path: badge
     - name: Push coverage.svg to orphan branch coverage-badge
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         set -e
-        gh auth setup-git
-        mkdir -p /tmp/coverage-badge-publish
-        cd /tmp/coverage-badge-publish
-        git init
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config user.name "github-actions[bot]"
-        cp "${GITHUB_WORKSPACE}/badge/coverage.svg" .
+        cp badge/coverage.svg coverage.svg
         git add coverage.svg
-        git commit -m "Update coverage badge [skip ci]"
-        git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
-        git push -f origin HEAD:coverage-badge
+        git diff --cached --quiet || git commit -m "Update coverage badge [skip ci]"
+        git push origin coverage-badge
