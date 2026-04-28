@@ -18,6 +18,8 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      IS_MAIN_PUSH: ${{ matrix.python-version == '3.11' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     strategy:
       fail-fast: false
       matrix:
@@ -39,28 +41,19 @@ jobs:
       run: |
         pytest --cov=microcore --cov-report=xml
     - name: Generate coverage badge
-      if: matrix.python-version == '3.11' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: env.IS_MAIN_PUSH == 'true'
       run: |
         pip install genbadge[coverage]
         genbadge coverage -i coverage.xml -o coverage.svg
     - name: Validate coverage badge output
-      if: matrix.python-version == '3.11' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: env.IS_MAIN_PUSH == 'true'
       run: |
-        python3 <<'PY'
-        import os, sys
-        p = "coverage.svg"
-        if not os.path.isfile(p):
-            sys.exit("coverage.svg missing")
-        n = os.path.getsize(p)
-        if n < 120:
-            sys.exit(f"coverage.svg too small ({n} bytes), genbadge likely failed silently")
-        with open(p, "rb") as f:
-            head = f.read(4096)
-        if b"<svg" not in head.lower():
-            sys.exit("coverage.svg does not start with an SVG document")
-        PY
+        f=coverage.svg
+        s=$(wc -c < "$f" 2>/dev/null) || s=0
+        [ "$s" -ge 120 ] || { echo "$f missing or too small ($s B)"; exit 1; }
+        head -c 4096 "$f" | grep -qiF '<svg' || { echo "$f: not an SVG"; exit 1; }
     - name: Upload coverage badge artifact
-      if: success() && matrix.python-version == '3.11' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: success() && env.IS_MAIN_PUSH == 'true'
       uses: actions/upload-artifact@v4
       with:
         name: coverage-badge
@@ -80,23 +73,22 @@ jobs:
     permissions:
       contents: write
     steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: coverage-badge
+        fetch-depth: 1
+        token: ${{ secrets.GITHUB_TOKEN }}
+        # persist-credentials intentionally true (default) — git push relies on it
     - uses: actions/download-artifact@v4
       with:
         name: coverage-badge
         path: badge
     - name: Push coverage.svg to orphan branch coverage-badge
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         set -e
-        gh auth setup-git
-        mkdir -p /tmp/coverage-badge-publish
-        cd /tmp/coverage-badge-publish
-        git init
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config user.name "github-actions[bot]"
-        cp "${GITHUB_WORKSPACE}/badge/coverage.svg" .
+        cp badge/coverage.svg coverage.svg
         git add coverage.svg
-        git commit -m "Update coverage badge [skip ci]"
-        git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
-        git push -f origin HEAD:coverage-badge
+        git diff --cached --quiet || git commit -m "Update coverage badge [skip ci]"
+        git push origin coverage-badge
