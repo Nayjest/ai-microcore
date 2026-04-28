@@ -41,7 +41,7 @@ jobs:
       run: |
         pytest --cov=microcore --cov-report=xml
     - name: Generate coverage badge
-      if: matrix.python-version == '3.11' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: env.IS_MAIN_PUSH == 'true'
       run: |
         pip install genbadge[coverage]
         genbadge coverage -i coverage.xml -o coverage.svg
@@ -53,7 +53,7 @@ jobs:
         [ "$s" -ge 120 ] || { echo "$f missing or too small ($s B)"; exit 1; }
         head -c 4096 "$f" | grep -qiF '<svg' || { echo "$f: not an SVG"; exit 1; }
     - name: Upload coverage badge artifact
-      if: success() && matrix.python-version == '3.11' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: success() && env.IS_MAIN_PUSH == 'true'
       uses: actions/upload-artifact@v4
       with:
         name: coverage-badge
