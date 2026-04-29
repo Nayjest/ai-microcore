@@ -228,10 +228,11 @@ def _build_azure_entra_token_provider(config: Config) -> Callable[[], str]:
     """
     Build an ``azure_ad_token_provider`` callable from ``LLMConfig`` fields.
 
-    Credentials are derived solely from ``LLM_AZURE_*`` config values — OS
-    environment variables, Azure CLI cache and Azure SDK auto-discovery are not
-    consulted (with the documented exception of ``DefaultAzureCredential``, which
-    remains available only for local development convenience).
+    When ``LLM_AZURE_ENTRA_CREDENTIAL`` is ``"client_secret"``, credentials are
+    derived solely from ``LLM_AZURE_*`` config values. When set to ``"default"``,
+    :class:`~azure.identity.DefaultAzureCredential` is used, which consults OS
+    environment variables, Azure CLI cache, and other Azure SDK auto-discovery
+    mechanisms.
     """
     try:
         from azure.identity import (

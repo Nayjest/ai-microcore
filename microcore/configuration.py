@@ -242,19 +242,18 @@ class LLMConfig(
 
     LLM_AZURE_ENTRA_CREDENTIAL: str = from_env(default="default")
     """
-    Credential mode used to obtain an Entra ID access token. All required
-    parameters for the selected mode must be passed via ``LLM_AZURE_*`` config
-    fields — the implementation does not read them from OS environment, the
-    Azure CLI cache, IDE state, or any other auto-discovery source.
+    Credential mode used to obtain an Entra ID access token.
 
     Supported values:
 
     * ``default`` — :class:`~azure.identity.DefaultAzureCredential`. Convenient
-      for local development with ``az login`` / IDE credentials but **does**
-      consult OS env / dev tools. Not recommended for production.
+      for local development with ``az login`` / IDE credentials. This mode
+      consults OS environment variables, Azure CLI cache, and other Azure SDK
+      auto-discovery mechanisms. Not recommended for production.
     * ``client_secret`` — :class:`~azure.identity.ClientSecretCredential`.
       Requires ``LLM_AZURE_TENANT_ID``, ``LLM_AZURE_CLIENT_ID``,
-      ``LLM_AZURE_CLIENT_SECRET``.
+      ``LLM_AZURE_CLIENT_SECRET``. This mode is configured entirely by
+      ``LLM_AZURE_*`` fields.
 
     Same configuration priority as other ``LLM_*`` options.
     """
