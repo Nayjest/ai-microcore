@@ -93,20 +93,52 @@ pip install google-genai
 
 #### Microsoft Azure OpenAI with Entra ID (no API key)
 
-Install the optional extra `pip install 'ai-microcore[azure]'` (adds `azure-identity`). For `LLM_API_PLATFORM=azure` and Entra, set the usual Azure
-fields (`LLM_API_BASE`, `LLM_DEPLOYMENT_ID`, `LLM_API_VERSION`, `MODEL`, …) plus:
+Install the optional extra `pip install 'ai-microcore[azure]'` (adds `azure-identity`).
+For `LLM_API_PLATFORM=azure` with Entra, set the usual Azure fields
+(`LLM_API_BASE`, `LLM_DEPLOYMENT_ID`, `LLM_API_VERSION`, `MODEL`, …) and pick a
+credential mode via `LLM_AZURE_ENTRA_CREDENTIAL`. **All credential parameters
+are read from `LLM_AZURE_*` config fields** — MicroCore does not consult OS env,
+the `az login` cache, IDE state or any other Azure SDK auto-discovery for them.
+That makes the library safe to drive from secrets stored in a database / vault.
+
+Common variables:
 
 | Variable | Role |
 |----------|------|
-| `LLM_AZURE_USE_ENTRA_ID` | Boolean env flag (same rules as other `dtype=bool` fields): parsed to `True`/`False` via `get_bool_from_env`; see `TRUE_VALUES` in [`microcore/configuration.py`](microcore/configuration.py). In `configure()` use Python `True` / `False`. |
-| `LLM_AZURE_ENTRA_CREDENTIAL` | `default` (DefaultAzureCredential) or `managed_identity` (ManagedIdentityCredential). |
-| `LLM_AZURE_ENTRA_SCOPE` | OAuth scope for the token. Defaults to `https://ai.azure.com/.default` (typical for Azure AI Foundry). Classic `*.openai.azure.com` resources often need `https://cognitiveservices.azure.com/.default`. |
+| `LLM_AZURE_USE_ENTRA_ID` | Boolean: enable Entra-based authentication. Parsed via `get_bool_from_env` (see `TRUE_VALUES` in [`microcore/configuration.py`](microcore/configuration.py)); pass Python `True`/`False` to `configure()`. |
+| `LLM_AZURE_ENTRA_CREDENTIAL` | `default` \| `client_secret` (temporary supported set). |
+| `LLM_AZURE_ENTRA_SCOPE` | OAuth scope. Defaults to `https://ai.azure.com/.default` (Azure AI Foundry). Classic `*.openai.azure.com` resources often need `https://cognitiveservices.azure.com/.default`. |
 
-User-assigned managed identity: set `AZURE_CLIENT_ID` to the identity’s client id (standard Azure
-SDK variable) when using `LLM_AZURE_ENTRA_CREDENTIAL=managed_identity`.
+
+Per-mode parameters:
+
+| Mode | Underlying class | Required `LLM_AZURE_*` fields |
+|------|------------------|-------------------------------|
+| `default` | `DefaultAzureCredential` | none — convenient for **local dev with `az login`**; not recommended for production (consults env/IDE/CLI). |
+| `client_secret` | `ClientSecretCredential` | `TENANT_ID`, `CLIENT_ID`, `CLIENT_SECRET`. |
 
 These variables follow the same **priority** as the rest of MicroCore: arguments to `configure()`
 override `.env`, which overrides bare process environment.
+
+Example - Service Principal credentials loaded from your database:
+
+```python
+import microcore as mc
+
+mc.configure(
+    LLM_API_PLATFORM=mc.ApiPlatform.AZURE,
+    LLM_API_BASE="https://<resource>.openai.azure.com",
+    LLM_API_VERSION="2024-02-15-preview",
+    LLM_DEPLOYMENT_ID=row["deployment"],
+    MODEL=row["deployment"],
+    LLM_AZURE_USE_ENTRA_ID=True,
+    LLM_AZURE_ENTRA_CREDENTIAL="client_secret",
+    LLM_AZURE_TENANT_ID=row["tenant_id"],
+    LLM_AZURE_CLIENT_ID=row["client_id"],
+    LLM_AZURE_CLIENT_SECRET=row["client_secret"],
+)
+print(mc.llm("Reply with exactly: OK"))
+```
 
 Inference with Entra requires **RBAC on the AI resource** (for example **Cognitive Services User**
 at resource scope; for some deployments **Cognitive Services OpenAI User** applies).

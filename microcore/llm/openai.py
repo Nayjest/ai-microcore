@@ -3,8 +3,7 @@ OpenAI LLM client implementation.
 """
 import asyncio
 import base64
-import os
-from typing import Any
+from typing import Any, Callable
 
 import openai
 from openai.types import CompletionChoice, ImagesResponse
@@ -113,31 +112,10 @@ class OpenAIClient(BaseAIChatClient):
             client_type = openai.AzureOpenAI
             async_client_type = openai.AsyncAzureOpenAI
             if config.LLM_AZURE_USE_ENTRA_ID:
-                try:
-                    from azure.identity import (
-                        DefaultAzureCredential,
-                        ManagedIdentityCredential,
-                        get_bearer_token_provider,
-                    )
-                except ModuleNotFoundError as e:
-                    raise LLMConfigError(
-                        "Azure Entra ID requires the azure-identity package. "
-                        "Install with: pip install 'ai-microcore[azure]'"
-                    ) from e
-                mode = (config.LLM_AZURE_ENTRA_CREDENTIAL or "default").strip().lower()
-                if mode == "managed_identity":
-                    entra_credential = ManagedIdentityCredential(
-                        client_id=os.environ.get("AZURE_CLIENT_ID") or None
-                    )
-                else:
-                    entra_credential = DefaultAzureCredential()
-                token_provider = get_bearer_token_provider(
-                    entra_credential, config.LLM_AZURE_ENTRA_SCOPE
-                )
                 client_params = {
                     "azure_endpoint": config.LLM_API_BASE,
                     "api_version": config.LLM_API_VERSION,
-                    "azure_ad_token_provider": token_provider,
+                    "azure_ad_token_provider": _build_azure_entra_token_provider(config),
                     **config.INIT_PARAMS,
                 }
             else:
@@ -244,6 +222,47 @@ class OpenAIClient(BaseAIChatClient):
             response=response,
             api_type=ApiType.OPENAI,
         )
+
+
+def _build_azure_entra_token_provider(config: Config) -> Callable[[], str]:
+    """
+    Build an ``azure_ad_token_provider`` callable from ``LLMConfig`` fields.
+
+    Credentials are derived solely from ``LLM_AZURE_*`` config values — OS
+    environment variables, Azure CLI cache and Azure SDK auto-discovery are not
+    consulted (with the documented exception of ``DefaultAzureCredential``, which
+    remains available only for local development convenience).
+    """
+    try:
+        from azure.identity import (
+            DefaultAzureCredential,
+            ClientSecretCredential,
+            get_bearer_token_provider,
+        )
+    except ModuleNotFoundError as e:
+        raise LLMConfigError(
+            "Azure Entra ID requires the azure-identity package. "
+            "Install with: pip install 'ai-microcore[azure]'"
+        ) from e
+
+    mode = (config.LLM_AZURE_ENTRA_CREDENTIAL or "default").strip().lower()
+    common: dict[str, Any] = {}
+
+    if mode == "default":
+        cred = DefaultAzureCredential()
+    elif mode == "client_secret":
+        cred = ClientSecretCredential(
+            tenant_id=config.LLM_AZURE_TENANT_ID,
+            client_id=config.LLM_AZURE_CLIENT_ID,
+            client_secret=config.LLM_AZURE_CLIENT_SECRET,
+            **common,
+        )
+    else:
+        raise LLMConfigError(
+            f"Unknown LLM_AZURE_ENTRA_CREDENTIAL: {mode!r}. "
+            "Supported modes: 'default', 'client_secret'"
+        )
+    return get_bearer_token_provider(cred, config.LLM_AZURE_ENTRA_SCOPE)
 
 
 def image_to_oai(img: ImageInterface) -> dict:

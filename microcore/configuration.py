@@ -31,6 +31,12 @@ PRINT_STREAM = "print_stream"
 
 DEFAULT_LOCAL_ENV_FILE = ".env"
 
+AZURE_ENTRA_CREDENTIAL_MODES = (
+    "default",
+    "client_secret",
+)
+"""Supported values for ``LLM_AZURE_ENTRA_CREDENTIAL``."""
+
 
 def from_env(default=None, dtype=None):
     """
@@ -236,12 +242,34 @@ class LLMConfig(
 
     LLM_AZURE_ENTRA_CREDENTIAL: str = from_env(default="default")
     """
-    ``default`` — :class:`~azure.identity.DefaultAzureCredential`;
-    ``managed_identity`` — :class:`~azure.identity.ManagedIdentityCredential`
-    (set ``AZURE_CLIENT_ID`` for a user-assigned identity).
+    Credential mode used to obtain an Entra ID access token. All required
+    parameters for the selected mode must be passed via ``LLM_AZURE_*`` config
+    fields — the implementation does not read them from OS environment, the
+    Azure CLI cache, IDE state, or any other auto-discovery source.
+
+    Supported values:
+
+    * ``default`` — :class:`~azure.identity.DefaultAzureCredential`. Convenient
+      for local development with ``az login`` / IDE credentials but **does**
+      consult OS env / dev tools. Not recommended for production.
+    * ``client_secret`` — :class:`~azure.identity.ClientSecretCredential`.
+      Requires ``LLM_AZURE_TENANT_ID``, ``LLM_AZURE_CLIENT_ID``,
+      ``LLM_AZURE_CLIENT_SECRET``.
 
     Same configuration priority as other ``LLM_*`` options.
     """
+
+    LLM_AZURE_TENANT_ID: str = from_env(default="")
+    """Microsoft Entra ID tenant for Service Principal (`client_secret`) flow."""
+
+    LLM_AZURE_CLIENT_ID: str = from_env(default="")
+    """
+    Application (client) id for Service Principal (`client_secret`) flow.
+    """
+
+    LLM_AZURE_CLIENT_SECRET: str = from_env(default="")
+    """Client secret for ``LLM_AZURE_ENTRA_CREDENTIAL=client_secret``."""
+
 
     INFERENCE_FUNC: Union[Callable, str] = from_env()
     """Inference function for local models"""
@@ -415,15 +443,32 @@ class LLMConfig(
                 if not self.LLM_API_VERSION:
                     raise LLMApiVersionError()
                 if self.LLM_AZURE_USE_ENTRA_ID:
-                    cred = (self.LLM_AZURE_ENTRA_CREDENTIAL or "default").strip().lower()
-                    if cred not in ("default", "managed_identity"):
-                        raise LLMConfigError(
-                            "LLM_AZURE_ENTRA_CREDENTIAL must be 'default' or 'managed_identity'"
-                        )
+                    self._validate_entra_credential_mode()
                 elif not self.LLM_API_KEY:
                     raise LLMApiKeyError()
             elif not self.LLM_API_KEY:
                 raise LLMApiKeyError()
+
+    def _validate_entra_credential_mode(self):
+        """Validate ``LLM_AZURE_*`` fields required by the selected Entra mode."""
+        mode = (self.LLM_AZURE_ENTRA_CREDENTIAL or "default").strip().lower()
+        if mode not in AZURE_ENTRA_CREDENTIAL_MODES:
+            raise LLMConfigError(
+                "LLM_AZURE_ENTRA_CREDENTIAL must be one of: "
+                + ", ".join(repr(m) for m in AZURE_ENTRA_CREDENTIAL_MODES)
+            )
+
+        def _require(field_name: str):
+            if not (getattr(self, field_name) or "").strip():
+                raise LLMConfigError(
+                    f"{field_name} is required when "
+                    f"LLM_AZURE_ENTRA_CREDENTIAL='{mode}'"
+                )
+
+        if mode == "client_secret":
+            _require("LLM_AZURE_TENANT_ID")
+            _require("LLM_AZURE_CLIENT_ID")
+            _require("LLM_AZURE_CLIENT_SECRET")
 
     def validate(self):
         """
@@ -482,11 +527,19 @@ class LLMConfig(
             for k, v in dict(self).items()
             if v is not None and v != getattr(default, k) and k != "USE_DOT_ENV"
         }
+        sensitive_markers = (
+            "_key",
+            "_secret",
+            "_password",
+        )
         for k, v in data.items():
-            if "_key" in k and isinstance(v, str):
+            if not isinstance(v, str) or not v:
+                continue
+            if any(marker in k for marker in sensitive_markers):
                 if len(v) <= 3:
-                    continue
-                data[k] = v[: 1 if len(v) <= 12 else 3] + "****" + v[-2:]
+                    data[k] = "***"
+                else:
+                    data[k] = v[: 1 if len(v) <= 12 else 3] + "****" + v[-2:]
         if return_dict:
             return data
 
