@@ -486,7 +486,10 @@ class CantResolveCallable(ValueError):
 def _load_callable(fn_path: str) -> callable:
     try:
         if "." not in fn_path:
-            fn = globals()[fn_path]
+            if fn_path in globals():
+                fn = globals()[fn_path]
+            else:
+                raise CantResolveCallable(f"Function '{fn_path}' not found in global scope")
         else:
             parts = fn_path.split(".")
             # Try resolve as *module.ClassName.static_method if 1st character is upper-cased
