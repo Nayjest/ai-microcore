@@ -476,20 +476,53 @@ class CantResolveCallable(ValueError):
     """
     Raised when a callable cannot be resolved by name.
     """
-    def __init__(self, message: str = None, name: str = None, e: Exception = None):
-        message = message or f"Can't resolve callable by name '{name}'{', ' + str(e) if e else ''}"
-        super().__init__(message)
+    def __init__(self, message: str = None, name: str = None, cause: Exception = None):
+        super().__init__(
+            message
+            or f"Can't resolve callable by name '{name}'{', ' + str(cause) if cause else ''}"
+        )
         self.name = name
+
+
+def resolve_callable(
+    fn: Union[Callable, str, None], allow_empty=False
+) -> Union[Callable, None]:
+    """
+    Resolves a callable function from a string.
+    Supported formats:
+      - module[.submodules].function
+      - module[.submodules].ClassName.static_method
+      - built-in function name (e.g., "len", "print")
+      - function name in microcore.utils module
+    """
+    if callable(fn):
+        return fn
+    if not fn:
+        if allow_empty:
+            return None
+        raise CantResolveCallable("Can't resolve callable: function is not specified")
+    if isinstance(fn, str):
+        if "." not in fn:
+            if fn in globals():  # globals of microcore.utils
+                return globals()[fn]
+            elif hasattr(builtins, fn):
+                fn = getattr(builtins, fn)
+            else:
+                raise CantResolveCallable(name=fn)
+        return _load_callable(fn)
+    raise CantResolveCallable(f"Can't resolve callable: expected a string, got {type(fn)}")
 
 
 @lru_cache
 def _load_callable(fn_path: str) -> callable:
     try:
         if "." not in fn_path:
-            if fn_path in globals():
+            if fn_path in globals():  # globals of microcore.utils
                 fn = globals()[fn_path]
+            elif hasattr(builtins, fn_path):
+                fn = getattr(builtins, fn_path)
             else:
-                raise CantResolveCallable(f"Function '{fn_path}' not found in global scope")
+                raise CantResolveCallable(name=fn_path)
         else:
             parts = fn_path.split(".")
             # Try resolve as *module.ClassName.static_method if 1st character is upper-cased
@@ -512,26 +545,8 @@ def _load_callable(fn_path: str) -> callable:
             fn = getattr(module, func_name)
         assert callable(fn)
     except (ImportError, AttributeError, AssertionError, ValueError) as e:
-        raise CantResolveCallable(name=fn_path, e=e) from e
+        raise CantResolveCallable(name=fn_path, cause=e) from e
     return fn
-
-
-def resolve_callable(
-    fn: Union[Callable, str, None], allow_empty=False
-) -> Union[Callable, None]:
-    """
-    Resolves a callable function from a string.
-    Supported formats:
-      - module[.submodules].function
-      - module[.submodules].ClassName.static_method
-    """
-    if callable(fn):
-        return fn
-    if not fn:
-        if allow_empty:
-            return None
-        raise CantResolveCallable("Can't resolve callable: function is not specified")
-    return _load_callable(fn)
 
 
 def levenshtein(a: str, b: str) -> int:
