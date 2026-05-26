@@ -506,7 +506,7 @@ def resolve_callable(
             if fn in globals():  # globals of microcore.utils
                 return globals()[fn]
             elif hasattr(builtins, fn):
-                fn = getattr(builtins, fn)
+                return getattr(builtins, fn)
             raise CantResolveCallable(name=fn)
         return _load_callable(fn)
     raise CantResolveCallable(f"Can't resolve callable: expected a string, got {type(fn)}")
