@@ -516,36 +516,29 @@ def resolve_callable(
 @lru_cache
 def _load_callable(fn_path: str) -> callable:
     try:
-        if "." not in fn_path:
-            if fn_path in globals():  # globals of microcore.utils
-                fn = globals()[fn_path]
-            elif hasattr(builtins, fn_path):
-                fn = getattr(builtins, fn_path)
-            else:
-                raise CantResolveCallable(name=fn_path)
-        else:
-            parts = fn_path.split(".")
-            # Try resolve as *module.ClassName.static_method if 1st character is upper-cased
-            if len(parts) >= 3 and len(parts[-2]) and parts[-2][0].isupper():
-                module_name = ".".join(parts[:-2])
-                class_name = parts[-2]
-                try:
-                    module = __import__(module_name, fromlist=[class_name])
-                    cls = getattr(module, class_name)
-                    fn = getattr(cls, parts[-1])
-                    assert callable(fn)
-                    return fn
-                except (ImportError, AttributeError, AssertionError, ValueError):
-                    pass
-            module_name = ".".join(parts[:-1])
-            func_name = parts[-1]
-            if not module_name:
-                raise CantResolveCallable(f"Invalid module name: {module_name}")
-            module = __import__(module_name, fromlist=[func_name])
-            fn = getattr(module, func_name)
-        assert callable(fn)
+        parts = fn_path.split(".")
+        # Try resolve as *module.ClassName.static_method if 1st character is upper-cased
+        if len(parts) >= 3 and len(parts[-2]) and parts[-2][0].isupper():
+            module_name = ".".join(parts[:-2])
+            class_name = parts[-2]
+            try:
+                module = __import__(module_name, fromlist=[class_name])
+                cls = getattr(module, class_name)
+                fn = getattr(cls, parts[-1])
+                assert callable(fn)
+                return fn
+            except (ImportError, AttributeError, AssertionError, ValueError):
+                pass
+        module_name = ".".join(parts[:-1])
+        func_name = parts[-1]
+        if not module_name:
+            raise CantResolveCallable(f"Invalid module name: {module_name}")
+        module = __import__(module_name, fromlist=[func_name])
+        fn = getattr(module, func_name)
     except (ImportError, AttributeError, AssertionError, ValueError) as e:
         raise CantResolveCallable(name=fn_path, cause=e) from e
+    if not callable(fn):
+        raise CantResolveCallable(f"Resolved object '{fn_path}' is not callable")
     return fn
 
 
