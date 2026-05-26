@@ -505,7 +505,7 @@ def resolve_callable(
         if "." not in fn:
             if fn in globals():  # globals of microcore.utils
                 return globals()[fn]
-            elif hasattr(builtins, fn):
+            if hasattr(builtins, fn):
                 return getattr(builtins, fn)
             raise CantResolveCallable(name=fn)
         return _load_callable(fn)
