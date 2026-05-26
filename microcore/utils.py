@@ -507,8 +507,7 @@ def resolve_callable(
                 return globals()[fn]
             elif hasattr(builtins, fn):
                 fn = getattr(builtins, fn)
-            else:
-                raise CantResolveCallable(name=fn)
+            raise CantResolveCallable(name=fn)
         return _load_callable(fn)
     raise CantResolveCallable(f"Can't resolve callable: expected a string, got {type(fn)}")
 
