@@ -106,10 +106,9 @@ class CommandLineClient(BaseAIChatClient):
         if len(messages) > 1:
             prompt_str = ""
             for msg in messages:
-                prompt_str += f"\n[{msg['role']}]:{msg['content'][0]}"
+                prompt_str += f"\n[{msg['role']}]: {msg['content'][0]}"
         else:
             prompt_str = messages[0]['content'][0]
-
         async def callback(text):
             for cb in callbacks:
                 if asyncio.iscoroutinefunction(cb):
