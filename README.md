@@ -291,7 +291,7 @@ And more via Google / Anthropic / OpenAI API.
 
 ## 🖼️ Examples
 
-#### [Code review tool](https://github.com/llm-microcore/microcore/blob/main/examples/code-review-tool)
+#### [Code review tool](https://github.com/Nayjest/ai-microcore/blob/main/examples/code-review-tool)
 Performs a code review by LLM for changes in git .patch files in any programming languages.
 
 #### [Image analysis](https://colab.research.google.com/drive/1qTJ51wxCv3VlyqLt3M8OZ7183YXPFpic) (Google Colab)
@@ -307,7 +307,7 @@ Simple example demonstrating image generation using [OpenAI GPT Image](https://p
 #### [Local inference with PyTorch / Transformers](https://github.com/Nayjest/ai-microcore/blob/main/examples/pytorch_transformers.py)
 Text generation using HF/Transformers model locally (example with Qwen 3 0.6B).
  
-#### [Other examples](https://github.com/llm-microcore/microcore/tree/main/examples)
+#### [Other examples](https://github.com/Nayjest/ai-microcore/tree/main/examples)
 
 ## 📚 Guides & Reference<a id="-guides--reference"></a>
 
