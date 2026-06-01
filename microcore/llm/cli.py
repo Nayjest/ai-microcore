@@ -48,12 +48,13 @@ async def run_streaming(argv: list[str], callback) -> str:
     """
     Run the given command line, streaming stdout to the callback as it arrives.
     Args:
-    - argv (list[str]): List of command line arguments, e.g. ["my_llm_cli", "--model", "gpt-4", "<request>"]
-    - callback: Async function to call with each chunk of output as it arrives.
+        argv (list[str]): List of command line arguments.
+        callback: Async function to call with each chunk of output as it arrives.
     Returns:
         str: The full output as a string once the process completes.
     Raises:
         CommandLineLLMError: If the process exits with a non-zero code, with stderr as
+            the error message if available, otherwise the output.
     """
     proc = await asyncio.create_subprocess_exec(
         *argv,
