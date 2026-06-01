@@ -366,7 +366,7 @@ class LLMConfig(
     def _validate_local_llm(self):
         if self.HTTP_HEADERS:
             logging.warning("HTTP_HEADERS will be ignored for local models")
-        if self.CHAT_MODE is None:
+        if self.CHAT_MODE is None and self.LLM_API_TYPE != ApiType.CLI:
             logging.warning(
                 "When using local models, "
                 "(bool)CHAT_MODE configuration option should be explicitly set"
