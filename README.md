@@ -257,7 +257,7 @@ Clear collection
 
 ## API providers and models support
 
-MI-MicroCore supports major API providers via various chat completion / text completion APIs.
+MicroCore supports major API providers via various chat completion / text completion APIs.
 
 Tested with the following services:
 - [OpenAI](https://openai.com)
