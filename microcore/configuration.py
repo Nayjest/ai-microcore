@@ -275,34 +275,39 @@ class LLMConfig(
         if self.LLM_API_PLATFORM in ApiPlatform:
             self.LLM_API_BASE = ApiPlatform(self.LLM_API_PLATFORM).default_api_base()
 
+    def _init_llm_options_cli(self):
+        if not self.LLM_API_TYPE:
+            self.LLM_API_TYPE = ApiType.CLI
+        elif self.LLM_API_TYPE != ApiType.CLI:
+            logging.warning(
+                f"LLM_CLI is provided but LLM_API_TYPE is set to "
+                f"'{self.LLM_API_TYPE}' instead of '{ApiType.CLI}'. "
+                f"LLM_CLI is only used when LLM_API_TYPE='{ApiType.CLI}' "
+                f"and will be ignored with the current configuration. "
+                f"Either unset LLM_API_TYPE or set it to '{ApiType.CLI}' "
+                f"to use the provided command line interface."
+            )
+        if not self.MODEL:
+            self.MODEL = str(self.LLM_CLI).split()[0] + "-cli"
+
+    def _init_llm_options_inference_func(self):
+        if not self.LLM_API_TYPE:
+            self.LLM_API_TYPE = ApiType.FUNCTION
+        if self.LLM_API_TYPE != ApiType.FUNCTION:
+            logging.warning(
+                f"INFERENCE_FUNC is provided but LLM_API_TYPE is set to "
+                f"'{self.LLM_API_TYPE}' instead of '{ApiType.FUNCTION}'. "
+                f"INFERENCE_FUNC is only used when LLM_API_TYPE='{ApiType.FUNCTION}' "
+                f"and will be ignored with the current configuration. "
+                f"Either unset LLM_API_TYPE or set it to '{ApiType.FUNCTION}' "
+                f"to use the provided inference function."
+            )
+
     def _init_llm_options(self):
         if self.LLM_CLI:
-            if not self.LLM_API_TYPE:
-                self.LLM_API_TYPE = ApiType.CLI
-            elif self.LLM_API_TYPE != ApiType.CLI:
-                logging.warning(
-                    f"LLM_CLI is provided but LLM_API_TYPE is set to "
-                    f"'{self.LLM_API_TYPE}' instead of '{ApiType.CLI}'. "
-                    f"LLM_CLI is only used when LLM_API_TYPE='{ApiType.CLI}' "
-                    f"and will be ignored with the current configuration. "
-                    f"Either unset LLM_API_TYPE or set it to '{ApiType.CLI}' "
-                    f"to use the provided command line interface."
-                )
-            if not self.MODEL:
-                self.MODEL = str(self.LLM_CLI).split()[0] + "-cli"
+            self._init_llm_options_cli()
         if self.INFERENCE_FUNC:
-            if not self.LLM_API_TYPE:
-                self.LLM_API_TYPE = ApiType.FUNCTION
-            if self.LLM_API_TYPE != ApiType.FUNCTION:
-                logging.warning(
-                    f"INFERENCE_FUNC is provided but LLM_API_TYPE is set to "
-                    f"'{self.LLM_API_TYPE}' instead of '{ApiType.FUNCTION}'. "
-                    f"INFERENCE_FUNC is only used when LLM_API_TYPE='{ApiType.FUNCTION}' "
-                    f"and will be ignored with the current configuration. "
-                    f"Either unset LLM_API_TYPE or set it to '{ApiType.FUNCTION}' "
-                    f"to use the provided inference function."
-                )
-
+            self._init_llm_options_inference_func()
         if self.uses_local_model():
             return
 

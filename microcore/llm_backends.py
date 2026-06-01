@@ -48,7 +48,12 @@ class ApiType(SafeStrEnum):
         Returns:
             bool: True if the API type is local, False otherwise.
         """
-        return api_type in (ApiType.FUNCTION, ApiType.TRANSFORMERS, ApiType.NONE)
+        return api_type in (
+            ApiType.FUNCTION,
+            ApiType.TRANSFORMERS,
+            ApiType.CLI,
+            ApiType.NONE,
+        )
 
     @staticmethod
     def major_remote() -> list["ApiType"]:
@@ -69,6 +74,7 @@ class ApiType(SafeStrEnum):
             ApiType.AZURE: "Azure OpenAI",
             ApiType.FUNCTION: "Local Function",
             ApiType.TRANSFORMERS: "Local Transformers",
+            ApiType.CLI: "CLI Command",
             ApiType.NONE: "No LLM",
         }
         return labels.get(api_type, str(api_type).replace('_', ' ').title())

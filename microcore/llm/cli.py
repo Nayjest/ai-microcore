@@ -84,7 +84,7 @@ class CommandLineClient(BaseAIChatClient):
         super().__init__(config)
         self.aio = AsyncCommandLineClient(self)
 
-    def load_models(self, **kwargs) -> dict:
+    def load_models(self, **_kwargs) -> dict:
         return {
             self.config.MODEL: {
                 "id": self.config.MODEL,
@@ -93,7 +93,7 @@ class CommandLineClient(BaseAIChatClient):
             }
         }
 
-    def _prepare_run(self, prompt: TPrompt, kwargs: dict):
+    def prepare_run(self, prompt: TPrompt, kwargs: dict):
         """Build the command line and streaming callback shared by sync/async."""
         args = {**self.config.LLM_DEFAULT_ARGS, **kwargs}
         args["model"] = args.get("model", self.config.MODEL)
@@ -126,7 +126,7 @@ class CommandLineClient(BaseAIChatClient):
         prompt: TPrompt,
         **kwargs
     ) -> LLMResponse | ImageGenerationResponse | StoredImageGenerationResponse:
-        argv, callback = self._prepare_run(prompt, kwargs)
+        argv, callback = self.prepare_run(prompt, kwargs)
         result: str = _run_sync(run_streaming(argv, callback))
         return LLMResponse(
             result,
