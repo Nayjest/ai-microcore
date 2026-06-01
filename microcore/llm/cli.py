@@ -34,8 +34,10 @@ def _run_sync(coro):
 
     # loop already running in this thread: run on a fresh loop in another thread
     result = {}
+
     def runner():
         result["value"] = asyncio.run(coro)
+
     t = threading.Thread(target=runner)
     t.start()
     t.join()
@@ -64,6 +66,7 @@ async def run_streaming(argv, callback) -> str:
             await callback(text)
 
     stderr_data = bytearray()
+
     async def pump_stderr():
         async for raw in proc.stderr:
             stderr_data.extend(raw)
@@ -148,7 +151,7 @@ class AsyncCommandLineClient(BaseAsyncAIClient):
         prompt: TPrompt,
         **kwargs
     ) -> LLMResponse:
-        argv, callback = self.sync_client._prepare_run(prompt, kwargs)
+        argv, callback = self.sync_client.prepare_run(prompt, kwargs)
         result: str = await run_streaming(argv, callback)
         return LLMResponse(
             result,
