@@ -23,7 +23,7 @@ def setup(request, mocker):
 
 def mock_openai_chat(mocker):
     _openai_version = importlib.metadata.version("openai")
-    if _openai_version.startswith("1."):
+    if _openai_version.startswith("1.") or _openai_version.startswith("2."):
         mocker.patch(
             "openai.resources.AsyncCompletions.create",
             side_effect=_aside_effect_compl_parrot,
