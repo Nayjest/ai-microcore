@@ -44,7 +44,17 @@ def _run_sync(coro):
     return result["value"]
 
 
-async def run_streaming(argv, callback) -> str:
+async def run_streaming(argv: list[str], callback) -> str:
+    """
+    Run the given command line, streaming stdout to the callback as it arrives.
+    Args:
+    - argv (list[str]): List of command line arguments, e.g. ["my_llm_cli", "--model", "gpt-4", "<request>"]
+    - callback: Async function to call with each chunk of output as it arrives.
+    Returns:
+        str: The full output as a string once the process completes.
+    Raises:
+        CommandLineLLMError: If the process exits with a non-zero code, with stderr as
+    """
     proc = await asyncio.create_subprocess_exec(
         *argv,
         stdout=asyncio.subprocess.PIPE,
@@ -72,22 +82,34 @@ async def run_streaming(argv, callback) -> str:
             stderr_data.extend(raw)
 
     await asyncio.gather(pump_stdout(), pump_stderr())
-    returncode = await proc.wait()
+    return_code = await proc.wait()
     output = "".join(chunks).strip()
-    if returncode != 0:
+    if return_code != 0:
         raise CommandLineLLMError(stderr_data.decode().strip() or output)
     return output
 
 
 class CommandLineClient(BaseAIChatClient):
+    """
+    LLM client that runs a command-line process for each request,
+    streaming output as it arrives.
+    """
+
+    # String in the command line to be replaced with the prompt, if present
     PLACEHOLDER = "<request>"
+
     aio: "AsyncCommandLineClient"
 
     def __init__(self, config: Config):
+        """Initialize the CommandLineClient with the given configuration."""
         super().__init__(config)
         self.aio = AsyncCommandLineClient(self)
 
     def load_models(self, **_kwargs) -> dict:
+        """
+        Returns a dict of available models.
+        For CLI, we assume the model is specified in the config and is always available.
+        """
         return {
             self.config.MODEL: {
                 "id": self.config.MODEL,
@@ -128,6 +150,9 @@ class CommandLineClient(BaseAIChatClient):
         prompt: TPrompt,
         **kwargs
     ) -> LLMResponse | ImageGenerationResponse | StoredImageGenerationResponse:
+        """
+        Run the command line with the prompt, streaming output to callbacks as it arrives.
+        """
         argv, callback = self.prepare_run(prompt, kwargs)
         result: str = _run_sync(run_streaming(argv, callback))
         return LLMResponse(
@@ -137,12 +162,16 @@ class CommandLineClient(BaseAIChatClient):
 
 
 class AsyncCommandLineClient(BaseAsyncAIClient):
+    """
+    Asynchronous version of CommandLineClient."""
     sync_client: "CommandLineClient"
 
     def __init__(self, sync_client: "CommandLineClient"):
+        """Initialize the AsyncCommandLineClient with a reference to the sync client."""
         self.sync_client = sync_client
 
     async def load_models(self, **kwargs) -> dict:
+        """For CLI, we assume the model is specified in the config and is always available."""
         return self.sync_client.load_models(**kwargs)
 
     async def generate(
@@ -150,6 +179,7 @@ class AsyncCommandLineClient(BaseAsyncAIClient):
         prompt: TPrompt,
         **kwargs
     ) -> LLMResponse:
+        """Run the command line with the prompt, streaming output to callbacks as it arrives."""
         argv, callback = self.sync_client.prepare_run(prompt, kwargs)
         result: str = await run_streaming(argv, callback)
         return LLMResponse(
