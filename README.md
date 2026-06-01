@@ -98,6 +98,32 @@ You will need to install transformers and a deep learning library of your choice
 
 See [transformers installation](https://huggingface.co/docs/transformers/installation).
 
+### Inference via a command-line tool (CLI)
+
+You can run inference through any external command-line LLM tool
+(e.g. `claude`, `gemini`, ...)
+by setting `LLM_API_TYPE` to `ApiType.CLI` and providing the command in `LLM_CLI`.
+The `<request>` placeholder is replaced with the prompt, and the tool's stdout is
+streamed back as the response (so streaming callbacks work as usual).
+
+```python
+import microcore as mc
+
+mc.configure(
+    LLM_API_TYPE=mc.ApiType.CLI,
+    LLM_CLI="claude -p <request>",
+)
+print(mc.llm("What is capital of France?"))
+```
+
+The same via a `.env` file:
+```ini
+LLM_API_TYPE=cli
+LLM_CLI="gemini --skip-trust -p <request>"
+```
+
+No API key is required. A non-zero exit code from the tool raises `CommandLineLLMError`.
+
 ### Priority of Configuration Sources
 
 1.  Configuration options passed as arguments to `microcore.configure()` have the highest priority.
@@ -260,6 +286,7 @@ And more via Google / Anthropic / OpenAI API.
 
 ## Supported local language model APIs:
 - HuggingFace [Transformers](https://huggingface.co/docs/transformers/index) (see configuration examples [here](https://github.com/Nayjest/ai-microcore/blob/main/tests/local/test_transformers.py)).
+- Command-line LLM tools (e.g. [`llm`](https://llm.datasette.io/), [`ollama`](https://ollama.com/), `claude`, `gemini`) via `ApiType.CLI` (see [Inference via a command-line tool](#inference-via-a-command-line-tool-cli)).
 - Custom local models by providing own function for chat / text completion, sync / async inference.
 
 ## 🖼️ Examples
