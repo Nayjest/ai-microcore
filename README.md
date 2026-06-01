@@ -113,7 +113,7 @@ mc.configure(
     LLM_API_TYPE=mc.ApiType.CLI,
     LLM_CLI="claude -p <request>",
 )
-print(mc.llm("What is capital of France?"))
+print(mc.llm("What is the capital of France?"))
 ```
 
 The same via a `.env` file:

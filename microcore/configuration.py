@@ -293,7 +293,7 @@ class LLMConfig(
     def _init_llm_options_inference_func(self):
         if not self.LLM_API_TYPE:
             self.LLM_API_TYPE = ApiType.FUNCTION
-        if self.LLM_API_TYPE != ApiType.FUNCTION:
+        elif self.LLM_API_TYPE != ApiType.FUNCTION:
             logging.warning(
                 f"INFERENCE_FUNC is provided but LLM_API_TYPE is set to "
                 f"'{self.LLM_API_TYPE}' instead of '{ApiType.FUNCTION}'. "

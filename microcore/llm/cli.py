@@ -141,7 +141,7 @@ class CommandLineClient(BaseAIChatClient):
                     cb(text)
 
         argv = shlex.split(self.config.LLM_CLI, posix=True)
-        argv = [a.replace(self.PLACEHOLDER, prompt_str) for a in argv]
+        argv = [a.replace(self.PLACEHOLDER, shlex.quote(prompt_str)) for a in argv]
         resolved = shutil.which(argv[0])
         if resolved:
             argv[0] = resolved
