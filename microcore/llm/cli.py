@@ -43,36 +43,34 @@ def run_streaming(argv: list[str], on_chunk) -> str:
         CommandLineLLMError: If the process exits with a non-zero code, carrying
             stderr as the message if available, otherwise the output.
     """
-    proc = subprocess.Popen(
+    with subprocess.Popen(
         argv,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         encoding="utf-8",
         errors="replace",
         bufsize=1,  # line-buffered
-    )
+    ) as proc:
+        # Drain stderr in a thread so a full stderr pipe buffer can never deadlock
+        # the stdout read loop below.
+        stderr_chunks: list[str] = []
+        stderr_thread = threading.Thread(
+            target=lambda: stderr_chunks.append(proc.stderr.read())
+        )
+        stderr_thread.start()
 
-    # Drain stderr in a thread so a full stderr pipe buffer can never deadlock
-    # the stdout read loop below.
-    stderr_chunks: list[str] = []
-    stderr_thread = threading.Thread(
-        target=lambda: stderr_chunks.append(proc.stderr.read())
-    )
-    stderr_thread.start()
+        chunks = []
+        first = True
+        for line in iter(proc.stdout.readline, ""):  # one line per flush, as it arrives
+            if first:
+                first = False
+                if line.startswith(">"):
+                    line = line[1:].lstrip()
+            chunks.append(line)
+            on_chunk(line)
 
-    chunks = []
-    first = True
-    for line in iter(proc.stdout.readline, ""):  # one line per flush, as it arrives
-        if first:
-            first = False
-            if line.startswith(">"):
-                line = line[1:].lstrip()
-        chunks.append(line)
-        on_chunk(line)
-
-    proc.stdout.close()
-    stderr_thread.join()
-    return_code = proc.wait()
+        stderr_thread.join()  # finish reading stderr before the context closes the pipe
+        return_code = proc.wait()
 
     output = "".join(chunks).strip()
     if return_code != 0:
