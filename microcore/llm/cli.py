@@ -4,6 +4,7 @@ Command-line interface LLM client implementation.
 import asyncio
 import shlex
 import shutil
+import sys
 import threading
 
 from ..lm_client import BaseAIChatClient, BaseAsyncAIClient
@@ -25,23 +26,82 @@ class CommandLineLLMError(BadAIAnswer):
         super().__init__(message, details)
 
 
+def _make_subprocess_loop() -> asyncio.AbstractEventLoop:
+    """
+    Create an event loop that is able to spawn subprocesses on the current platform.
+
+    On Windows only the ``ProactorEventLoop`` supports subprocesses; the
+    ``SelectorEventLoop`` raises ``NotImplementedError`` from
+    ``_make_subprocess_transport``. The selector loop is installed globally by
+    some libraries (e.g. Jupyter / ipykernel, which need it for pyzmq/tornado),
+    so we create the right loop explicitly instead of relying on the ambient
+    event loop policy. The global policy is left untouched.
+    """
+    if sys.platform == "win32":
+        return asyncio.ProactorEventLoop()
+    return asyncio.new_event_loop()
+
+
+def _loop_supports_subprocess(loop: asyncio.AbstractEventLoop) -> bool:
+    """Whether the given (running) loop is able to spawn subprocesses."""
+    if sys.platform != "win32":
+        return True
+    return isinstance(loop, asyncio.ProactorEventLoop)
+
+
+def _run_on_new_loop(coro):
+    """Run a coroutine to completion on a fresh, subprocess-capable event loop."""
+    loop = _make_subprocess_loop()
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        try:
+            loop.run_until_complete(loop.shutdown_asyncgens())
+        finally:
+            loop.close()
+
+
 def _run_sync(coro):
-    """Run a coroutine to completion from sync code, whether or not a loop is already running."""
+    """
+    Run a coroutine to completion from sync code, on a subprocess-capable event
+    loop, whether or not a loop is already running in this thread.
+    """
     try:
         asyncio.get_running_loop()
     except RuntimeError:
-        return asyncio.run(coro)  # no loop: simplest path
+        return _run_on_new_loop(coro)  # no loop running here: run directly
 
-    # loop already running in this thread: run on a fresh loop in another thread
-    result = {}
+    # A loop is already running in this thread; we cannot nest run_until_complete.
+    # Run on a fresh loop in another thread and propagate the result or error.
+    box = {}
 
     def runner():
-        result["value"] = asyncio.run(coro)
+        try:
+            box["value"] = _run_on_new_loop(coro)
+        except BaseException as e:  # noqa: BLE001 - re-raised in the calling thread
+            box["error"] = e
 
     t = threading.Thread(target=runner)
     t.start()
     t.join()
-    return result["value"]
+    if "error" in box:
+        raise box["error"]
+    return box["value"]
+
+
+async def run_streaming_safe(argv: list[str], callback) -> str:
+    """
+    Like :func:`run_streaming`, but resilient to event loops that cannot spawn
+    subprocesses (e.g. the Windows ``SelectorEventLoop`` used inside Jupyter).
+
+    If the running loop supports subprocesses, the command is run on it directly
+    so callbacks share the caller's loop. Otherwise the work is offloaded to a
+    subprocess-capable loop in a worker thread.
+    """
+    loop = asyncio.get_running_loop()
+    if _loop_supports_subprocess(loop):
+        return await run_streaming(argv, callback)
+    return await asyncio.to_thread(_run_on_new_loop, run_streaming(argv, callback))
 
 
 async def run_streaming(argv: list[str], callback) -> str:
@@ -140,8 +200,11 @@ class CommandLineClient(BaseAIChatClient):
                 else:
                     cb(text)
 
+        # create_subprocess_exec passes argv elements directly (no shell), so the
+        # prompt is inserted verbatim - shell-quoting it would leak literal quotes
+        # into the argument the CLI receives.
         argv = shlex.split(self.config.LLM_CLI, posix=True)
-        argv = [a.replace(self.PLACEHOLDER, shlex.quote(prompt_str)) for a in argv]
+        argv = [a.replace(self.PLACEHOLDER, prompt_str) for a in argv]
         resolved = shutil.which(argv[0])
         if resolved:
             argv[0] = resolved
@@ -183,7 +246,7 @@ class AsyncCommandLineClient(BaseAsyncAIClient):
     ) -> LLMResponse:
         """Run the command line with the prompt, streaming output to callbacks as it arrives."""
         argv, callback = self.sync_client.prepare_run(prompt, kwargs)
-        result: str = await run_streaming(argv, callback)
+        result: str = await run_streaming_safe(argv, callback)
         return LLMResponse(
             result,
             api_type=ApiType.CLI,
