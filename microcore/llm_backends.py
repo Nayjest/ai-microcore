@@ -34,7 +34,7 @@ class ApiType(SafeStrEnum):
     GOOGLE = "google"  # new Google SDK
 
     # Local models
-    FUNCTION = "function"  # python inference function, requires config.INFERENCE_FUNCTION field
+    FUNCTION = "function"  # Python inference function, requires config.INFERENCE_FUNCTION field
     TRANSFORMERS = "transformers"
     CLI = "cli"  # external executable over stdio
     NONE = "none"

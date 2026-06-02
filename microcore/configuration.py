@@ -212,6 +212,7 @@ class LLMConfig(
     INFERENCE_FUNC: Union[Callable, str] = from_env()
     """Inference function for local models"""
     LLM_CLI: str = from_env(dtype=str)
+    """CLI command for LLM inference, e.g. 'claude -p <request>'"""
     CHAT_MODE: bool = from_env(dtype=bool)
     """Is it a chat or completion model"""
     INIT_PARAMS: dict = from_env(dtype=dict)
