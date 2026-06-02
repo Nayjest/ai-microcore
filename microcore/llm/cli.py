@@ -4,7 +4,7 @@ Command-line interface LLM client implementation.
 import asyncio
 import shlex
 import shutil
-import sys
+import subprocess
 import threading
 
 from ..lm_client import BaseAIChatClient, BaseAsyncAIClient
@@ -26,127 +26,57 @@ class CommandLineLLMError(BadAIAnswer):
         super().__init__(message, details)
 
 
-def _make_subprocess_loop() -> asyncio.AbstractEventLoop:
+def run_streaming(argv: list[str], on_chunk) -> str:
     """
-    Create an event loop that is able to spawn subprocesses on the current platform.
+    Run the given command line, streaming stdout to ``on_chunk`` as it arrives.
 
-    On Windows only the ``ProactorEventLoop`` supports subprocesses; the
-    ``SelectorEventLoop`` raises ``NotImplementedError`` from
-    ``_make_subprocess_transport``. The selector loop is installed globally by
-    some libraries (e.g. Jupyter / ipykernel, which need it for pyzmq/tornado),
-    so we create the right loop explicitly instead of relying on the ambient
-    event loop policy. The global policy is left untouched.
-    """
-    if sys.platform == "win32":
-        return asyncio.ProactorEventLoop()
-    return asyncio.new_event_loop()
+    Plain blocking subprocess - no asyncio. This sidesteps the Windows event
+    loop limitation where ``SelectorEventLoop`` (installed globally by Jupyter /
+    ipykernel) cannot spawn subprocesses.
 
-
-def _loop_supports_subprocess(loop: asyncio.AbstractEventLoop) -> bool:
-    """Whether the given (running) loop is able to spawn subprocesses."""
-    if sys.platform != "win32":
-        return True
-    return isinstance(loop, asyncio.ProactorEventLoop)
-
-
-def _run_on_new_loop(coro):
-    """Run a coroutine to completion on a fresh, subprocess-capable event loop."""
-    loop = _make_subprocess_loop()
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        try:
-            loop.run_until_complete(loop.shutdown_asyncgens())
-        finally:
-            loop.close()
-
-
-def _run_sync(coro):
-    """
-    Run a coroutine to completion from sync code, on a subprocess-capable event
-    loop, whether or not a loop is already running in this thread.
-    """
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        return _run_on_new_loop(coro)  # no loop running here: run directly
-
-    # A loop is already running in this thread; we cannot nest run_until_complete.
-    # Run on a fresh loop in another thread and propagate the result or error.
-    box = {}
-
-    def runner():
-        try:
-            box["value"] = _run_on_new_loop(coro)
-        except BaseException as e:  # noqa: BLE001 - re-raised in the calling thread
-            box["error"] = e
-
-    t = threading.Thread(target=runner)
-    t.start()
-    t.join()
-    if "error" in box:
-        raise box["error"]
-    return box["value"]
-
-
-async def run_streaming_safe(argv: list[str], callback) -> str:
-    """
-    Like :func:`run_streaming`, but resilient to event loops that cannot spawn
-    subprocesses (e.g. the Windows ``SelectorEventLoop`` used inside Jupyter).
-
-    If the running loop supports subprocesses, the command is run on it directly
-    so callbacks share the caller's loop. Otherwise the work is offloaded to a
-    subprocess-capable loop in a worker thread.
-    """
-    loop = asyncio.get_running_loop()
-    if _loop_supports_subprocess(loop):
-        return await run_streaming(argv, callback)
-    return await asyncio.to_thread(_run_on_new_loop, run_streaming(argv, callback))
-
-
-async def run_streaming(argv: list[str], callback) -> str:
-    """
-    Run the given command line, streaming stdout to the callback as it arrives.
     Args:
-        argv (list[str]): List of command line arguments.
-        callback: Async function to call with each chunk of output as it arrives.
+        argv (list[str]): Command line, already split into arguments.
+        on_chunk (callable): Called with each line of stdout as it arrives.
     Returns:
-        str: The full output as a string once the process completes.
+        str: The full stdout once the process completes.
     Raises:
-        CommandLineLLMError: If the process exits with a non-zero code, with stderr as
-            the error message if available, otherwise the output.
+        CommandLineLLMError: If the process exits with a non-zero code, carrying
+            stderr as the message if available, otherwise the output.
     """
-    proc = await asyncio.create_subprocess_exec(
-        *argv,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
+    proc = subprocess.Popen(
+        argv,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+        errors="replace",
+        bufsize=1,  # line-buffered
     )
+
+    # Drain stderr in a thread so a full stderr pipe buffer can never deadlock
+    # the stdout read loop below.
+    stderr_chunks: list[str] = []
+    stderr_thread = threading.Thread(
+        target=lambda: stderr_chunks.append(proc.stderr.read())
+    )
+    stderr_thread.start()
 
     chunks = []
     first = True
+    for line in iter(proc.stdout.readline, ""):  # one line per flush, as it arrives
+        if first:
+            first = False
+            if line.startswith(">"):
+                line = line[1:].lstrip()
+        chunks.append(line)
+        on_chunk(line)
 
-    async def pump_stdout():
-        nonlocal first
-        async for raw in proc.stdout:        # yields complete lines as they arrive
-            text = raw.decode()
-            if first:
-                first = False
-                if text.startswith(">"):
-                    text = text[1:].lstrip()
-            chunks.append(text)
-            await callback(text)
+    proc.stdout.close()
+    stderr_thread.join()
+    return_code = proc.wait()
 
-    stderr_data = bytearray()
-
-    async def pump_stderr():
-        async for raw in proc.stderr:
-            stderr_data.extend(raw)
-
-    await asyncio.gather(pump_stdout(), pump_stderr())
-    return_code = await proc.wait()
     output = "".join(chunks).strip()
     if return_code != 0:
-        raise CommandLineLLMError(stderr_data.decode().strip() or output)
+        raise CommandLineLLMError("".join(stderr_chunks).strip() or output)
     return output
 
 
@@ -180,7 +110,7 @@ class CommandLineClient(BaseAIChatClient):
         }
 
     def prepare_run(self, prompt: TPrompt, kwargs: dict):
-        """Build the command line and streaming callback shared by sync/async."""
+        """Build the argv and callback list shared by the sync/async clients."""
         args = {**self.config.LLM_DEFAULT_ARGS, **kwargs}
         args["model"] = args.get("model", self.config.MODEL)
         callbacks = prepare_callbacks(self.config, args)
@@ -193,22 +123,16 @@ class CommandLineClient(BaseAIChatClient):
         else:
             prompt_str = messages[0]['content'][0]
 
-        async def callback(text):
-            for cb in callbacks:
-                if asyncio.iscoroutinefunction(cb):
-                    await cb(text)
-                else:
-                    cb(text)
-
-        # create_subprocess_exec passes argv elements directly (no shell), so the
-        # prompt is inserted verbatim - shell-quoting it would leak literal quotes
-        # into the argument the CLI receives.
+        # subprocess passes argv elements directly (no shell), so the prompt is
+        # inserted verbatim - shell-quoting it would leak literal quotes into the
+        # argument the CLI receives. Splitting happens before substitution, so the
+        # prompt always stays within a single argv element.
         argv = shlex.split(self.config.LLM_CLI, posix=True)
         argv = [a.replace(self.PLACEHOLDER, prompt_str) for a in argv]
         resolved = shutil.which(argv[0])
         if resolved:
             argv[0] = resolved
-        return argv, callback
+        return argv, callbacks
 
     def generate(
         self,
@@ -218,8 +142,13 @@ class CommandLineClient(BaseAIChatClient):
         """
         Run the command line with the prompt, streaming output to callbacks as it arrives.
         """
-        argv, callback = self.prepare_run(prompt, kwargs)
-        result: str = _run_sync(run_streaming(argv, callback))
+        argv, callbacks = self.prepare_run(prompt, kwargs)
+
+        def on_chunk(text):
+            for cb in callbacks:
+                cb(text)
+
+        result = run_streaming(argv, on_chunk)
         return LLMResponse(
             result,
             api_type=ApiType.CLI,
@@ -228,7 +157,8 @@ class CommandLineClient(BaseAIChatClient):
 
 class AsyncCommandLineClient(BaseAsyncAIClient):
     """
-    Asynchronous version of CommandLineClient."""
+    Asynchronous version of CommandLineClient.
+    """
     sync_client: "CommandLineClient"
 
     def __init__(self, sync_client: "CommandLineClient"):
@@ -245,8 +175,19 @@ class AsyncCommandLineClient(BaseAsyncAIClient):
         **kwargs
     ) -> LLMResponse:
         """Run the command line with the prompt, streaming output to callbacks as it arrives."""
-        argv, callback = self.sync_client.prepare_run(prompt, kwargs)
-        result: str = await run_streaming_safe(argv, callback)
+        argv, callbacks = self.sync_client.prepare_run(prompt, kwargs)
+        loop = asyncio.get_running_loop()
+
+        def on_chunk(text):
+            # Runs in the worker thread; marshal coroutine callbacks back to the
+            # event loop and block here until they complete.
+            for cb in callbacks:
+                if asyncio.iscoroutinefunction(cb):
+                    asyncio.run_coroutine_threadsafe(cb(text), loop).result()
+                else:
+                    cb(text)
+
+        result = await asyncio.to_thread(run_streaming, argv, on_chunk)
         return LLMResponse(
             result,
             api_type=ApiType.CLI,
