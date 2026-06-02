@@ -23,7 +23,7 @@ from ..utils import is_image_model
 from .shared import make_image_generation_response, prepare_callbacks
 from ..lm_client import BaseAsyncAIClient, BaseAIChatClient
 from ..images import Image, ImageInterface
-from ..llm_backends import ApiType
+from ..llm_backends import ApiPlatform, ApiType
 
 
 def _load_service_account_info(config: Config) -> Optional[dict]:
@@ -96,16 +96,18 @@ class GoogleClient(BaseAIChatClient):
         if config.HTTP_HEADERS:
             inject_headers(config.HTTP_HEADERS, client_params)
 
-        if config.GOOGLE_GENAI_USE_VERTEXAI is not None:
+        developer_api = config.LLM_API_PLATFORM == ApiPlatform.GOOGLE_AI_STUDIO
+
+        if not developer_api and config.GOOGLE_GENAI_USE_VERTEXAI is not None:
             client_params["vertexai"] = config.GOOGLE_GENAI_USE_VERTEXAI
 
-        if config.GOOGLE_CLOUD_PROJECT_ID:
+        if not developer_api and config.GOOGLE_CLOUD_PROJECT_ID:
             client_params["project"] = config.GOOGLE_CLOUD_PROJECT_ID
 
-        if config.GOOGLE_CLOUD_LOCATION:
+        if not developer_api and config.GOOGLE_CLOUD_LOCATION:
             client_params["location"] = config.GOOGLE_CLOUD_LOCATION
 
-        if creds_info := _load_service_account_info(config):
+        if not developer_api and (creds_info := _load_service_account_info(config)):
             try:
                 credentials = Credentials.from_service_account_info(
                     creds_info,
@@ -121,7 +123,14 @@ class GoogleClient(BaseAIChatClient):
             if "vertexai" not in client_params:
                 client_params["vertexai"] = True
         else:
+            if developer_api:
+                client_params.pop("credentials", None)
+                client_params.pop("project", None)
+                client_params.pop("location", None)
+                client_params.pop("vertexai", None)
             client_params["api_key"] = config.LLM_API_KEY
+            if developer_api:
+                client_params["vertexai"] = False
 
         self.genai_client = genai.Client(**client_params)
         self.aio = AsyncGoogleClient(self)

@@ -4,7 +4,7 @@
 name: Tests
 
 permissions:
-  contents: write
+  contents: read
 
 on:
   push:
@@ -17,15 +17,20 @@ jobs:
   build:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      IS_MAIN_PUSH: ${{ matrix.python-version == '3.11' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -36,25 +41,54 @@ jobs:
       run: |
         pytest --cov=microcore --cov-report=xml
     - name: Generate coverage badge
-      if: matrix.python-version == '3.11' && (
-        (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-        (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
-        )
+      if: env.IS_MAIN_PUSH == 'true'
       run: |
         pip install genbadge[coverage]
         genbadge coverage -i coverage.xml -o coverage.svg
-    - name: Commit coverage badge
-      if: matrix.python-version == '3.11' && (
-        (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-        (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
-        )
+    - name: Validate coverage badge output
+      if: env.IS_MAIN_PUSH == 'true'
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git fetch origin
-        git checkout ${{ github.head_ref || github.ref_name }}
+        f=coverage.svg
+        s=$(wc -c < "$f" 2>/dev/null) || s=0
+        [ "$s" -ge 120 ] || { echo "$f missing or too small ($s B)"; exit 1; }
+        head -c 4096 "$f" | grep -qiF '<svg' || { echo "$f: not an SVG"; exit 1; }
+    - name: Upload coverage badge artifact
+      if: success() && env.IS_MAIN_PUSH == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-badge
+        path: coverage.svg
+        if-no-files-found: error
+        retention-days: 1
+
+  # Isolated job: no checkout of main, no push from PRs — token write only to publish orphan branch.
+  update-coverage-badge:
+    needs: build
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main'
+      && needs.build.result == 'success'
+      && !contains(github.event.head_commit.message, '[skip ci]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: coverage-badge
+        fetch-depth: 1
+        token: ${{ secrets.GITHUB_TOKEN }}
+        # persist-credentials intentionally true (default) — git push relies on it
+    - uses: actions/download-artifact@v4
+      with:
+        name: coverage-badge
+        path: badge
+    - name: Push coverage.svg to orphan branch coverage-badge
+      run: |
+        set -e
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
+        cp badge/coverage.svg coverage.svg
         git add coverage.svg
-        git commit -m "Update coverage badge [skip ci]" || echo "No changes to commit"
-        git push
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        git diff --cached --quiet || git commit -m "Update coverage badge [skip ci]"
+        git push origin coverage-badge

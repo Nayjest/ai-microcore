@@ -272,6 +272,8 @@ class LLMConfig(
 
     INFERENCE_FUNC: Union[Callable, str] = from_env()
     """Inference function for local models"""
+    LLM_CLI: str = from_env(dtype=str)
+    """CLI command for LLM inference, e.g. 'claude -p <request>'"""
     CHAT_MODE: bool = from_env(dtype=bool)
     """Is it a chat or completion model"""
     INIT_PARAMS: dict = from_env(dtype=dict)
@@ -335,11 +337,39 @@ class LLMConfig(
         if self.LLM_API_PLATFORM in ApiPlatform:
             self.LLM_API_BASE = ApiPlatform(self.LLM_API_PLATFORM).default_api_base()
 
-    def _init_llm_options(self):
-        if self.INFERENCE_FUNC:
-            if not self.LLM_API_TYPE:
-                self.LLM_API_TYPE = ApiType.FUNCTION
+    def _init_llm_options_cli(self):
+        if not self.LLM_API_TYPE:
+            self.LLM_API_TYPE = ApiType.CLI
+        elif self.LLM_API_TYPE != ApiType.CLI:
+            logging.warning(
+                f"LLM_CLI is provided but LLM_API_TYPE is set to "
+                f"'{self.LLM_API_TYPE}' instead of '{ApiType.CLI}'. "
+                f"LLM_CLI is only used when LLM_API_TYPE='{ApiType.CLI}' "
+                f"and will be ignored with the current configuration. "
+                f"Either unset LLM_API_TYPE or set it to '{ApiType.CLI}' "
+                f"to use the provided command line interface."
+            )
+        if not self.MODEL:
+            self.MODEL = str(self.LLM_CLI).split()[0] + "-cli"
 
+    def _init_llm_options_inference_func(self):
+        if not self.LLM_API_TYPE:
+            self.LLM_API_TYPE = ApiType.FUNCTION
+        elif self.LLM_API_TYPE != ApiType.FUNCTION:
+            logging.warning(
+                f"INFERENCE_FUNC is provided but LLM_API_TYPE is set to "
+                f"'{self.LLM_API_TYPE}' instead of '{ApiType.FUNCTION}'. "
+                f"INFERENCE_FUNC is only used when LLM_API_TYPE='{ApiType.FUNCTION}' "
+                f"and will be ignored with the current configuration. "
+                f"Either unset LLM_API_TYPE or set it to '{ApiType.FUNCTION}' "
+                f"to use the provided inference function."
+            )
+
+    def _init_llm_options(self):
+        if self.LLM_CLI:
+            self._init_llm_options_cli()
+        if self.INFERENCE_FUNC:
+            self._init_llm_options_inference_func()
         if self.uses_local_model():
             return
 
@@ -400,7 +430,7 @@ class LLMConfig(
     def _validate_local_llm(self):
         if self.HTTP_HEADERS:
             logging.warning("HTTP_HEADERS will be ignored for local models")
-        if self.CHAT_MODE is None:
+        if self.CHAT_MODE is None and self.LLM_API_TYPE != ApiType.CLI:
             logging.warning(
                 "When using local models, "
                 "(bool)CHAT_MODE configuration option should be explicitly set"
