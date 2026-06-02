@@ -146,6 +146,9 @@ class Env:
                     "Run `pip install google-genai`."
                 ) from e
             self.default_client = GoogleClient(self.config)
+        elif self.config.LLM_API_TYPE == ApiType.CLI:
+            from .llm.cli import CommandLineClient
+            self.default_client = CommandLineClient(self.config)
         else:
             from .llm.openai import OpenAIClient
             self.default_client = OpenAIClient(self.config)

@@ -98,6 +98,32 @@ You will need to install transformers and a deep learning library of your choice
 
 See [transformers installation](https://huggingface.co/docs/transformers/installation).
 
+### Inference via a command-line tool (CLI)
+
+You can run inference through any external command-line LLM tool
+(e.g. `claude`, `gemini`, ...)
+by setting `LLM_API_TYPE` to `ApiType.CLI` and providing the command in `LLM_CLI`.
+The `<request>` placeholder is replaced with the prompt, and the tool's stdout is
+streamed back as the response (so streaming callbacks work as usual).
+
+```python
+import microcore as mc
+
+mc.configure(
+    LLM_API_TYPE=mc.ApiType.CLI,
+    LLM_CLI="claude -p <request>",
+)
+print(mc.llm("What is the capital of France?"))
+```
+
+The same via a `.env` file:
+```ini
+LLM_API_TYPE=cli
+LLM_CLI="gemini --skip-trust -p <request>"
+```
+
+No API key is required. A non-zero exit code from the tool raises `CommandLineLLMError`.
+
 ### Priority of Configuration Sources
 
 1.  Configuration options passed as arguments to `microcore.configure()` have the highest priority.
@@ -231,7 +257,7 @@ Clear collection
 
 ## API providers and models support
 
-MI-MicroCore supports major API providers via various chat completion / text completion APIs.
+MicroCore supports major API providers via various chat completion / text completion APIs.
 
 Tested with the following services:
 - [OpenAI](https://openai.com)
@@ -260,11 +286,12 @@ And more via Google / Anthropic / OpenAI API.
 
 ## Supported local language model APIs:
 - HuggingFace [Transformers](https://huggingface.co/docs/transformers/index) (see configuration examples [here](https://github.com/Nayjest/ai-microcore/blob/main/tests/local/test_transformers.py)).
+- Command-line LLM tools (e.g. [`llm`](https://llm.datasette.io/), [`ollama`](https://ollama.com/), `claude`, `gemini`) via `ApiType.CLI` (see [Inference via a command-line tool](#inference-via-a-command-line-tool-cli)).
 - Custom local models by providing own function for chat / text completion, sync / async inference.
 
 ## 🖼️ Examples
 
-#### [Code review tool](https://github.com/llm-microcore/microcore/blob/main/examples/code-review-tool)
+#### [Code review tool](https://github.com/Nayjest/ai-microcore/blob/main/examples/code-review-tool)
 Performs a code review by LLM for changes in git .patch files in any programming languages.
 
 #### [Image analysis](https://colab.research.google.com/drive/1qTJ51wxCv3VlyqLt3M8OZ7183YXPFpic) (Google Colab)
@@ -280,7 +307,7 @@ Simple example demonstrating image generation using [OpenAI GPT Image](https://p
 #### [Local inference with PyTorch / Transformers](https://github.com/Nayjest/ai-microcore/blob/main/examples/pytorch_transformers.py)
 Text generation using HF/Transformers model locally (example with Qwen 3 0.6B).
  
-#### [Other examples](https://github.com/llm-microcore/microcore/tree/main/examples)
+#### [Other examples](https://github.com/Nayjest/ai-microcore/tree/main/examples)
 
 ## 📚 Guides & Reference<a id="-guides--reference"></a>
 
