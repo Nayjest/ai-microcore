@@ -33,7 +33,7 @@ def prompt_api_type(
 
 def prompt_api_platform(
     api_type: ApiType,
-    question: str = "Select your LLM inference provider.",
+    question: str = "Select your LLM inference provider:",
 ) -> ApiPlatform | None:
     platforms: list = ApiPlatform.for_api_type(api_type)
     if len(platforms) == 1:
@@ -67,7 +67,7 @@ def prompt_model_name(
 
 
 def prompt_llm_cli(
-    question: str = "Specify CLI command to query LLM:"
+    question: str = "Specify the CLI command to query the LLM:"
 ) -> str:
     """
     Prompt user to enter a CLI command for LLM interaction.
@@ -84,13 +84,13 @@ def prompt_llm_cli(
         return res
     while True:
         res = ask_non_empty(
-            "Enter CLI command to query LLM (use <request> as placeholder for prompt):"
+            "Enter CLI command to query LLM (use <request> as a placeholder for the prompt):"
         ).strip()
         parts = res.split(maxsplit=1)
         if len(parts) < 2 or "<request>" not in res:
             error(
-                "Command must include at least one executable "
-                "and <request> as placeholder for the prompt."
+                "Command must include executable with required arguments "
+                "and <request> as a placeholder for the prompt."
             )
             continue
         return res
@@ -166,7 +166,7 @@ def interactive_setup(
 
         if "LLM_API_BASE" not in raw_config and llm_api_base_required(api_type, platform):
             raw_config["LLM_API_BASE"] = ask(
-                "API Base URL (may be empty for some API types): "
+                "API Base URL (can be left empty for some API types): "
             ).strip()
 
         if platform == ApiPlatform.AZURE:
@@ -198,7 +198,7 @@ def interactive_setup(
     _fill_extras(raw_config, extras)
 
     if not (config := test_llm_connection(raw_config)):
-        if ask_yn("Restart configuring?"):
+        if ask_yn("Restart setup?"):
             return interactive_setup(file_path, defaults, extras)
         return None
 
