@@ -240,12 +240,12 @@ DEFAULT_PLATFORMS = {
 }
 
 HIGH_END_MODELS: dict[ApiPlatform, str] = {
-    ApiPlatform.OPENAI: "gpt-5.2",
-    ApiPlatform.ANTHROPIC: "claude-opus-4-6",
+    ApiPlatform.OPENAI: "gpt-5.5",  # I/O: $5/$30 /M tokens
+    ApiPlatform.ANTHROPIC: "claude-opus-4-8",  # I/O: $5/$25 /M tokens
     ApiPlatform.GOOGLE_AI_STUDIO: "gemini-2.5-pro",
     ApiPlatform.GOOGLE_VERTEX_AI: "gemini-2.5-pro",
     ApiPlatform.MISTRAL: "mistral-large-latest",
-    ApiPlatform.XAI: "grok-4",  # I/O: $3 $15 /M tokens
+    ApiPlatform.XAI: "grok-4.3",  # I/O: $1.25 $2.50 /M tokens
     ApiPlatform.DEEPSEEK: "deepseek-chat",
     ApiPlatform.CEREBRAS: "gpt-oss-120b",  # I/O: $0.35/$0.75 /M tokens
     ApiPlatform.GROQ: "openai/gpt-oss-120b",  # I/O: $0.15/$0.60 /M tokens
@@ -253,10 +253,10 @@ HIGH_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.PERPLEXITY: "sonar-deep-research",  # I/O: $2/$8 /M tokens
 }
 LOW_END_MODELS: dict[ApiPlatform, str] = {
-    ApiPlatform.OPENAI: "gpt-5-nano",
+    ApiPlatform.OPENAI: "gpt-5.4-mini",
     ApiPlatform.ANTHROPIC: "claude-haiku-4-5",
-    ApiPlatform.GOOGLE_AI_STUDIO: "gemini-2.5-flash-lite",
-    ApiPlatform.GOOGLE_VERTEX_AI: "gemini-2.5-flash-lite",
+    ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.1-flash-lite",  # I/O: $0.25 $1.50 /M tokens
+    ApiPlatform.GOOGLE_VERTEX_AI: "gemini-3.1-flash-lite",
     ApiPlatform.XAI: "grok-4-1-fast",  # I/O: $0.20 $0.50 /M tokens
     ApiPlatform.MISTRAL: "ministral-3b-2512",
     ApiPlatform.DEEPSEEK: "deepseek-chat",
@@ -267,6 +267,8 @@ LOW_END_MODELS: dict[ApiPlatform, str] = {
 }
 MID_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.PERPLEXITY: "sonar-pro",  # I/O: $3/$15 /M tokens
+    ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.5-flash",  # I/O: $1.5/$9 /M tokens
+    ApiPlatform.GOOGLE_VERTEX_AI: "gemini-3.5-flash",
 }
 MODEL_PRESETS: dict[ModelPreset, dict[ApiPlatform, str]] = {
     ModelPreset.HIGH_END: HIGH_END_MODELS,
