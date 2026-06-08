@@ -45,6 +45,21 @@ async def test_llm_no_streaming(setup):
     assert t == "okok"
 
 
+def test_llm_stream(setup):
+    assert list(mc.llm_stream("ok", model="gpt-4", stream=False)) == ["ok"]
+
+    def relay():
+        yield from mc.llm_stream("hi", model="gpt-3.5-instruct", stream=False)
+
+    assert "".join(relay()) == "completion:hi"
+
+
+def test_llm_stream_propagates_errors(setup):
+    # Errors raised in the worker thread surface to the consumer of the iterator.
+    with pytest.raises(mc.BadAIJsonAnswer):
+        list(mc.llm_stream("{a=1-2}", model="gpt-4", parse_json=True, stream=False))
+
+
 def test_llm_with_parsing_json_and_retries(setup):
     t = ""
 
