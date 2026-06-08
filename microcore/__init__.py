@@ -32,7 +32,7 @@ from .llm_backends import ApiPlatform, ApiType
 from .types import BadAIJsonAnswer, BadAIAnswer, LLMContextLengthExceededError
 from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
-from ._llm_functions import llm, allm, llm_parallel
+from ._llm_functions import llm, allm, llm_parallel, llm_stream
 from .utils import parse, dedent
 from .metrics import Metrics
 from .interactive_setup import interactive_setup
@@ -232,4 +232,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "6.2.1"
+__version__ = "6.3.0"

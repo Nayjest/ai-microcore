@@ -2,6 +2,9 @@ import re
 import logging
 from datetime import datetime
 from typing import Any
+from collections.abc import Iterator
+from queue import Queue
+from threading import Thread
 
 from .utils import run_parallel, RETURN_EXCEPTION
 from .wrappers.llm_response_wrapper import (
@@ -416,3 +419,25 @@ async def llm_parallel(
         return_on_failure=return_on_failure,
         log_errors=log_errors,
     )
+
+
+def llm_stream(*args, **kwargs) -> Iterator[str]:
+    q = Queue()
+    sentinel = object()
+    error = None
+    kwargs["callbacks"] = list(kwargs.get("callbacks", [])) + [lambda token: q.put(token)]
+
+    def run():
+        nonlocal error
+        try:
+            llm(*args, **kwargs)
+        except Exception as e:  # pylint: disable=W0718
+            error = e
+        finally:
+            q.put(sentinel)
+
+    Thread(target=run, daemon=True).start()
+    while (item := q.get()) is not sentinel:
+        yield item
+    if error is not None:
+        raise error
