@@ -176,6 +176,7 @@ __all__ = [
     "llm",
     "allm",
     "llm_parallel",
+    "llm_stream",
     "tpl",
     "prompt",
     "fmt",

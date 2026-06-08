@@ -425,7 +425,11 @@ def llm_stream(*args, **kwargs) -> Iterator[str]:
     q = Queue()
     sentinel = object()
     error = None
-    kwargs["callbacks"] = list(kwargs.get("callbacks", [])) + [lambda token: q.put(token)]
+
+    def on_token(token):
+        q.put(token)
+
+    kwargs["callbacks"] = list(kwargs.get("callbacks", [])) + [on_token]
 
     def run():
         nonlocal error
