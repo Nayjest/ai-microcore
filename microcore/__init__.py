@@ -215,7 +215,7 @@ __all__ = [
     "SearchResult",
     "SearchResults",
     "make_point_id",
-        "dedent",
+    "dedent",
     # submodules
     "embedding_db",
     "file_cache",

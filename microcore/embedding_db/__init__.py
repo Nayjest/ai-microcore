@@ -25,7 +25,7 @@ def make_point_id(*key_parts: str, text: str | None = None) -> str:
         raw = text
     else:
         raise ValueError("make_point_id: pass key_parts or text")
-    return str(uuid.UUID(hashlib.md5(raw.encode()).hexdigest()))
+    return str(uuid.UUID(hashlib.md5(raw.encode(), usedforsecurity=False).hexdigest()))
 
 
 class SearchResults(list):
