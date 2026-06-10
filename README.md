@@ -246,11 +246,14 @@ Find most similar text
 ### texts.get_all(self, collection: str) -> list[str]
 Return collection of texts
 
-### texts.save(collection: str, text: str, metadata: dict = None)
-Store text and related metadata in embeddings database
+### texts.save(collection: str, text: str, metadata: dict = None, id: str = None)
+Store text and related metadata in embeddings database.
+If `id` is not provided, it will be generated.
 
-### texts.save_many(collection: str, items: list[tuple[str, dict] | str])
-Store multiple texts and related metadata in the embeddings database
+### texts.save_many(collection: str, items: list[tuple[str, dict] | tuple[str, dict, str] | str])
+Store multiple texts and related metadata in the embeddings database.
+Each item may be a string (text), a `(text, metadata)` tuple, or a `(text, metadata, id)` tuple.
+If `id` is not provided, it will be generated.
 
 ### texts.clear(collection: str):
 Clear collection
