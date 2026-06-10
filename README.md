@@ -11,20 +11,20 @@
 </p>
 
 
-**MicroCore** is a collection of python adapters for Large Language Models
-and Vector Databases / Semantic Search APIs allowing to 
+**MicroCore** is a collection of Python adapters for Large Language Models
+and Vector Databases / Semantic Search APIs allowing you to 
 communicate with these services in a convenient way, make them easily switchable 
 and separate business logic from the implementation details.
 
 It defines interfaces for features typically used in AI applications,
 which allows you to keep your application as simple as possible and try various models & services
-without need to change your application code.
+without the need to change your application code.
 
-You can even switch between text completion and chat completion models only using configuration.
+You can even switch between text completion and chat completion models using only configuration.
 
 Thanks to LLM-agnostic MCP integration,
 **MicroCore** connects MCP tools to any language models easily,
-whether through API providers that do not support MCP, or through inference using pytorch or arbitrary python functions.
+whether through API providers that do not support MCP, or through inference using PyTorch or arbitrary Python functions.
 
 The basic example of usage is as follows:
 
@@ -38,13 +38,13 @@ while user_msg := input('Enter message: '):
 ## 🔗 Links
 
  - [API Reference](https://ai-microcore.github.io/api-reference/)
- - [PyPi Package](https://pypi.org/project/ai-microcore/)
+ - [PyPI Package](https://pypi.org/project/ai-microcore/)
  - [GitHub Repository](https://github.com/Nayjest/ai-microcore)
 
 
 ## 💻 Installation
 
-Install as PyPi package:
+Install as a PyPI package:
 ```
 pip install ai-microcore
 ```
@@ -81,7 +81,7 @@ For the full list of available configuration options, you may also check
 [`microcore/configuration.py`](https://github.com/Nayjest/ai-microcore/blob/main/microcore/configuration.py#L175).
 
 ### Installing vendor-specific packages
-For models working not via OpenAI API, you may need to install additional packages:
+For models that work via APIs other than the OpenAI API, you may need to install additional packages:
 #### Anthropic Claude
 ```bash
 pip install anthropic
@@ -94,7 +94,7 @@ pip install google-genai
 #### Local language models via Hugging Face Transformers
 
 You will need to install transformers and a deep learning library of your choice
-(PyTorch, TensorFlow, Flax, etc).
+(PyTorch, TensorFlow, Flax, etc.).
 
 See [transformers installation](https://huggingface.co/docs/transformers/installation).
 
@@ -156,7 +156,7 @@ In order to use vector database functions with Qdrant, you need to install the `
 ```bash
 pip install qdrant-client
 ```
-Configuration example
+Configuration example:
 ```python
 from microcore import configure, EmbeddingDbType
 from sentence_transformers import SentenceTransformer
@@ -237,14 +237,14 @@ configure(
 )
 ```
 
-### texts.search(collection: str, query: str | list, n_results: int = 5, where: dict = None, **kwargs) → list[str]
+### texts.search(collection: str, query: str | list, n_results: int = 5, where: dict = None, \*\*kwargs) → list[str]
 Similarity search
 
-### texts.find_one(self, collection: str, query: str | list) → str | None
+### texts.find_one(collection: str, query: str | list) → str | None
 Find most similar text
 
-### texts.get_all(self, collection: str) -> list[str]
-Return collection of texts
+### texts.get_all(collection: str) → list[str]
+Return all texts in the collection
 
 ### texts.save(collection: str, text: str, metadata: dict = None, id: str = None)
 Store text and related metadata in embeddings database.
@@ -255,7 +255,7 @@ Store multiple texts and related metadata in the embeddings database.
 Each item may be a string (text), a `(text, metadata)` tuple, or a `(text, metadata, id)` tuple.
 If `id` is not provided, it will be generated.
 
-### texts.clear(collection: str):
+### texts.clear(collection: str)
 Clear collection
 
 ## API providers and models support
@@ -264,14 +264,14 @@ MicroCore supports major API providers via various chat completion / text comple
 
 Tested with the following services:
 - [OpenAI](https://openai.com)
-- [Anthropic](https://anthropic.com)  (via Anthropic API and via OpenAI API)
+- [Anthropic](https://anthropic.com) (via Anthropic API and via OpenAI API)
 - [MistralAI](https://mistral.ai)
 - [Google AI Studio](https://aistudio.google.com/) (via Google GenAI API and via OpenAI API)
 - [Google Vertex AI](https://cloud.google.com/vertex-ai?hl=en)
 - [xAI](https://x.ai/)
 - [Microsoft Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service)
 - [Perplexity](https://www.perplexity.ai/api-platform)
-- [DeepSeek](https://www.deepseek.ai/)
+- [DeepSeek](https://www.deepseek.com/)
 - [Cohere](https://cohere.com/)
 - [RunPod](https://www.runpod.io/) (via OpenAI API)
 - [Cerebras](https://www.cerebras.ai/)
@@ -287,7 +287,7 @@ Tested with the following services:
 
 And more via Google / Anthropic / OpenAI API.
 
-## Supported local language model APIs:
+## Supported local language model APIs
 - HuggingFace [Transformers](https://huggingface.co/docs/transformers/index) (see configuration examples [here](https://github.com/Nayjest/ai-microcore/blob/main/tests/local/test_transformers.py)).
 - Command-line LLM tools (e.g. [`llm`](https://llm.datasette.io/), [`ollama`](https://ollama.com/), `claude`, `gemini`) via `ApiType.CLI` (see [Inference via a command-line tool](#inference-via-a-command-line-tool-cli)).
 - Custom local models by providing own function for chat / text completion, sync / async inference.
@@ -295,13 +295,13 @@ And more via Google / Anthropic / OpenAI API.
 ## 🖼️ Examples
 
 #### [Code review tool](https://github.com/Nayjest/ai-microcore/blob/main/examples/code-review-tool)
-Performs a code review by LLM for changes in git .patch files in any programming languages.
+Performs a code review by LLM for changes in git .patch files in any programming language.
 
 #### [Image analysis](https://colab.research.google.com/drive/1qTJ51wxCv3VlyqLt3M8OZ7183YXPFpic) (Google Colab)
 Determine the number of petals and the color of the flower from a photo (gpt-4-turbo)
 
 #### [Benchmark LLMs on math problems](https://www.kaggle.com/code/nayjest/gigabenchmark-llm-accuracy-math-problems) (Kaggle Notebook)
-Benchmark accuracy of 20+ state of the art models on solving olympiad math problems. Inferencing local language models via HuggingFace Transformers, parallel inference.
+Benchmark accuracy of 20+ state-of-the-art models on solving olympiad math problems. Inferencing local language models via HuggingFace Transformers, parallel inference.
 
 #### [Generate meme image](https://github.com/Nayjest/ai-microcore/blob/main/examples/generate_meme_image.py)
 Simple example demonstrating image generation using [OpenAI GPT Image](https://platform.openai.com/docs/guides/image-generation?image-generation-model=gpt-image-1) model.
