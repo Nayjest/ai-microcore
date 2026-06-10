@@ -14,6 +14,7 @@ from . import tokenizing
 from . import presets
 from . import file_cache
 from .embedding_db import SearchResult, AbstractEmbeddingDB, SearchResults
+from .embedding_db import make_point_id
 from .file_storage import storage
 from ._env import configure, env, config, min_setup
 from .logging import use_logging
@@ -213,7 +214,8 @@ __all__ = [
     "parse",
     "SearchResult",
     "SearchResults",
-    "dedent",
+    "make_point_id",
+        "dedent",
     # submodules
     "embedding_db",
     "file_cache",
@@ -233,4 +235,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "6.3.0"
+__version__ = "6.3.1"

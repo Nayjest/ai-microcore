@@ -139,6 +139,24 @@ def test_uuid():
     assert 2 == len(texts.get_all(cid))
 
 
+def test_save_many_explicit_point_id_allows_same_text():
+    from microcore.embedding_db import make_point_id
+
+    cid = "test_explicit_point_id"
+    texts.clear(cid)
+    same = "Scope: Revenue"
+    texts.save_many(
+        cid,
+        [
+            (same, {"_point_id": make_point_id("d1", "res_a", "scope", "q1")}),
+            (same, {"_point_id": make_point_id("d1", "res_b", "scope", "q1")}),
+        ],
+    )
+    assert 2 == texts.count(cid)
+    for sr in texts.get_all(cid):
+        assert "_point_id" not in (sr.metadata or {})
+
+
 def test_count():
     cid = "test_count"
     texts.clear(cid)
