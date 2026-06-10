@@ -6,7 +6,6 @@ import tiktoken
 
 from ..utils import ExtendedString
 
-
 INT32_MAX = 2**31 - 1  # 2147483647
 
 
