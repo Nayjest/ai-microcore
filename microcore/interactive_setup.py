@@ -7,6 +7,7 @@ from .configuration import (
 from .llm_backends import (
     ApiPlatform,
     ApiType,
+    DEFAULT_MODELS,
     llm_api_base_required,
     llm_api_key_required,
 )
@@ -59,10 +60,14 @@ def prompt_api_key(
 
 def prompt_model_name(
     question: str = "Enter model name:",
+    default: str = None,
 ) -> str:
     """
     Prompt user to enter an LLM model name.
+    If a default is provided, it is suggested and used when the input is empty.
     """
+    if default:
+        return ask(f"{question} [{magenta(default)}] ").strip() or default
     return ask_non_empty(question).strip()
 
 
@@ -193,7 +198,12 @@ def interactive_setup(
                 )
 
         if "MODEL" not in raw_config:
-            raw_config["MODEL"] = prompt_model_name()
+            default_model = (
+                DEFAULT_MODELS.get(ApiPlatform(platform))
+                if platform in ApiPlatform
+                else None
+            )
+            raw_config["MODEL"] = prompt_model_name(default=default_model)
 
     _fill_extras(raw_config, extras)
 
