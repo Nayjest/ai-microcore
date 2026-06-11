@@ -1,4 +1,3 @@
-import hashlib
 import logging
 import sys
 from dataclasses import dataclass
@@ -18,6 +17,7 @@ from qdrant_client.models import VectorParams, Distance, PointStruct, ScoredPoin
 
 from ..configuration import Config
 from .. import SearchResult, SearchResults, AbstractEmbeddingDB
+from . import make_point_id
 
 
 def is_sentence_transformer(fn):
@@ -158,13 +158,16 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
                 text = i[0]
                 metadata = i[1] or {}
             metadata["_text"] = text
-            if unique:
-                new_id = str(uuid.UUID(hashlib.md5(text.encode()).hexdigest()))
-                if new_id in ids:
-                    continue
-                ids.add(new_id)
+            explicit = metadata.pop("_point_id", None)
+            if explicit is not None:
+                new_id = explicit
+            elif unique:
+                new_id = make_point_id(text=text)
             else:
                 new_id = str(uuid.uuid4())
+            if unique and new_id in ids:
+                continue
+            ids.add(new_id)
             point_structs.append(
                 PointStruct(
                     id=new_id,

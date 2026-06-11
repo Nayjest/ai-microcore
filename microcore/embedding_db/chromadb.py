@@ -8,6 +8,7 @@ from chromadb.errors import ChromaError
 from chromadb.utils import embedding_functions
 from ..configuration import Config
 from .. import SearchResult, SearchResults, AbstractEmbeddingDB
+from . import make_point_id
 
 
 @dataclass
@@ -83,15 +84,22 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
         for i in items:
             if isinstance(i, str):
                 text = i
-                metadata = None
+                metadata = {}
             else:
                 text = i[0]
-                metadata = i[1] or None
-            if unique and text in texts:
+                metadata = dict(i[1] or {})
+            explicit = metadata.pop("_point_id", None)
+            if explicit is not None:
+                new_id = explicit
+            elif unique:
+                new_id = make_point_id(text=text)
+            else:
+                new_id = str(uuid.uuid4())
+            if unique and new_id in ids:
                 continue
             texts.append(text)
-            metadatas.append(metadata)
-            ids.append(str(hash(text)) if unique else str(uuid.uuid4()))
+            metadatas.append(metadata or None)
+            ids.append(new_id)
         self._get_collection(collection, create=True).upsert(
             documents=texts, ids=ids, metadatas=metadatas
         )

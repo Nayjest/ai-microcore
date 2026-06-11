@@ -1,4 +1,6 @@
+import hashlib
 import logging
+import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
@@ -8,6 +10,22 @@ from ..utils import ExtendedString
 
 
 INT32_MAX = 2**31 - 1  # 2147483647
+
+
+def make_point_id(*key_parts: str, text: str | None = None) -> str:
+    """
+    Stable point id for Qdrant/Chroma.
+
+    - key_parts given: MD5(part0 \\0 part1 \\0 ...) → UUID
+    - text only: MD5(text) → UUID (legacy save_many default)
+    """
+    if key_parts:
+        raw = "\0".join(key_parts)
+    elif text is not None:
+        raw = text
+    else:
+        raise ValueError("make_point_id: pass key_parts or text")
+    return str(uuid.UUID(hashlib.md5(raw.encode(), usedforsecurity=False).hexdigest()))
 
 
 class SearchResults(list):
