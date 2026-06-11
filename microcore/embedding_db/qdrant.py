@@ -144,7 +144,14 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
         )
         return self._wrap_results(hits.points)
 
-    def save_many(self, collection: str, items: list[tuple[str, dict] | str]):
+    def save_many(
+        self,
+        collection: str,
+        items: list[tuple[str, dict] | tuple[str, dict, str] | str],
+    ):
+        """
+        Save multiple documents in the collection.
+        """
         if not self.collection_exists(collection):
             self._create_collection(collection)
         point_structs = []
@@ -152,19 +159,20 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
         unique = not self.config.EMBEDDING_DB_ALLOW_DUPLICATES
         for i in items:
             if isinstance(i, str):
-                text = i
-                metadata = dict()
+                text, metadata, new_id = i, dict(), None
             else:
                 text = i[0]
                 metadata = i[1] or {}
+                new_id = i[2] if len(i) > 2 and i[2] is not None else None
             metadata["_text"] = text
-            if unique:
-                new_id = str(uuid.UUID(hashlib.md5(text.encode()).hexdigest()))
-                if new_id in ids:
-                    continue
-                ids.add(new_id)
-            else:
-                new_id = str(uuid.uuid4())
+            if new_id is None:
+                if unique:
+                    new_id = str(uuid.UUID(hashlib.md5(text.encode()).hexdigest()))
+                    if new_id in ids:
+                        continue
+                    ids.add(new_id)
+                else:
+                    new_id = str(uuid.uuid4())
             point_structs.append(
                 PointStruct(
                     id=new_id,
