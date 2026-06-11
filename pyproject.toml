@@ -59,6 +59,12 @@ maintainers = [
 ]
 license = { file = "LICENSE" }
 
+[project.optional-dependencies]
+azure = [
+    "azure-identity>=1.17.0,<2",
+    "azure-identity-broker>=1.3.0,<2",
+]
+
 [project.urls]
 "Source Code" = "https://github.com/Nayjest/ai-microcore"
 "Bug Tracker" = "https://github.com/Nayjest/ai-microcore/issues"

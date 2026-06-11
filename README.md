@@ -91,6 +91,20 @@ pip install anthropic
 pip install google-genai
 ```
 
+#### Microsoft Azure OpenAI with Entra ID (no API key)
+```bash
+pip install azure-identity azure-identity-broker
+```
+
+Inference with Entra requires **RBAC on the AI resource** (for example **Cognitive Services User**
+at resource scope; for some deployments **Cognitive Services OpenAI User** applies).
+Owner/Contributor does not substitute for these roles. Role assignments can take several minutes
+to propagate.
+
+Microsoft guide: [Configure Microsoft Entra ID for Azure AI Foundry models](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/configure-entra-id?tabs=python&pivots=ai-foundry-portal).
+
+Configuration example: [.env.azure-openai-entra-id.example](.env.azure-openai-entra-id.example)
+
 #### Local language models via Hugging Face Transformers
 
 You will need to install transformers and a deep learning library of your choice
