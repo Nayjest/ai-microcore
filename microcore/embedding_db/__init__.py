@@ -6,7 +6,6 @@ import tiktoken
 
 from ..utils import ExtendedString
 
-
 INT32_MAX = 2**31 - 1  # 2147483647
 
 
@@ -124,13 +123,41 @@ class AbstractEmbeddingDB(ABC):
     def get_all(self, collection: str) -> SearchResults | list[str | SearchResult]:
         """Return all documents in the collection"""
 
-    def save(self, collection: str, text: str, metadata: dict = None):
-        """Save a single document in the collection"""
-        self.save_many(collection, [(text, metadata)])
+    def save(
+        self,
+        collection: str,
+        text: str,
+        metadata: dict = None,
+        id: str = None,  # pylint: disable=redefined-builtin
+    ):
+        """
+        Save a single document in the collection
+
+        Args:
+            collection (str): collection name
+            text (str): document text
+            metadata (dict): document metadata
+            id (str): document identifier; if not provided, it will be generated
+        """
+        self.save_many(collection, [(text, metadata, id)])
 
     @abstractmethod
-    def save_many(self, collection: str, items: list[tuple[str, dict] | str]):
-        """Save multiple documents in the collection"""
+    def save_many(
+        self,
+        collection: str,
+        items: list[tuple[str, dict] | tuple[str, dict, str] | str],
+    ):
+        """
+        Save multiple documents in the collection
+
+        Args:
+            collection (str): collection name
+            items: list of documents;
+                each item may be a string (text),
+                a tuple of (text, metadata),
+                or a tuple of (text, metadata, id).
+                If id is not provided, it will be generated.
+        """
 
     @abstractmethod
     def clear(self, collection: str):

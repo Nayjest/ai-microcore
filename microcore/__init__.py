@@ -130,11 +130,21 @@ class _EmbeddingDBProxy(AbstractEmbeddingDB):
     ) -> list[str | SearchResult] | str | SearchResult | None:
         return env().texts.get(collection, ids, limit, offset, where, **kwargs)
 
-    def save_many(self, collection: str, items: list[tuple[str, dict] | str]):
+    def save_many(
+        self,
+        collection: str,
+        items: list[tuple[str, dict] | tuple[str, dict, str] | str],
+    ):
         return env().texts.save_many(collection, items)
 
-    def save(self, collection: str, text: str, metadata: dict = None):
-        return env().texts.save(collection, text, metadata)
+    def save(
+        self,
+        collection: str,
+        text: str,
+        metadata: dict = None,
+        id: str = None,  # pylint: disable=redefined-builtin
+    ):
+        return env().texts.save(collection, text, metadata, id)
 
     def clear(self, collection: str):
         return env().texts.clear(collection)
@@ -154,6 +164,8 @@ class _EmbeddingDBProxy(AbstractEmbeddingDB):
 
 texts = _EmbeddingDBProxy()
 """Embedding database, see `microcore.embedding_db.AbstractEmbeddingDB`"""
+vector_db = texts
+"""Alias for `texts`"""
 
 
 def mcp_server(name: str) -> mcp.MCPServer:  # noqa, pylint-disable=E0602
@@ -181,6 +193,7 @@ __all__ = [
     "prompt",
     "fmt",
     "texts",
+    "vector_db",
     "configure",
     "min_setup",
     "validate_config",
@@ -233,4 +246,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "6.3.0"
+__version__ = "6.4.0"

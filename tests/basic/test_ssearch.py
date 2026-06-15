@@ -225,6 +225,32 @@ def test_bool_metadata():
     mc.texts.clear("test_bool_metadata")
 
 
+def test_custom_ids():
+    cid = "test_custom_ids"
+    texts.clear(cid)
+    texts.save(cid, "first doc", id="doc-1")
+    texts.save(cid, "second doc", {"field": "value"}, id="doc-2")
+    texts.save_many(
+        cid,
+        [
+            ("third doc", None, "doc-3"),
+            ("fourth doc", {"field": "value4"}),  # id is generated
+            "fifth doc",  # id is generated
+        ],
+    )
+    assert 5 == texts.count(cid)
+    assert "first doc" == texts.get(cid, "doc-1")
+    item = texts.get(cid, "doc-2")
+    assert "second doc" == item
+    assert {"field": "value"} == item.metadata
+    assert "third doc" == texts.get(cid, "doc-3")
+
+    # saving with an existing id overwrites the document
+    texts.save(cid, "updated doc", id="doc-1")
+    assert "updated doc" == texts.get(cid, "doc-1")
+    assert 5 == texts.count(cid)
+
+
 def test_or_filter():
     cid = "test_collection"
     texts.clear(cid)
