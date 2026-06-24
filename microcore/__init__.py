@@ -39,29 +39,24 @@ from .interactive_setup import interactive_setup
 
 
 def tpl(
-    file: os.PathLike[str] | str,
-    sanitize_utf8=True,
-    **kwargs
+    file: os.PathLike[str] | str, sanitize_utf8=True, **kwargs
 ) -> str | PromptWrapper:
     """Renders a prompt template using the provided parameters."""
     rendered = env().tpl_function(file, **kwargs)
     if sanitize_utf8:
-        rendered = rendered.encode('utf-8', errors='replace').decode('utf-8')
+        rendered = rendered.encode("utf-8", errors="replace").decode("utf-8")
     return PromptWrapper(rendered, tpl_vars=kwargs, tpl_file=file)
 
 
 def prompt(
-    template_str: str,
-    remove_indent=True,
-    sanitize_utf8=True,
-    **kwargs
+    template_str: str, remove_indent=True, sanitize_utf8=True, **kwargs
 ) -> str | PromptWrapper:
     """Renders a prompt template from string using the provided parameters."""
     if remove_indent:
         template_str = dedent(template_str)
     rendered = env().jinja_env.from_string(template_str).render(**kwargs)
     if sanitize_utf8:
-        rendered = rendered.encode('utf-8', errors='replace').decode('utf-8')
+        rendered = rendered.encode("utf-8", errors="replace").decode("utf-8")
     return PromptWrapper(rendered, tpl_vars=kwargs, tpl_file=None)
 
 
@@ -246,4 +241,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "6.4.0"
+__version__ = "6.4.1"
