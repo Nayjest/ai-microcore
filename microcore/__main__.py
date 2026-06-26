@@ -26,7 +26,7 @@ def test_llm(env_file: str) -> int:
         print(mc.ui.red(f"\n[FAIL]: {e}"))
         return 1
     print(mc.ui.green("\n[OK]"))
-    return 1
+    return 0
 
 
 def main(argv: list[str] = None) -> int:
@@ -39,7 +39,7 @@ def main(argv: list[str] = None) -> int:
         if len(args) != 1:
             print(mc.ui.red("test-llm accepts one argument: <.env-file>"))
             return 1
-        return test_llm(args[0] if args else None)
+        return test_llm(args[0])
     print(mc.ui.red(f"Unknown command: {command}"))
     print(__doc__.strip())
     return 1
