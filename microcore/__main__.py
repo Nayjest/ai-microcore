@@ -20,13 +20,13 @@ def test_llm(env_file: str) -> int:
             USE_LOGGING=mc.PRINT_STREAM,
         )
         answer = mc.llm("What is the capital of France?")
-        if "paris" in str(answer).lower():
-            print(mc.ui.green("\n[OK]"))
-        else:
+        if "paris" not in str(answer).lower():
             raise ValueError('LLM response does not contain expected answer ("Paris").')
     except Exception as e:
         print(mc.ui.red(f"\n[FAIL]: {e}"))
         return 1
+    print(mc.ui.green("\n[OK]"))
+    return 1
 
 
 def main(argv: list[str] = None) -> int:
