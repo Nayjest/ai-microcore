@@ -22,7 +22,7 @@ def test_llm(env_file: str) -> int:
         answer = mc.llm("What is the capital of France?")
         if "paris" not in str(answer).lower():
             raise ValueError('LLM response does not contain expected answer ("Paris").')
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(mc.ui.red(f"\n[FAIL]: {e}"))
         return 1
     print(mc.ui.green("\n[OK]"))
