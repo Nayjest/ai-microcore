@@ -37,10 +37,10 @@ def main(argv: list[str] = None) -> int:
     command, *args = argv
     if command == "test-llm":
         if len(args) != 1:
-            print(ui.red("test-llm accepts one argument: <.env-file>"))
+            print(mc.ui.red("test-llm accepts one argument: <.env-file>"))
             return 1
         return test_llm(args[0] if args else None)
-    print(ui.red(f"Unknown command: {command}"))
+    print(mc.ui.red(f"Unknown command: {command}"))
     print(__doc__.strip())
     return 1
 
