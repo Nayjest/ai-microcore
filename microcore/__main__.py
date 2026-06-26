@@ -41,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         return test_llm(args[0])
     print(mc.ui.red(f"Unknown command: {command}"))
-    print(__doc__.strip())
+    print((__doc__ or "").strip())
     return 1
 
 
