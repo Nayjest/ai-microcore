@@ -29,10 +29,10 @@ def test_llm(env_file: str) -> int:
     return 0
 
 
-def main(argv: list[str] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if not argv or argv[0] in ("-h", "--help", "help"):
-        print(__doc__.strip())
+        print((__doc__ or "").strip())
         return 0
     command, *args = argv
     if command == "test-llm":
