@@ -8,6 +8,7 @@ Usage:
 import sys
 import microcore as mc
 
+
 def test_llm(env_file: str) -> int:
     """
     Smoke-test the configured LLM: ask for the capital of France
@@ -22,7 +23,7 @@ def test_llm(env_file: str) -> int:
         if "paris" in str(answer).lower():
             print(mc.ui.green("\n[OK]"))
         else:
-            raise ValeError("LLM response does not contain expected answer (\"Paris\").")
+            raise ValueError('LLM response does not contain expected answer ("Paris").')
     except Exception as e:
         print(mc.ui.red(f"\n[FAIL]: {e}"))
         return 1
@@ -35,7 +36,7 @@ def main(argv: list[str] = None) -> int:
         return 0
     command, *args = argv
     if command == "test-llm":
-        if len(args) !=1:
+        if len(args) != 1:
             print(ui.red("test-llm accepts one argument: <.env-file>"))
             return 1
         return test_llm(args[0] if args else None)
