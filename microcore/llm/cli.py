@@ -26,7 +26,7 @@ class CommandLineLLMError(BadAIAnswer):
         super().__init__(message, details)
 
 
-def run_streaming(argv: list[str], on_chunk) -> str:
+def run_streaming(argv: list[str], on_chunk, stdin_data: str | None = None) -> str:
     """
     Run the given command line, streaming stdout to ``on_chunk`` as it arrives.
 
@@ -37,6 +37,10 @@ def run_streaming(argv: list[str], on_chunk) -> str:
     Args:
         argv (list[str]): Command line, already split into arguments.
         on_chunk (callable): Called with each line of stdout as it arrives.
+        stdin_data (str | None): If given, written to the process's stdin and
+            the pipe is closed. Used to pass the prompt without putting it on the
+            command line, which avoids OS argument-length limits (notably the
+            Windows ``CreateProcess`` ~32KB limit) for large prompts.
     Returns:
         str: The full stdout once the process completes.
     Raises:
@@ -45,12 +49,27 @@ def run_streaming(argv: list[str], on_chunk) -> str:
     """
     with subprocess.Popen(
         argv,
+        stdin=subprocess.PIPE if stdin_data is not None else None,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         encoding="utf-8",
         errors="replace",
         bufsize=1,  # line-buffered
     ) as proc:
+        # Feed stdin from a thread so a large prompt can't deadlock against the
+        # stdout/stderr read loops by filling the pipe buffer before we read.
+        stdin_thread = None
+        if stdin_data is not None:
+            def _write_stdin():
+                try:
+                    proc.stdin.write(stdin_data)
+                    proc.stdin.close()
+                except (BrokenPipeError, OSError):
+                    pass  # process exited early; stdout/stderr carry the reason
+
+            stdin_thread = threading.Thread(target=_write_stdin)
+            stdin_thread.start()
+
         # Drain stderr in a thread so a full stderr pipe buffer can never deadlock
         # the stdout read loop below.
         stderr_chunks: list[str] = []
@@ -70,6 +89,8 @@ def run_streaming(argv: list[str], on_chunk) -> str:
             on_chunk(line)
 
         stderr_thread.join()  # finish reading stderr before the context closes the pipe
+        if stdin_thread is not None:
+            stdin_thread.join()
         return_code = proc.wait()
 
     output = "".join(chunks).strip()
@@ -126,11 +147,20 @@ class CommandLineClient(BaseAIChatClient):
         # argument the CLI receives. Splitting happens before substitution, so the
         # prompt always stays within a single argv element.
         argv = shlex.split(self.config.LLM_CLI, posix=True)
-        argv = [a.replace(self.PLACEHOLDER, prompt_str) for a in argv]
+        if any(self.PLACEHOLDER in a for a in argv):
+            # Placeholder present: substitute the prompt into the command line.
+            argv = [a.replace(self.PLACEHOLDER, prompt_str) for a in argv]
+            stdin_data = None
+        else:
+            # No placeholder: pass the prompt via stdin. This avoids OS
+            # argument-length limits (notably Windows CreateProcess ~32KB) that
+            # would otherwise truncate or reject large prompts, and works with
+            # CLIs that read the prompt from stdin (e.g. `claude -p`).
+            stdin_data = prompt_str
         resolved = shutil.which(argv[0])
         if resolved:
             argv[0] = resolved
-        return argv, callbacks
+        return argv, callbacks, stdin_data
 
     def generate(
         self,
@@ -140,13 +170,13 @@ class CommandLineClient(BaseAIChatClient):
         """
         Run the command line with the prompt, streaming output to callbacks as it arrives.
         """
-        argv, callbacks = self.prepare_run(prompt, kwargs)
+        argv, callbacks, stdin_data = self.prepare_run(prompt, kwargs)
 
         def on_chunk(text):
             for cb in callbacks:
                 cb(text)
 
-        result = run_streaming(argv, on_chunk)
+        result = run_streaming(argv, on_chunk, stdin_data)
         return LLMResponse(
             result,
             api_type=ApiType.CLI,
@@ -173,7 +203,7 @@ class AsyncCommandLineClient(BaseAsyncAIClient):
         **kwargs
     ) -> LLMResponse:
         """Run the command line with the prompt, streaming output to callbacks as it arrives."""
-        argv, callbacks = self.sync_client.prepare_run(prompt, kwargs)
+        argv, callbacks, stdin_data = self.sync_client.prepare_run(prompt, kwargs)
         loop = asyncio.get_running_loop()
 
         def on_chunk(text):
@@ -185,7 +215,7 @@ class AsyncCommandLineClient(BaseAsyncAIClient):
                 else:
                     cb(text)
 
-        result = await asyncio.to_thread(run_streaming, argv, on_chunk)
+        result = await asyncio.to_thread(run_streaming, argv, on_chunk, stdin_data)
         return LLMResponse(
             result,
             api_type=ApiType.CLI,
