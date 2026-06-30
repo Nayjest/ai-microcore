@@ -82,6 +82,22 @@ def inject_headers(headers: Mapping[str, str], params: dict) -> None:
         http_options.headers.update(headers)
 
 
+def inject_base_url(base_url: str, params: dict) -> None:
+    """
+    Set a custom API endpoint (base URL) for the Google GenAI client.
+
+    Allows pointing the client at an alternative Gemini-compatible endpoint
+    (proxy, gateway, self-hosted) via config.LLM_API_BASE.
+    """
+    if "http_options" not in params:
+        params["http_options"] = {}
+    http_options = params["http_options"]
+    if isinstance(http_options, dict):
+        http_options["base_url"] = base_url
+    elif isinstance(http_options, HttpOptions):
+        http_options.base_url = base_url
+
+
 class GoogleClient(BaseAIChatClient):
     """
     Client for Google GenAI SDK to interact with Google Gemini models.
@@ -95,6 +111,9 @@ class GoogleClient(BaseAIChatClient):
 
         if config.HTTP_HEADERS:
             inject_headers(config.HTTP_HEADERS, client_params)
+
+        if config.LLM_API_BASE:
+            inject_base_url(config.LLM_API_BASE, client_params)
 
         developer_api = config.LLM_API_PLATFORM == ApiPlatform.GOOGLE_AI_STUDIO
 

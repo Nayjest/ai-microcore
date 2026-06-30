@@ -145,6 +145,18 @@ No API key is required. A non-zero exit code from the tool raises `CommandLineLL
     <br>💡 <small>Setting `USE_DOT_ENV` to `false` disables reading configuration files.</small>
 3.  OS environment variables have the lowest priority.
 
+### Verifying Configuration
+
+The `test-llm` command validates a configuration file against the live API:
+
+```bash
+python -m microcore test-llm <.env-file>
+```
+
+It issues a single completion request and asserts the response is coherent.
+Exit code `0` indicates success; `1` indicates a configuration error,
+request failure, or unexpected response.
+
 ### Vector Databases
 
 Vector database functions are available via `microcore.texts`.
