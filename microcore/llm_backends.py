@@ -241,7 +241,7 @@ DEFAULT_PLATFORMS = {
 
 HIGH_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.OPENAI: "gpt-5.5",  # I/O: $5/$30 /M tokens
-    ApiPlatform.ANTHROPIC: "claude-opus-4-8",  # I/O: $5/$25 /M tokens
+    ApiPlatform.ANTHROPIC: "claude-fable-5",  # I/O: $10/$50 /M tokens
     ApiPlatform.GOOGLE_AI_STUDIO: "gemini-2.5-pro",
     ApiPlatform.GOOGLE_VERTEX_AI: "gemini-2.5-pro",
     ApiPlatform.MISTRAL: "mistral-large-latest",
@@ -266,7 +266,7 @@ LOW_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.PERPLEXITY: "sonar",  # I/O: $1/$1 /M tokens
 }
 MID_END_MODELS: dict[ApiPlatform, str] = {
-    ApiPlatform.ANTHROPIC: "claude-sonnet-4-6",  # I/O: $3/$15 /M tokens
+    ApiPlatform.ANTHROPIC: "claude-sonnet-5",  # I/O: $3/$15 /M tokens
     ApiPlatform.PERPLEXITY: "sonar-pro",  # I/O: $3/$15 /M tokens
     ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.5-flash",  # I/O: $1.5/$9 /M tokens
     ApiPlatform.GOOGLE_VERTEX_AI: "gemini-3.5-flash",
