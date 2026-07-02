@@ -1,7 +1,13 @@
 import logging
 import asyncio
 import anthropic
-from anthropic.types import ContentBlockDeltaEvent, SignatureDelta, ThinkingDelta
+from anthropic.types import (
+    ContentBlockDeltaEvent,
+    ContentBlockStartEvent,
+    ContentBlockStopEvent,
+    SignatureDelta,
+    ThinkingDelta,
+)
 
 from ..configuration import Config
 from .._prepare_llm_args import prompt_to_message_dicts
@@ -11,39 +17,83 @@ from ..wrappers.llm_response_wrapper import LLMResponse
 from ..llm_backends import ApiType
 from .shared import prepare_callbacks
 
+THINK_OPEN, THINK_CLOSE = "<think>", "</think>\n"
+PART_SEPARATOR = "\n"
+
 
 def _get_response_text(response, show_thinking: bool = False) -> str:
     """
     Extract text from response content blocks, preserving their order.
     When show_thinking is enabled, thinking blocks are included,
     wrapped in <think>...</think>.
+    Output format is identical to the one produced by _StreamFormatter.
     """
     parts = []
     for block in response.content:
         block_type = getattr(block, "type", None)
-        if block_type == "text":
+        if block_type == "text" and block.text:
             parts.append(block.text)
         elif show_thinking and block_type == "thinking" and block.thinking:
-            parts.append(f"<think>{block.thinking}</think>\n")
-    return "\n".join(parts)
+            parts.append(f"{THINK_OPEN}{block.thinking}{THINK_CLOSE}")
+    return PART_SEPARATOR.join(parts)
 
 
-def _get_chunk_text(chunk) -> str:
-    if not isinstance(chunk, ContentBlockDeltaEvent):
-        return ""
-    if isinstance(chunk.delta, ThinkingDelta):
-        return ""
-    if isinstance(chunk.delta, SignatureDelta):
-        return ""
-    return chunk.delta.text or ""
+class _StreamFormatter:
+    """
+    Transforms raw stream events into output chunks,
+    formatted identically to _get_response_text():
+    thinking blocks (if enabled) are wrapped in <think>...</think>,
+    non-empty content blocks are separated with PART_SEPARATOR.
+    """
 
+    def __init__(self, show_thinking: bool = False):
+        self.show_thinking = show_thinking
+        self.is_first_part = True
+        self.is_thinking_block = False
+        self.opening: str | None = None  # pending output for the current block start
+        self.opened = False  # current block has produced output
 
-def _get_chunk_thinking(chunk) -> str:
-    if isinstance(chunk, ContentBlockDeltaEvent) and isinstance(
-        chunk.delta, ThinkingDelta
-    ):
-        return chunk.delta.thinking or ""
-    return ""
+    def _delta_content(self, chunk) -> str:
+        if isinstance(chunk.delta, ThinkingDelta):
+            if self.show_thinking:
+                return chunk.delta.thinking or ""
+            return ""
+        if isinstance(chunk.delta, SignatureDelta):
+            return ""
+        return chunk.delta.text or ""
+
+    def process(self, chunk) -> list[str]:
+        """Returns output chunks to emit for the given stream event."""
+        out = []
+        if isinstance(chunk, ContentBlockStartEvent):
+            self.is_thinking_block = (
+                getattr(chunk.content_block, "type", None) == "thinking"
+            )
+            self.opened = False
+            self.opening = ("" if self.is_first_part else PART_SEPARATOR) + (
+                THINK_OPEN if self.is_thinking_block else ""
+            )
+        elif isinstance(chunk, ContentBlockDeltaEvent):
+            if content := self._delta_content(chunk):
+                if not self.opened and self.opening is not None:
+                    out.append(self.opening)
+                    self.opening = None
+                    self.opened = True
+                    self.is_first_part = False
+                out.append(content)
+        elif isinstance(chunk, ContentBlockStopEvent):
+            out.extend(self.finish())
+        return [i for i in out if i]
+
+    def finish(self) -> list[str]:
+        """Closes the current block if needed; call at end of block or stream."""
+        out = []
+        if self.opened and self.is_thinking_block:
+            out.append(THINK_CLOSE)
+        self.opening = None
+        self.opened = False
+        self.is_thinking_block = False
+        return out
 
 
 async def _a_process_streamed_response(
@@ -59,20 +109,12 @@ async def _a_process_streamed_response(
             else:
                 cb(chunk_text)
 
-    in_thinking = False
+    formatter = _StreamFormatter(show_thinking)
     async for chunk in response:
-        if show_thinking and (thinking_chunk := _get_chunk_thinking(chunk)):
-            if not in_thinking:
-                in_thinking = True
-                await send("<think>")
-            await send(thinking_chunk)
-        if text_chunk := _get_chunk_text(chunk):
-            if in_thinking:
-                in_thinking = False
-                await send("</think>\n\n")
-            await send(text_chunk)
-    if in_thinking:
-        await send("</think>")
+        for piece in formatter.process(chunk):
+            await send(piece)
+    for piece in formatter.finish():
+        await send(piece)
     return LLMResponse("".join(parts), api_type=ApiType.ANTHROPIC)
 
 
@@ -85,20 +127,12 @@ def _process_streamed_response(
         parts.append(chunk_text)
         [cb(chunk_text) for cb in callbacks]
 
-    in_thinking = False
+    formatter = _StreamFormatter(show_thinking)
     for chunk in response:
-        if show_thinking and (thinking_chunk := _get_chunk_thinking(chunk)):
-            if not in_thinking:
-                in_thinking = True
-                send("<think>")
-            send(thinking_chunk)
-        if text_chunk := _get_chunk_text(chunk):
-            if in_thinking:
-                in_thinking = False
-                send("</think>\n\n")
-            send(text_chunk)
-    if in_thinking:
-        send("</think>")
+        for piece in formatter.process(chunk):
+            send(piece)
+    for piece in formatter.finish():
+        send(piece)
     return LLMResponse("".join(parts), api_type=ApiType.ANTHROPIC)
 
 
