@@ -282,6 +282,8 @@ class LLMConfig(
     HIDDEN_OUTPUT_BEGIN: str = from_env()
     HIDDEN_OUTPUT_END: str = from_env()
     """Remove <think>...</think> from LLM response for models like DeepSeek R1"""
+    SHOW_THINKING: bool = from_env(dtype=bool, default=False)
+    """Pass model thinking (reasoning) wrapped in <think>...</think> to streaming callbacks"""
     CALLBACKS: list[Callable] = field(default_factory=list)
 
     VALIDATE_CONFIG: bool = from_env(dtype=bool, default=True)

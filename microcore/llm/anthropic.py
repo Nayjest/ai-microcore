@@ -12,6 +12,25 @@ from ..llm_backends import ApiType
 from .shared import prepare_callbacks
 
 
+def _get_response_texts(response, show_thinking: bool = False) -> tuple[str, str]:
+    """
+    Extract text from response content blocks, preserving their order.
+    Returns (response_text, display_text); display_text additionally contains
+    thinking blocks wrapped in <think>...</think> when show_thinking is enabled.
+    """
+    text_parts, display_parts = [], []
+    for block in response.content:
+        block_type = getattr(block, "type", None)
+        if block_type == "text":
+            text_parts.append(block.text)
+            display_parts.append(block.text)
+        elif show_thinking and block_type == "thinking" and block.thinking:
+            display_parts.append(f"<think>{block.thinking}</think>")
+    response_text = "\n".join(text_parts)
+    display_text = "\n\n".join(display_parts) if show_thinking else response_text
+    return response_text, display_text
+
+
 def _get_chunk_text(chunk) -> str:
     if not isinstance(chunk, ContentBlockDeltaEvent):
         return ""
@@ -22,25 +41,65 @@ def _get_chunk_text(chunk) -> str:
     return chunk.delta.text or ""
 
 
-async def _a_process_streamed_response(response, callbacks: list[callable]):
+def _get_chunk_thinking(chunk) -> str:
+    if isinstance(chunk, ContentBlockDeltaEvent) and isinstance(
+        chunk.delta, ThinkingDelta
+    ):
+        return chunk.delta.thinking or ""
+    return ""
+
+
+async def _a_process_streamed_response(
+    response, callbacks: list[callable], show_thinking: bool = False
+):
+    async def send(chunk_text: str):
+        for cb in callbacks:
+            if asyncio.iscoroutinefunction(cb):
+                await cb(chunk_text)
+            else:
+                cb(chunk_text)
+
     response_text: str = ""
+    in_thinking = False
     async for chunk in response:
+        if show_thinking and (thinking_chunk := _get_chunk_thinking(chunk)):
+            if not in_thinking:
+                in_thinking = True
+                await send("<think>")
+            await send(thinking_chunk)
         if text_chunk := _get_chunk_text(chunk):
+            if in_thinking:
+                in_thinking = False
+                await send("</think>\n\n")
             response_text += text_chunk
-            for cb in callbacks:
-                if asyncio.iscoroutinefunction(cb):
-                    await cb(text_chunk)
-                else:
-                    cb(text_chunk)
+            await send(text_chunk)
+    if in_thinking:
+        await send("</think>")
     return LLMResponse(response_text, api_type=ApiType.ANTHROPIC)
 
 
-def _process_streamed_response(response, callbacks: list[callable]):
+def _process_streamed_response(
+    response, callbacks: list[callable], show_thinking: bool = False
+):
+    def send(chunk_text: str):
+        [cb(chunk_text) for cb in callbacks]
+
     response_text: str = ""
+    in_thinking = False
     for chunk in response:
+        if show_thinking and (thinking_chunk := _get_chunk_thinking(chunk)):
+            if not in_thinking:
+                in_thinking = True
+                send("<think>")
+            send(thinking_chunk)
         if text_chunk := _get_chunk_text(chunk):
+            if in_thinking:
+                in_thinking = False
+                send("</think>\n\n")
             response_text += text_chunk
-            [cb(text_chunk) for cb in callbacks]
+            send(text_chunk)
+    if in_thinking:
+        send("</think>")
     return LLMResponse(response_text, api_type=ApiType.ANTHROPIC)
 
 
@@ -63,8 +122,9 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
             "`temperature` and `top_p` cannot both be specified for this model. "
             "`top_p` parameter will be ignored. "
         )
+    show_thinking = args.pop("show_thinking", config.SHOW_THINKING)
     callbacks = prepare_callbacks(config, args)
-    return args, {"callbacks": callbacks}
+    return args, {"callbacks": callbacks, "show_thinking": show_thinking}
 
 
 def _extract_sys_msg(prepared_messages: list[dict]) -> tuple[str, list[dict]]:
@@ -123,15 +183,18 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
         )
         response = await async_client.messages.create(**args)
         if args.get("stream"):
-            return await _a_process_streamed_response(response, options["callbacks"])
+            return await _a_process_streamed_response(
+                response, options["callbacks"], options["show_thinking"]
+            )
 
+        response_text, cb_text = _get_response_texts(response, options["show_thinking"])
         for cb in options["callbacks"]:
             if asyncio.iscoroutinefunction(cb):
-                await cb(response.content[0].text)
+                await cb(cb_text)
             else:
-                cb(response.content[0].text)
+                cb(cb_text)
         return LLMResponse(
-            response.content[0].text,
+            response_text,
             response.__dict__,
             api_type=ApiType.ANTHROPIC,
             response=response,
@@ -144,12 +207,15 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
         )
         response = sync_client.messages.create(**args)
         if args.get("stream"):
-            return _process_streamed_response(response, options["callbacks"])
+            return _process_streamed_response(
+                response, options["callbacks"], options["show_thinking"]
+            )
 
+        response_text, cb_text = _get_response_texts(response, options["show_thinking"])
         for cb in options["callbacks"]:
-            cb(response.content[0].text)
+            cb(cb_text)
         return LLMResponse(
-            response.content[0].text,
+            response_text,
             response.__dict__,
             api_type=ApiType.ANTHROPIC,
             response=response,

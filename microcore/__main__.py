@@ -6,10 +6,11 @@ Usage:
 """
 
 import sys
+import logging
 import microcore as mc
 
 
-def test_llm(env_file: str) -> int:
+def test_llm(env_file: str, prompt: str = None) -> int:
     """
     Smoke-test the configured LLM: ask for the capital of France
     and verify the answer contains "Paris".
@@ -19,8 +20,8 @@ def test_llm(env_file: str) -> int:
             DOT_ENV_FILE=env_file,
             USE_LOGGING=mc.PRINT_STREAM,
         )
-        answer = mc.llm("What is the capital of France?")
-        if "paris" not in str(answer).lower():
+        answer = mc.llm(prompt or "What is the capital of France?")
+        if not prompt and "paris" not in str(answer).lower():
             raise ValueError('LLM response does not contain expected answer ("Paris").')
     except Exception as e:  # pylint: disable=broad-exception-caught
         print(mc.ui.red(f"\n[FAIL]: {e}"))
@@ -35,15 +36,16 @@ def main(argv: list[str] | None = None) -> int:
         print((__doc__ or "").strip())
         return 0
     command, *args = argv
-    if command == "test-llm":
-        if len(args) != 1:
+    if command in ("test-llm", "test_llm"):
+        if len(args) not in (1, 2):
             print(mc.ui.red("test-llm accepts one argument: <.env-file>"))
             return 1
-        return test_llm(args[0])
+        return test_llm(args[0], args[1] if len(args) == 2 else None)
     print(mc.ui.red(f"Unknown command: {command}"))
     print((__doc__ or "").strip())
     return 1
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s: %(message)s")
     sys.exit(main())
