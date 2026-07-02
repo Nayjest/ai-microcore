@@ -12,23 +12,20 @@ from ..llm_backends import ApiType
 from .shared import prepare_callbacks
 
 
-def _get_response_texts(response, show_thinking: bool = False) -> tuple[str, str]:
+def _get_response_text(response, show_thinking: bool = False) -> str:
     """
     Extract text from response content blocks, preserving their order.
-    Returns (response_text, display_text); display_text additionally contains
-    thinking blocks wrapped in <think>...</think> when show_thinking is enabled.
+    When show_thinking is enabled, thinking blocks are included,
+    wrapped in <think>...</think>.
     """
-    text_parts, display_parts = [], []
+    parts = []
     for block in response.content:
         block_type = getattr(block, "type", None)
         if block_type == "text":
-            text_parts.append(block.text)
-            display_parts.append(block.text)
+            parts.append(block.text)
         elif show_thinking and block_type == "thinking" and block.thinking:
-            display_parts.append(f"<think>{block.thinking}</think>")
-    response_text = "\n".join(text_parts)
-    display_text = "\n\n".join(display_parts) if show_thinking else response_text
-    return response_text, display_text
+            parts.append(f"<think>{block.thinking}</think>\n")
+    return "\n".join(parts)
 
 
 def _get_chunk_text(chunk) -> str:
@@ -52,14 +49,16 @@ def _get_chunk_thinking(chunk) -> str:
 async def _a_process_streamed_response(
     response, callbacks: list[callable], show_thinking: bool = False
 ):
+    parts: list[str] = []
+
     async def send(chunk_text: str):
+        parts.append(chunk_text)
         for cb in callbacks:
             if asyncio.iscoroutinefunction(cb):
                 await cb(chunk_text)
             else:
                 cb(chunk_text)
 
-    response_text: str = ""
     in_thinking = False
     async for chunk in response:
         if show_thinking and (thinking_chunk := _get_chunk_thinking(chunk)):
@@ -71,20 +70,21 @@ async def _a_process_streamed_response(
             if in_thinking:
                 in_thinking = False
                 await send("</think>\n\n")
-            response_text += text_chunk
             await send(text_chunk)
     if in_thinking:
         await send("</think>")
-    return LLMResponse(response_text, api_type=ApiType.ANTHROPIC)
+    return LLMResponse("".join(parts), api_type=ApiType.ANTHROPIC)
 
 
 def _process_streamed_response(
     response, callbacks: list[callable], show_thinking: bool = False
 ):
+    parts: list[str] = []
+
     def send(chunk_text: str):
+        parts.append(chunk_text)
         [cb(chunk_text) for cb in callbacks]
 
-    response_text: str = ""
     in_thinking = False
     for chunk in response:
         if show_thinking and (thinking_chunk := _get_chunk_thinking(chunk)):
@@ -96,11 +96,10 @@ def _process_streamed_response(
             if in_thinking:
                 in_thinking = False
                 send("</think>\n\n")
-            response_text += text_chunk
             send(text_chunk)
     if in_thinking:
         send("</think>")
-    return LLMResponse(response_text, api_type=ApiType.ANTHROPIC)
+    return LLMResponse("".join(parts), api_type=ApiType.ANTHROPIC)
 
 
 def _prepare_llm_arguments(config: Config, kwargs: dict):
@@ -187,12 +186,12 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
                 response, options["callbacks"], options["show_thinking"]
             )
 
-        response_text, cb_text = _get_response_texts(response, options["show_thinking"])
+        response_text = _get_response_text(response, options["show_thinking"])
         for cb in options["callbacks"]:
             if asyncio.iscoroutinefunction(cb):
-                await cb(cb_text)
+                await cb(response_text)
             else:
-                cb(cb_text)
+                cb(response_text)
         return LLMResponse(
             response_text,
             response.__dict__,
@@ -211,9 +210,9 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
                 response, options["callbacks"], options["show_thinking"]
             )
 
-        response_text, cb_text = _get_response_texts(response, options["show_thinking"])
+        response_text = _get_response_text(response, options["show_thinking"])
         for cb in options["callbacks"]:
-            cb(cb_text)
+            cb(response_text)
         return LLMResponse(
             response_text,
             response.__dict__,
