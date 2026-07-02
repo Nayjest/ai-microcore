@@ -2,7 +2,7 @@
 Command-line entry point for MicroCore.
 
 Usage:
-    python -m microcore test-llm [<.env-file>]
+    python -m microcore test-llm <.env-file> [<prompt>]
 """
 
 import sys
@@ -12,8 +12,11 @@ import microcore as mc
 
 def test_llm(env_file: str, prompt: str = None) -> int:
     """
-    Smoke-test the configured LLM: ask for the capital of France
-    and verify the answer contains "Paris".
+    Smoke-test the configured LLM.
+
+    Sends the given prompt if provided, without verifying the response;
+    otherwise asks for the capital of France
+    and verifies the answer contains "Paris".
     """
     try:
         mc.configure(
@@ -38,7 +41,11 @@ def main(argv: list[str] | None = None) -> int:
     command, *args = argv
     if command in ("test-llm", "test_llm"):
         if len(args) not in (1, 2):
-            print(mc.ui.red("test-llm accepts one argument: <.env-file>"))
+            print(
+                mc.ui.red(
+                    "test-llm accepts one or two arguments: <.env-file> [<prompt>]"
+                )
+            )
             return 1
         return test_llm(args[0], args[1] if len(args) == 2 else None)
     print(mc.ui.red(f"Unknown command: {command}"))
@@ -47,5 +54,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s:%(name)s: %(message)s"
+    )
     sys.exit(main())
