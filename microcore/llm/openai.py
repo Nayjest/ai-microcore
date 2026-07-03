@@ -20,7 +20,14 @@ from ..wrappers.llm_response_wrapper import (
     StoredImageGenerationResponse
 )
 from ..utils import is_chat_model, is_image_model
-from .shared import make_image_generation_response, make_remove_hidden_output, prepare_callbacks
+from .shared import (
+    attrs_with_normalized_usage,
+    ensure_stream_include_usage,
+    make_image_generation_response,
+    make_remove_hidden_output,
+    prepare_callbacks,
+    streaming_usage_attrs,
+)
 from ..images import (
     Image,
     FileImage,
@@ -76,7 +83,7 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
                     cb(response_text)
             return LLMResponse(
                 response_text,
-                response.__dict__,
+                attrs_with_normalized_usage(response.__dict__),
                 response=response,
                 api_type=ApiType.OPENAI,
             )
@@ -91,7 +98,7 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
             )
         return LLMResponse(
             response.choices[0].text,
-            response.__dict__,
+            attrs_with_normalized_usage(response.__dict__),
             response=response,
             api_type=ApiType.OPENAI,
         )
@@ -218,7 +225,7 @@ class OpenAIClient(BaseAIChatClient):
             cb(response_text)
         return LLMResponse(
             response_text,
-            response.__dict__,
+            attrs_with_normalized_usage(response.__dict__),
             response=response,
             api_type=ApiType.OPENAI,
         )
@@ -298,7 +305,12 @@ async def _a_process_streamed_response(
     response_text: str = ""
     hiding: bool = False
     need_to_hide = hidden_output_begin and hidden_output_end
+    usage = None
+    last_chunk = None
     async for chunk in response:
+        last_chunk = chunk
+        if (chunk_usage := getattr(chunk, "usage", None)) is not None:
+            usage = chunk_usage
         if text_chunk := _get_chunk_text(chunk, chat_model_used):
             if need_to_hide:
                 if text_chunk == hidden_output_begin:
@@ -316,10 +328,11 @@ async def _a_process_streamed_response(
                     await cb(text_chunk)
                 else:
                     cb(text_chunk)
+    attrs = streaming_usage_attrs(usage)
     return LLMResponse(
         response_text,
-        attrs=response.__dict__,
-        response=response,
+        attrs=attrs,
+        response=last_chunk,
         api_type=ApiType.OPENAI
     )
 
@@ -334,7 +347,12 @@ def _process_streamed_response(
     response_text: str = ""
     is_hiding: bool = False
     need_to_hide = hidden_output_begin and hidden_output_end
+    usage = None
+    last_chunk = None
     for chunk in response:
+        last_chunk = chunk
+        if (chunk_usage := getattr(chunk, "usage", None)) is not None:
+            usage = chunk_usage
         if text_chunk := _get_chunk_text(chunk, chat_model_used):
             if need_to_hide:
                 if text_chunk == hidden_output_begin:
@@ -348,10 +366,11 @@ def _process_streamed_response(
                         continue
             response_text += text_chunk
             [cb(text_chunk) for cb in callbacks]
+    attrs = streaming_usage_attrs(usage)
     return LLMResponse(
         response_text,
-        attrs=response.__dict__,
-        response=response,
+        attrs=attrs,
+        response=last_chunk,
         api_type=ApiType.OPENAI
     )
 
@@ -367,6 +386,8 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
         ),
     )
     callbacks = prepare_callbacks(config, args)
+    if args.get("stream"):
+        ensure_stream_include_usage(args)
     return args, {"callbacks": callbacks}
 
 
