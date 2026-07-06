@@ -32,7 +32,7 @@ def prepare_callbacks(config: Config, args, set_stream: bool = True) -> list[cal
 def _usage_field(usage: Any, *keys: str):
     if isinstance(usage, dict):
         for key in keys:
-            if key in usage:
+            if usage.get(key) is not None:
                 return usage[key]
         return None
     for key in keys:

@@ -46,6 +46,19 @@ def test_normalize_usage():
     assert normalize_usage(None) is None
     assert normalize_usage({}) is None
 
+    assert normalize_usage({"prompt_tokens": None, "input_tokens": 5}) == {
+        "prompt_tokens": 5,
+        "completion_tokens": None,
+        "total_tokens": 5,
+    }
+    assert normalize_usage(
+        SimpleNamespace(prompt_tokens=None, input_tokens=5)
+    ) == {
+        "prompt_tokens": 5,
+        "completion_tokens": None,
+        "total_tokens": 5,
+    }
+
 
 @pytest.mark.parametrize(
     "initial,expected",
