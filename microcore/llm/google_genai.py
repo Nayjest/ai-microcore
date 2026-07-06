@@ -20,7 +20,13 @@ from ..wrappers.llm_response_wrapper import (
     StoredImageGenerationResponse
 )
 from ..utils import is_image_model
-from .shared import make_image_generation_response, prepare_callbacks
+from .shared import (
+    attrs_with_normalized_usage,
+    make_image_generation_response,
+    normalize_usage,
+    prepare_callbacks,
+    streaming_usage_attrs,
+)
 from ..lm_client import BaseAsyncAIClient, BaseAIChatClient
 from ..images import Image, ImageInterface
 from ..llm_backends import ApiPlatform, ApiType
@@ -217,7 +223,7 @@ class GoogleClient(BaseAIChatClient):
                     return make_image_generation_response(images, ctx.save, response_attrs)
                 return LLMResponse(
                     response.text,
-                    response.__dict__,
+                    _attrs_with_google_usage(response),
                     response=response,
                     api_type=ApiType.GOOGLE
                 )
@@ -263,7 +269,7 @@ class AsyncGoogleClient(BaseAsyncAIClient):
                     return make_image_generation_response(images, ctx.save, response_attrs)
                 return LLMResponse(
                     response.text,
-                    response.__dict__,
+                    _attrs_with_google_usage(response),
                     response=response,
                     api_type=ApiType.GOOGLE
                 )
@@ -345,9 +351,21 @@ def _convert_message_roles(messages: list[dict]):
     return messages
 
 
+def _attrs_with_google_usage(response) -> dict:
+    attrs = dict(response.__dict__) if hasattr(response, "__dict__") else {}
+    if (metadata := getattr(response, "usage_metadata", None)) is not None:
+        attrs["usage"] = metadata
+    return attrs_with_normalized_usage(attrs)
+
+
 async def _a_process_streamed_response(response, callbacks: list[callable]):
     response_text: str = ""
+    usage: dict | None = None
+    last_chunk = None
     async for chunk in response:
+        last_chunk = chunk
+        if chunk_usage := normalize_usage(getattr(chunk, "usage_metadata", None)):
+            usage = chunk_usage
         if text_chunk := chunk.text:
             response_text += text_chunk
             for cb in callbacks:
@@ -355,23 +373,30 @@ async def _a_process_streamed_response(response, callbacks: list[callable]):
                     await cb(text_chunk)
                 else:
                     cb(text_chunk)
+    attrs = streaming_usage_attrs(usage)
     return LLMResponse(
         response_text,
-        vars(response) if hasattr(response, '__dict__') else {},
+        attrs,
         api_type=ApiType.GOOGLE,
-        response=response,
+        response=last_chunk,
     )
 
 
 def _process_streamed_response(response, callbacks: list[callable]):
     response_text: str = ""
+    usage: dict | None = None
+    last_chunk = None
     for chunk in response:
+        last_chunk = chunk
+        if chunk_usage := normalize_usage(getattr(chunk, "usage_metadata", None)):
+            usage = chunk_usage
         if text_chunk := chunk.text:
             response_text += text_chunk
             [cb(text_chunk) for cb in callbacks]
+    attrs = streaming_usage_attrs(usage)
     return LLMResponse(
         response_text,
-        vars(response) if hasattr(response, "__dict__") else {},
-        response=response,
+        attrs,
+        response=last_chunk,
         api_type=ApiType.GOOGLE
     )

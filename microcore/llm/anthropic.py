@@ -5,6 +5,8 @@ from anthropic.types import (
     ContentBlockDeltaEvent,
     ContentBlockStartEvent,
     ContentBlockStopEvent,
+    MessageDeltaEvent,
+    MessageStartEvent,
     SignatureDelta,
     ThinkingDelta,
 )
@@ -15,7 +17,7 @@ from ..message_types import Role
 from ..types import LLMAsyncFunctionType, LLMFunctionType
 from ..wrappers.llm_response_wrapper import LLMResponse
 from ..llm_backends import ApiType
-from .shared import prepare_callbacks
+from .shared import attrs_with_normalized_usage, prepare_callbacks, streaming_usage_attrs
 
 THINK_OPEN, THINK_CLOSE = "<think>", "</think>\n"
 PART_SEPARATOR = "\n"
@@ -96,10 +98,28 @@ class _StreamFormatter:
         return out
 
 
+def _update_stream_usage(chunk, usage: dict) -> dict:
+    if isinstance(chunk, MessageStartEvent):
+        msg_usage = chunk.message.usage
+        for key in (
+            "input_tokens",
+            "cache_read_input_tokens",
+            "cache_creation_input_tokens",
+        ):
+            val = getattr(msg_usage, key, None)
+            if val is not None:
+                usage[key] = val
+    elif isinstance(chunk, MessageDeltaEvent):
+        if chunk.usage and chunk.usage.output_tokens is not None:
+            usage["output_tokens"] = chunk.usage.output_tokens
+    return usage
+
+
 async def _a_process_streamed_response(
     response, callbacks: list[callable], show_thinking: bool = False
 ):
     parts: list[str] = []
+    usage: dict = {}
 
     async def send(chunk_text: str):
         parts.append(chunk_text)
@@ -111,17 +131,20 @@ async def _a_process_streamed_response(
 
     formatter = _StreamFormatter(show_thinking)
     async for chunk in response:
+        usage = _update_stream_usage(chunk, usage)
         for piece in formatter.process(chunk):
             await send(piece)
     for piece in formatter.finish():
         await send(piece)
-    return LLMResponse("".join(parts), api_type=ApiType.ANTHROPIC)
+    attrs = streaming_usage_attrs(usage)
+    return LLMResponse("".join(parts), attrs=attrs, api_type=ApiType.ANTHROPIC)
 
 
 def _process_streamed_response(
     response, callbacks: list[callable], show_thinking: bool = False
 ):
     parts: list[str] = []
+    usage: dict = {}
 
     def send(chunk_text: str):
         parts.append(chunk_text)
@@ -129,11 +152,13 @@ def _process_streamed_response(
 
     formatter = _StreamFormatter(show_thinking)
     for chunk in response:
+        usage = _update_stream_usage(chunk, usage)
         for piece in formatter.process(chunk):
             send(piece)
     for piece in formatter.finish():
         send(piece)
-    return LLMResponse("".join(parts), api_type=ApiType.ANTHROPIC)
+    attrs = streaming_usage_attrs(usage)
+    return LLMResponse("".join(parts), attrs=attrs, api_type=ApiType.ANTHROPIC)
 
 
 def _prepare_llm_arguments(config: Config, kwargs: dict):
@@ -155,7 +180,7 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
             "`temperature` and `top_p` cannot both be specified for this model. "
             "`top_p` parameter will be ignored. "
         )
-    show_thinking = args.pop("show_thinking", config.SHOW_THINKING)
+    show_thinking = args.pop("show_thinking", getattr(config, "SHOW_THINKING", False))
     callbacks = prepare_callbacks(config, args)
     return args, {"callbacks": callbacks, "show_thinking": show_thinking}
 
@@ -228,7 +253,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
                 cb(response_text)
         return LLMResponse(
             response_text,
-            response.__dict__,
+            attrs_with_normalized_usage(response.__dict__),
             api_type=ApiType.ANTHROPIC,
             response=response,
         )
@@ -249,7 +274,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             cb(response_text)
         return LLMResponse(
             response_text,
-            response.__dict__,
+            attrs_with_normalized_usage(response.__dict__),
             api_type=ApiType.ANTHROPIC,
             response=response,
         )
