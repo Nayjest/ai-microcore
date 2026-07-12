@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions: { contents: read, pull-requests: write } # 'write' for leaving the summary comment
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with: { fetch-depth: 0 }
 
     - name: Set up Python
@@ -33,13 +33,13 @@ jobs:
 
     - name: Install Gito
       if: steps.cache.outputs.cache-hit != 'true'
-      run: pip install gito.bot~=4.2
+      run: pip install gito.bot~=4.4
 
     - name: Run AI code review
       env:
-        LLM_API_TYPE: anthropic
-        LLM_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        MODEL: claude-opus-4-8
+        LLM_API_TYPE: openai
+        LLM_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        MODEL: gpt-5.6
         JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
         JIRA_URL: ${{ secrets.JIRA_URL }}
         JIRA_USER: ${{ secrets.JIRA_USER }}
