@@ -73,7 +73,7 @@ There are a few options available for configuring microcore:
 
 -   Use `microcore.configure(**params)`
     <br>💡 <small>All configuration options appear in IDE autocompletion tooltips</small>
--   Create a `.env` file in your project root; examples: [basic.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.example), [Mistral Large.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.mistral.example), [Anthropic Claude 3 Opus.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.anthropic.example), [Gemini on Vertex AI.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.google-vertex-gemini.example), [Gemini on AI Studio.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.gemini.example)
+-   Create a `.env` file in your project root; examples: [basic.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.example), [Mistral Large.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.mistral.example), [Anthropic Claude.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.anthropic.example), [Gemini on Vertex AI.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.google-vertex-gemini.example), [Gemini on AI Studio.env](https://github.com/Nayjest/ai-microcore/blob/main/.env.gemini.example)
 -   Use a custom configuration file: `mc.configure(DOT_ENV_FILE='dev-config.ini')`
 -   Define OS environment variables
 
@@ -218,7 +218,7 @@ ai_response = llm('What is your model name?')
 # - For chat completion models elements are treated as separate messages
 # - For completion LLMs elements are treated as text lines
 llm(['1+2', '='])
-llm('1+2=', model='gpt-5.2')
+llm('1+2=', model='gpt-5.6')
 
 # To specify a message role, you can use dictionary or classes
 llm(dict(role='system', content='1+2='))

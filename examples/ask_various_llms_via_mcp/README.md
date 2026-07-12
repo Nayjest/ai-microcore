@@ -15,20 +15,20 @@ import os, pathlib, fastmcp, dotenv, microcore as mc
 dotenv.load_dotenv(pathlib.Path(__file__).parent / '.env', override=True)
 mcp = fastmcp.FastMCP("Ask LLMs via MCP", host="0.0.0.0", port=8001)
 configs = {  # See https://github.com/Nayjest/ai-microcore?tab=readme-ov-file#%EF%B8%8F-configuring
-    "gpt5": {
-        "model": "gpt-5",
+    "gpt-5.6": {
+        "model": "gpt-5.6",
         "api_type": mc.ApiType.OPENAI,
         "api_key": os.getenv("OPENAI_API_KEY"),
         "api_base": "https://api.openai.com/v1",
     },
-    "gemini": {
-        "model": "gemini-1.5-flash",
+    "gemini-3.1-pro": {
+        "model": "gemini-3.1-pro-preview",
         "api_type": mc.ApiType.GOOGLE,
         "api_key": os.getenv("GOOGLE_API_KEY"),
         "api_base": "https://generativelanguage.googleapis.com/v1alpha",
     },
-    "claude": {
-        "model": "claude-opus-4-1-20250805",
+    "claude-opus-4.8": {
+        "model": "claude-opus-4-8",
         "api_type": mc.ApiType.ANTHROPIC,
         "api_key": os.getenv("ANTHROPIC_API_KEY"),
         "api_base": "",
@@ -55,7 +55,7 @@ mcp.run(transport="streamable-http")
 pip install -r requirements.txt
 ```
 
-> **Note:** `anthropic` and `google-generativeai` packages are optional and required only if you
+> **Note:** `anthropic` and `google-genai` packages are optional and required only if you
 > want to use Anthropic Claude or Google Gemini models.
 > 
 > Only `ai-microcore` package is mandatory for usage with OpenAI or local models:
