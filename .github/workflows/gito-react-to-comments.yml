@@ -50,7 +50,7 @@ jobs:
           };
 
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: ${{ github.repository }}
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -75,15 +75,15 @@ jobs:
 
     - name: Install Gito
       if: steps.cache.outputs.cache-hit != 'true'
-      run: pip install gito.bot~=4.2
+      run: pip install gito.bot~=4.4
 
     - name: Run Gito react
       env:
         # LLM config is needed only if answer_github_comments = true in .gito/config.toml
         # Otherwise, use LLM_API_TYPE: none
-        LLM_API_TYPE: anthropic
-        LLM_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        MODEL: claude-opus-4-8
+        LLM_API_TYPE: openai
+        LLM_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        MODEL: gpt-5.6
         JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
         JIRA_URL: ${{ secrets.JIRA_URL }}
         JIRA_USER: ${{ secrets.JIRA_USER }}
