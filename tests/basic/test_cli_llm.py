@@ -12,9 +12,11 @@ from microcore.llm.cli import CommandLineLLMError
 
 # A minimal CLI "LLM": echoes the request back, fails on "boom", or - on "stream3" -
 # emits three words one at a time (flushed, with a pause) to exercise streaming.
+# The request comes from argv (when <request> is in LLM_CLI) or, failing that,
+# from stdin (when LLM_CLI has no placeholder).
 PARROT = """\
 import sys, time
-req = sys.argv[1] if len(sys.argv) > 1 else ""
+req = sys.argv[1] if len(sys.argv) > 1 else sys.stdin.read()
 if req == "boom":
     sys.stderr.write("kaboom")
     sys.exit(1)
@@ -42,6 +44,21 @@ def cli_setup(tmp_path):
     yield
 
 
+@pytest.fixture()
+def cli_stdin_setup(tmp_path):
+    parrot = tmp_path / "parrot.py"
+    parrot.write_text(PARROT)
+    # No <request> placeholder -> the prompt is delivered to the process via
+    # stdin instead of the command line.
+    mc.configure(
+        USE_DOT_ENV=False,
+        LLM_API_TYPE=mc.ApiType.CLI,
+        LLM_CLI=f"python {parrot.as_posix()}",
+        MODEL="parrot-cli",
+    )
+    yield
+
+
 def test_cli_llm_sync(cli_setup):
     res = mc.llm("ping")
     assert res == "ping"
@@ -55,6 +72,36 @@ def test_cli_llm_multiword_prompt(cli_setup):
 
 async def test_cli_llm_async(cli_setup):
     assert await mc.allm("pong") == "pong"
+
+
+def test_cli_llm_stdin_sync(cli_stdin_setup):
+    # No <request> placeholder -> the prompt is delivered via stdin.
+    res = mc.llm("ping")
+    assert res == "ping"
+    assert res.api_type == mc.ApiType.CLI
+
+
+def test_cli_llm_stdin_multiword(cli_stdin_setup):
+    assert mc.llm("hello world") == "hello world"
+
+
+def test_cli_llm_stdin_large_prompt(cli_stdin_setup):
+    # The reason stdin delivery exists: a prompt far larger than the OS
+    # command-line limit (Windows CreateProcess ~32KB) must still round-trip
+    # intact. As an argv element this would raise OSError/WinError 206.
+    big = "x" * 200_000
+    assert mc.llm(big) == big
+
+
+async def test_cli_llm_stdin_async(cli_stdin_setup):
+    assert await mc.allm("pong") == "pong"
+
+
+def test_cli_llm_stdin_streaming_callback(cli_stdin_setup):
+    chunks = []
+    res = mc.llm("stream3", callback=chunks.append)
+    assert [c.strip() for c in chunks] == ["alpha", "beta", "gamma"]
+    assert res.split() == ["alpha", "beta", "gamma"]
 
 
 def test_cli_llm_streaming_callback(cli_setup):
