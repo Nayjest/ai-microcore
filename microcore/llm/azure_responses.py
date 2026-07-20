@@ -122,7 +122,7 @@ def prompt_to_responses_input(
     return result
 
 
-def prepare_responses_args(config: Config, args: dict[str, Any]) -> dict[str, Any]:
+def prepare_responses_args(args: dict[str, Any]) -> dict[str, Any]:
     responses_args = {
         key: value
         for key, value in args.items()
@@ -180,6 +180,6 @@ def build_responses_request(
     args: dict[str, Any],
     config: Config,
 ) -> dict[str, Any]:
-    responses_args = prepare_responses_args(config, args)
+    responses_args = prepare_responses_args(args)
     responses_args["input"] = prompt_to_responses_input(prompt, convert_to_messages)
     return responses_args

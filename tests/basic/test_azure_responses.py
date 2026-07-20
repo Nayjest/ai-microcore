@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
+import importlib
 
 import pytest
 
@@ -118,9 +119,7 @@ def test_build_responses_client_params_requires_credentials():
 
 
 def test_prepare_responses_args_maps_reasoning_and_defaults():
-    cfg = _azure_gpt56_config()
     args = prepare_responses_args(
-        cfg,
         {
             "model": "prod-luna",
             "reasoning_effort": "medium",
@@ -139,14 +138,12 @@ def test_prepare_responses_args_maps_reasoning_and_defaults():
 
 
 def test_prepare_responses_args_default_reasoning_effort_is_medium():
-    cfg = _azure_gpt56_config()
-    args = prepare_responses_args(cfg, {"model": "prod-luna"})
+    args = prepare_responses_args({"model": "prod-luna"})
     assert args["reasoning"] == {"effort": "medium"}
 
 
 def test_prepare_responses_args_respects_llm_default_args():
-    cfg = _azure_gpt56_config()
-    args = prepare_responses_args(cfg, {"model": "prod-luna", "reasoning_effort": "low"})
+    args = prepare_responses_args({"model": "prod-luna", "reasoning_effort": "low"})
     assert args["reasoning"] == {"effort": "low"}
 
 
@@ -269,10 +266,11 @@ async def test_allm_azure_gpt56_multi_turn_input(setup, mocker):
 
 def test_responses_client_uses_openai_base_url(setup, mocker):
     _configure_azure_gpt56()
-    constructor = mocker.patch("microcore.llm.openai.openai.OpenAI")
-    mocker.patch("microcore.llm.openai.openai.AsyncOpenAI")
-    from microcore.llm.openai import OpenAIClient
+    openai_module = importlib.import_module("microcore.llm.openai")
+    constructor = mocker.patch.object(openai_module.openai, "OpenAI")
+    mocker.patch.object(openai_module.openai, "AsyncOpenAI")
 
+    OpenAIClient = openai_module.OpenAIClient
     OpenAIClient(mc.config())
 
     constructor.assert_called_once_with(
