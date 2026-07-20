@@ -20,6 +20,14 @@ from ..wrappers.llm_response_wrapper import (
     StoredImageGenerationResponse
 )
 from ..utils import is_chat_model, is_image_model
+from .azure_responses import (
+    adapt_responses_events,
+    adapt_responses_events_async,
+    build_responses_client_params,
+    build_responses_request,
+    extract_responses_text,
+    should_use_azure_responses,
+)
 from .shared import (
     attrs_with_normalized_usage,
     ensure_stream_include_usage,
@@ -58,6 +66,14 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
                 args,
                 self.oai_client,
                 options
+            )
+        if should_use_azure_responses(config):
+            return await _generate_via_responses_async(
+                self,
+                prompt,
+                args,
+                options,
+                config,
             )
         if is_chat_model(args["model"], config):
             messages = self.sync_client.convert_prompt_to_chat_input(prompt)
@@ -115,7 +131,22 @@ class OpenAIClient(BaseAIChatClient):
 
     def __init__(self, config: Config):
         super().__init__(config)
-        if config.LLM_API_PLATFORM == ApiPlatform.AZURE:
+        if (
+            config.LLM_API_PLATFORM == ApiPlatform.AZURE
+            and should_use_azure_responses(config)
+        ):
+            client_type = openai.OpenAI
+            async_client_type = openai.AsyncOpenAI
+            entra_token_provider = (
+                _build_azure_entra_token_provider(config)
+                if config.LLM_AZURE_USE_ENTRA_ID
+                else None
+            )
+            client_params = build_responses_client_params(
+                config,
+                entra_token_provider=entra_token_provider,
+            )
+        elif config.LLM_API_PLATFORM == ApiPlatform.AZURE:
             client_type = openai.AzureOpenAI
             async_client_type = openai.AsyncAzureOpenAI
             if config.LLM_AZURE_USE_ENTRA_ID:
@@ -194,6 +225,13 @@ class OpenAIClient(BaseAIChatClient):
                 args,
                 self.oai_client,
                 options
+            )
+        if should_use_azure_responses(self.config):
+            return _generate_via_responses(
+                self,
+                prompt,
+                args,
+                options,
             )
         is_chat: bool = is_chat_model(args["model"], self.config)
         if is_chat:
@@ -372,6 +410,79 @@ def _process_streamed_response(
         attrs=attrs,
         response=last_chunk,
         api_type=ApiType.OPENAI
+    )
+
+
+async def _generate_via_responses_async(
+    client: AsyncOpenAIClient,
+    prompt: TPrompt,
+    args: dict[str, Any],
+    options: dict[str, Any],
+    config: Config,
+):
+    responses_args = build_responses_request(
+        prompt,
+        client.sync_client.convert_prompt_to_chat_input,
+        args,
+        config,
+    )
+    response = await client.oai_client.responses.create(**responses_args)
+    if args.get("stream"):
+        return await _a_process_streamed_response(
+            adapt_responses_events_async(response),
+            options["callbacks"],
+            chat_model_used=True,
+            hidden_output_begin=config.HIDDEN_OUTPUT_BEGIN,
+            hidden_output_end=config.HIDDEN_OUTPUT_END,
+        )
+    response_text = extract_responses_text(response)
+    if config.hiding_output():
+        response_text = client.sync_client.remove_hidden_output(response_text)
+    for cb in options["callbacks"]:
+        if asyncio.iscoroutinefunction(cb):
+            await cb(response_text)
+        else:
+            cb(response_text)
+    return LLMResponse(
+        response_text,
+        attrs_with_normalized_usage({"usage": getattr(response, "usage", None)}),
+        response=response,
+        api_type=ApiType.OPENAI,
+    )
+
+
+def _generate_via_responses(
+    client: "OpenAIClient",
+    prompt: TPrompt,
+    args: dict[str, Any],
+    options: dict[str, Any],
+):
+    config = client.config
+    responses_args = build_responses_request(
+        prompt,
+        client.convert_prompt_to_chat_input,
+        args,
+        config,
+    )
+    response = client.oai_client.responses.create(**responses_args)
+    if args.get("stream"):
+        return _process_streamed_response(
+            adapt_responses_events(response),
+            options["callbacks"],
+            chat_model_used=True,
+            hidden_output_begin=config.HIDDEN_OUTPUT_BEGIN,
+            hidden_output_end=config.HIDDEN_OUTPUT_END,
+        )
+    response_text = extract_responses_text(response)
+    if config.hiding_output():
+        response_text = client.remove_hidden_output(response_text)
+    for cb in options["callbacks"]:
+        cb(response_text)
+    return LLMResponse(
+        response_text,
+        attrs_with_normalized_usage({"usage": getattr(response, "usage", None)}),
+        response=response,
+        api_type=ApiType.OPENAI,
     )
 
 
