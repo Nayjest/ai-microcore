@@ -118,6 +118,17 @@ def test_build_responses_client_params_requires_credentials():
         build_responses_client_params(cfg)
 
 
+def test_build_responses_client_params_uses_entra_token_provider_callable():
+    cfg = _azure_gpt56_config(LLM_API_KEY="")
+    token_provider = lambda: "fresh-token"  # noqa: E731
+
+    params = build_responses_client_params(cfg, entra_token_provider=token_provider)
+
+    assert params["api_key"] is token_provider
+    assert params["base_url"] == "https://example.openai.azure.com/openai/v1/"
+    assert "default_headers" not in params
+
+
 def test_prepare_responses_args_maps_reasoning_and_defaults():
     args = prepare_responses_args(
         {

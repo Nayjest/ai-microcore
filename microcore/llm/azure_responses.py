@@ -74,8 +74,7 @@ def build_responses_client_params(
 
     http_headers = dict(config.HTTP_HEADERS or {})
     if entra_token_provider is not None:
-        client_params["api_key"] = "unused"
-        http_headers["Authorization"] = f"Bearer {entra_token_provider()}"
+        client_params["api_key"] = entra_token_provider
     else:
         key = str(config.LLM_API_KEY or "").strip()
         if not key and not any(name.lower() == "api-key" for name in http_headers):
