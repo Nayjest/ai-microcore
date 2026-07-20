@@ -427,6 +427,7 @@ async def _generate_via_responses_async(
         config,
     )
     response = await client.oai_client.responses.create(**responses_args)
+    check_for_errors(response)
     if args.get("stream"):
         return await _a_process_streamed_response(
             adapt_responses_events_async(response),
@@ -465,6 +466,7 @@ def _generate_via_responses(
         config,
     )
     response = client.oai_client.responses.create(**responses_args)
+    check_for_errors(response)
     if args.get("stream"):
         return _process_streamed_response(
             adapt_responses_events(response),

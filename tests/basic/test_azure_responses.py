@@ -129,6 +129,25 @@ def test_build_responses_client_params_uses_entra_token_provider_callable():
     assert "default_headers" not in params
 
 
+def test_build_responses_client_params_uses_api_key_from_headers():
+    cfg = _azure_gpt56_config(
+        LLM_API_KEY="",
+        HTTP_HEADERS={"api-key": "header-key"},
+    )
+    params = build_responses_client_params(cfg)
+    assert params["api_key"] == "header-key"
+    assert params["default_headers"] == {"api-key": "header-key"}
+
+
+def test_build_responses_client_params_uses_api_key_from_init_params():
+    cfg = _azure_gpt56_config(
+        LLM_API_KEY="",
+        INIT_PARAMS={"api_key": "init-key"},
+    )
+    params = build_responses_client_params(cfg)
+    assert params["api_key"] == "init-key"
+
+
 def test_prepare_responses_args_maps_reasoning_and_defaults():
     args = prepare_responses_args(
         {
@@ -153,7 +172,7 @@ def test_prepare_responses_args_default_reasoning_effort_is_medium():
     assert args["reasoning"] == {"effort": "medium"}
 
 
-def test_prepare_responses_args_respects_llm_default_args():
+def test_prepare_responses_args_respects_explicit_reasoning_effort():
     args = prepare_responses_args({"model": "prod-luna", "reasoning_effort": "low"})
     assert args["reasoning"] == {"effort": "low"}
 
@@ -201,6 +220,19 @@ async def test_allm_azure_gpt56_uses_responses_api(setup, mocker):
     assert responses_create.await_args.kwargs["reasoning"] == {"effort": "medium"}
     assert responses_create.await_args.kwargs["store"] is False
     assert responses_create.await_args.kwargs["include"] == ["reasoning.encrypted_content"]
+
+
+@pytest.mark.asyncio
+async def test_allm_azure_gpt56_raises_on_responses_error(setup, mocker):
+    mocker.patch(
+        "openai.resources.responses.AsyncResponses.create",
+        new_callable=AsyncMock,
+        return_value=SimpleNamespace(error="quota exceeded", output_text=""),
+    )
+    _configure_azure_gpt56()
+
+    with pytest.raises(mc.BadAIAnswer, match="quota exceeded"):
+        await mc.allm("hello")
 
 
 @pytest.mark.asyncio

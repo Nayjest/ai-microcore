@@ -57,6 +57,27 @@ def responses_base_url(endpoint: str) -> str:
     return endpoint + "/openai/v1/"
 
 
+def _responses_api_key(
+    config: Config,
+    http_headers: dict[str, Any],
+    client_params: dict[str, Any],
+) -> str:
+    init_key = client_params.get("api_key")
+    if init_key is not None and not callable(init_key):
+        key = str(init_key).strip()
+        if key:
+            return key
+
+    key = str(config.LLM_API_KEY or "").strip()
+    if key:
+        return key
+
+    for header_name, header_value in http_headers.items():
+        if header_name.lower() == "api-key" and header_value:
+            return str(header_value).strip()
+    return ""
+
+
 def build_responses_client_params(
     config: Config,
     *,
@@ -76,13 +97,12 @@ def build_responses_client_params(
     if entra_token_provider is not None:
         client_params["api_key"] = entra_token_provider
     else:
-        key = str(config.LLM_API_KEY or "").strip()
-        if not key and not any(name.lower() == "api-key" for name in http_headers):
+        key = _responses_api_key(config, http_headers, client_params)
+        if not key:
             raise LLMApiKeyError(
                 "API Key is missing. Please enter a valid API Key."
             )
-        if key:
-            client_params["api_key"] = key
+        client_params["api_key"] = key
 
     if http_headers:
         client_params.setdefault("default_headers", {}).update(http_headers)
