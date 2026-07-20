@@ -424,7 +424,6 @@ async def _generate_via_responses_async(
         prompt,
         client.sync_client.convert_prompt_to_chat_input,
         args,
-        config,
     )
     response = await client.oai_client.responses.create(**responses_args)
     check_for_errors(response)
@@ -463,7 +462,6 @@ def _generate_via_responses(
         prompt,
         client.convert_prompt_to_chat_input,
         args,
-        config,
     )
     response = client.oai_client.responses.create(**responses_args)
     check_for_errors(response)

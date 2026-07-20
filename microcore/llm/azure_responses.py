@@ -197,7 +197,6 @@ def build_responses_request(
     prompt: TPrompt,
     convert_to_messages: Callable[[TPrompt], list[dict[str, Any]]],
     args: dict[str, Any],
-    config: Config,
 ) -> dict[str, Any]:
     responses_args = prepare_responses_args(args)
     responses_args["input"] = prompt_to_responses_input(prompt, convert_to_messages)
