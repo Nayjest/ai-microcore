@@ -5,7 +5,7 @@ import importlib
 import pytest
 
 import microcore as mc
-from microcore.configuration import LLMApiBaseError, LLMApiKeyError
+from microcore.configuration import Config, LLMApiBaseError, LLMApiKeyError
 from microcore.llm.azure_responses import (
     build_responses_client_params,
     prepare_responses_args,
@@ -39,6 +39,11 @@ _OPENAI = {
 }
 
 
+def _config(**overrides):
+    """Build a Config without constructing an OpenAI client."""
+    return Config(**{**_AZURE_GPT56, **overrides})
+
+
 def _configure(**overrides):
     mc.configure(USE_DOT_ENV=False, **{**_AZURE_GPT56, **overrides})
     return mc.config()
@@ -54,16 +59,16 @@ def _chat_completion(content="chat-ok"):
 
 def test_should_use_responses_api_config_and_override():
     # default (unset) -> Chat Completions, no model-name magic
-    assert should_use_responses_api(_configure()) is False
-    assert should_use_responses_api(_configure(LLM_USE_RESPONSES_API=False)) is False
+    assert should_use_responses_api(_config()) is False
+    assert should_use_responses_api(_config(LLM_USE_RESPONSES_API=False)) is False
     # config flag opts in
-    assert should_use_responses_api(_configure(LLM_USE_RESPONSES_API=True)) is True
+    assert should_use_responses_api(_config(LLM_USE_RESPONSES_API=True)) is True
     # per-request override wins over config
     assert should_use_responses_api(
-        _configure(LLM_USE_RESPONSES_API=False), override=True
+        _config(LLM_USE_RESPONSES_API=False), override=True
     ) is True
     assert should_use_responses_api(
-        _configure(LLM_USE_RESPONSES_API=True), override=False
+        _config(LLM_USE_RESPONSES_API=True), override=False
     ) is False
 
 
@@ -93,7 +98,7 @@ def test_responses_base_url_requires_endpoint():
 
 
 def test_build_responses_client_params_uses_api_key_only():
-    cfg = _configure()
+    cfg = _config()
     params = build_responses_client_params(cfg)
     assert params == {
         "api_key": "resource-key",
@@ -102,13 +107,13 @@ def test_build_responses_client_params_uses_api_key_only():
 
 
 def test_build_responses_client_params_requires_credentials():
-    cfg = _configure(LLM_API_KEY="")
+    cfg = _config(LLM_API_KEY="")
     with pytest.raises(LLMApiKeyError, match="API Key is missing"):
         build_responses_client_params(cfg)
 
 
 def test_build_responses_client_params_uses_entra_token_provider_callable():
-    cfg = _configure(LLM_API_KEY="")
+    cfg = _config(LLM_API_KEY="")
     token_provider = lambda: "fresh-token"  # noqa: E731
 
     params = build_responses_client_params(cfg, entra_token_provider=token_provider)
@@ -119,7 +124,7 @@ def test_build_responses_client_params_uses_entra_token_provider_callable():
 
 
 def test_build_responses_client_params_uses_api_key_from_headers():
-    cfg = _configure(
+    cfg = _config(
         LLM_API_KEY="",
         HTTP_HEADERS={"api-key": "header-key"},
     )
@@ -129,7 +134,7 @@ def test_build_responses_client_params_uses_api_key_from_headers():
 
 
 def test_build_responses_client_params_uses_api_key_from_init_params():
-    cfg = _configure(
+    cfg = _config(
         LLM_API_KEY="",
         INIT_PARAMS={"api_key": "init-key"},
     )
