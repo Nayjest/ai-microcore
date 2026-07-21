@@ -210,6 +210,25 @@ class LLMConfig(
     i. e. temperature, max_tokens, etc.
     """
 
+    LLM_USE_RESPONSES_API: bool | None = from_env(default=None, dtype=bool)
+    """
+    Controls whether the OpenAI **Responses API** (``/responses``) is used instead of
+    Chat Completions (``/chat/completions``) for ``ApiType.OPENAI`` backends.
+
+    * ``None`` (default) / ``False`` — use Chat Completions.
+    * ``True`` — use the Responses API.
+
+    There is no model-name auto-detection: the application decides when to enable it.
+    For example, GPT-5.6 with function tools requires the Responses API, so enable this
+    flag (globally or per request) for such workloads.
+
+    Can be overridden per request via ``llm(prompt, use_responses_api=True)``.
+
+    On Azure, enabling the Responses API builds an OpenAI v1 client
+    (``{endpoint}/openai/v1/``) which serves both Chat Completions and Responses, so a
+    single process can mix both call styles per request.
+    """
+
     HTTP_HEADERS: dict = from_env(dtype=dict)
     """Additional HTTP headers to add to LLM API requests"""
 

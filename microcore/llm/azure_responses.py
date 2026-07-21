@@ -1,17 +1,13 @@
 """
-Azure OpenAI Responses API support for GPT-5.6 reasoning models.
+OpenAI Responses API support (used e.g. for Azure GPT-5.6 reasoning models).
 """
 from __future__ import annotations
 
-import re
 from types import SimpleNamespace
 from typing import Any, AsyncIterator, Callable, Iterator
 
 from ..configuration import Config, LLMApiBaseError, LLMApiKeyError
-from ..llm_backends import ApiPlatform
 from ..types import TPrompt
-
-_AZURE_GPT_56_RE = re.compile(r"^gpt-5\.6(?:-|$)", re.IGNORECASE)
 
 _RESPONSES_EXCLUDED_ARGS = frozenset({
     "messages",
@@ -25,14 +21,17 @@ _RESPONSES_EXCLUDED_ARGS = frozenset({
 })
 
 
-def is_azure_gpt56_model(platform: str | ApiPlatform | None, model: str) -> bool:
-    if str(platform or "").strip().lower() != ApiPlatform.AZURE:
-        return False
-    return _AZURE_GPT_56_RE.match(str(model or "").strip()) is not None
+def should_use_responses_api(config: Config, override: bool | None = None) -> bool:
+    """
+    Resolve whether the Responses API should be used for a request.
 
-
-def should_use_azure_responses(config: Config) -> bool:
-    return is_azure_gpt56_model(config.LLM_API_PLATFORM, config.MODEL)
+    Priority: per-request ``override`` > ``config.LLM_USE_RESPONSES_API``.
+    Defaults to Chat Completions (``False``) when neither is set; the caller/app
+    is responsible for opting in (e.g. GPT-5.6 with tools requires the Responses API).
+    """
+    if override is not None:
+        return bool(override)
+    return bool(config.LLM_USE_RESPONSES_API)
 
 
 def responses_base_url(endpoint: str) -> str:

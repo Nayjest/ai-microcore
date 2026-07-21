@@ -5,77 +5,66 @@ import importlib
 import pytest
 
 import microcore as mc
-from microcore.configuration import Config, LLMApiBaseError, LLMApiKeyError
+from microcore.configuration import LLMApiBaseError, LLMApiKeyError
 from microcore.llm.azure_responses import (
     build_responses_client_params,
-    is_azure_gpt56_model,
     prepare_responses_args,
     prompt_to_responses_input,
     responses_base_url,
-    should_use_azure_responses,
+    should_use_responses_api,
 )
 from microcore.llm_backends import ApiPlatform
 
 from . import setup  # noqa
 
 
-def _azure_gpt56_config(**overrides) -> Config:
-    params = {
-        "LLM_API_TYPE": mc.ApiType.OPENAI,
-        "LLM_API_PLATFORM": ApiPlatform.AZURE,
-        "LLM_API_KEY": "resource-key",
-        "LLM_API_BASE": "https://example.openai.azure.com",
-        "LLM_API_VERSION": "2024-06-01",
-        "LLM_DEPLOYMENT_ID": "prod-luna",
-        "MODEL": "gpt-5.6-luna",
-        "VALIDATE_CONFIG": False,
-    }
-    params.update(overrides)
-    return Config(**params)
+_AZURE_GPT56 = {
+    "LLM_API_TYPE": mc.ApiType.OPENAI,
+    "LLM_API_PLATFORM": ApiPlatform.AZURE,
+    "LLM_API_KEY": "resource-key",
+    "LLM_API_BASE": "https://example.openai.azure.com",
+    "LLM_API_VERSION": "2024-06-01",
+    "LLM_DEPLOYMENT_ID": "prod-luna",
+    "MODEL": "gpt-5.6-luna",
+    "VALIDATE_CONFIG": False,
+}
+
+_OPENAI = {
+    "LLM_API_PLATFORM": ApiPlatform.OPENAI,
+    "LLM_API_KEY": "sk-test",
+    "MODEL": "gpt-4o",
+    "LLM_API_BASE": "https://api.openai.com/v1",
+    "LLM_DEPLOYMENT_ID": "",
+    "LLM_API_VERSION": "",
+}
 
 
-def _configure_azure_gpt56(**overrides):
-    params = {
-        "USE_DOT_ENV": False,
-        "LLM_API_TYPE": mc.ApiType.OPENAI,
-        "LLM_API_PLATFORM": ApiPlatform.AZURE,
-        "LLM_API_KEY": "resource-key",
-        "LLM_API_BASE": "https://example.openai.azure.com",
-        "LLM_API_VERSION": "2024-06-01",
-        "LLM_DEPLOYMENT_ID": "prod-luna",
-        "MODEL": "gpt-5.6-luna",
-        "VALIDATE_CONFIG": False,
-    }
-    params.update(overrides)
-    mc.configure(**params)
+def _configure(**overrides):
+    mc.configure(USE_DOT_ENV=False, **{**_AZURE_GPT56, **overrides})
     return mc.config()
 
 
-def test_is_azure_gpt56_model():
-    for model in ("gpt-5.6-luna", "GPT-5.6-SOL", "gpt-5.6"):
-        assert is_azure_gpt56_model(ApiPlatform.AZURE, model)
-        assert is_azure_gpt56_model("azure", model)
-    for model in ("gpt-5.5", "gpt-5.60", ""):
-        assert not is_azure_gpt56_model(ApiPlatform.AZURE, model)
-    assert not is_azure_gpt56_model(ApiPlatform.OPENAI, "gpt-5.6-luna")
-
-
-def test_should_use_azure_responses_only_for_azure_gpt_56():
-    for model in ("gpt-5.6-luna", "GPT-5.6-SOL", "gpt-5.6"):
-        cfg = _azure_gpt56_config(MODEL=model)
-        assert should_use_azure_responses(cfg)
-    for model in ("gpt-5.5", "gpt-5.60", ""):
-        cfg = _azure_gpt56_config(MODEL=model)
-        assert not should_use_azure_responses(cfg)
-    cfg = _azure_gpt56_config(MODEL="gpt-4o")
-    assert not should_use_azure_responses(cfg)
-    assert not should_use_azure_responses(
-        Config(
-            LLM_API_PLATFORM=ApiPlatform.OPENAI,
-            MODEL="gpt-5.6-luna",
-            VALIDATE_CONFIG=False,
-        )
+def _chat_completion(content="chat-ok"):
+    return SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content=content))],
+        usage=None,
+        __dict__={"usage": None},
     )
+
+
+def test_should_use_responses_api_config_and_override():
+    # default (unset) -> Chat Completions, no model-name magic
+    assert should_use_responses_api(_configure()) is False
+    assert should_use_responses_api(_configure(LLM_USE_RESPONSES_API=False)) is False
+    # config flag opts in
+    assert should_use_responses_api(_configure(LLM_USE_RESPONSES_API=True)) is True
+    # per-request override wins over config
+    assert should_use_responses_api(
+        _configure(LLM_USE_RESPONSES_API=False), override=True
+    ) is True
+    assert should_use_responses_api(
+        _configure(LLM_USE_RESPONSES_API=True), override=False
+    ) is False
 
 
 def test_responses_base_url_is_normalized():
@@ -104,7 +93,7 @@ def test_responses_base_url_requires_endpoint():
 
 
 def test_build_responses_client_params_uses_api_key_only():
-    cfg = _azure_gpt56_config()
+    cfg = _configure()
     params = build_responses_client_params(cfg)
     assert params == {
         "api_key": "resource-key",
@@ -113,13 +102,13 @@ def test_build_responses_client_params_uses_api_key_only():
 
 
 def test_build_responses_client_params_requires_credentials():
-    cfg = _azure_gpt56_config(LLM_API_KEY="")
+    cfg = _configure(LLM_API_KEY="")
     with pytest.raises(LLMApiKeyError, match="API Key is missing"):
         build_responses_client_params(cfg)
 
 
 def test_build_responses_client_params_uses_entra_token_provider_callable():
-    cfg = _azure_gpt56_config(LLM_API_KEY="")
+    cfg = _configure(LLM_API_KEY="")
     token_provider = lambda: "fresh-token"  # noqa: E731
 
     params = build_responses_client_params(cfg, entra_token_provider=token_provider)
@@ -130,7 +119,7 @@ def test_build_responses_client_params_uses_entra_token_provider_callable():
 
 
 def test_build_responses_client_params_uses_api_key_from_headers():
-    cfg = _azure_gpt56_config(
+    cfg = _configure(
         LLM_API_KEY="",
         HTTP_HEADERS={"api-key": "header-key"},
     )
@@ -140,7 +129,7 @@ def test_build_responses_client_params_uses_api_key_from_headers():
 
 
 def test_build_responses_client_params_uses_api_key_from_init_params():
-    cfg = _azure_gpt56_config(
+    cfg = _configure(
         LLM_API_KEY="",
         INIT_PARAMS={"api_key": "init-key"},
     )
@@ -208,7 +197,7 @@ async def test_allm_azure_gpt56_uses_responses_api(setup, mocker):
         "openai.resources.chat.AsyncCompletions.create",
         new_callable=AsyncMock,
     )
-    _configure_azure_gpt56()
+    _configure(LLM_USE_RESPONSES_API=True)
 
     result = await mc.allm("test successful")
 
@@ -229,14 +218,111 @@ async def test_allm_azure_gpt56_raises_on_responses_error(setup, mocker):
         new_callable=AsyncMock,
         return_value=SimpleNamespace(error="quota exceeded", output_text=""),
     )
-    _configure_azure_gpt56()
+    _configure(LLM_USE_RESPONSES_API=True)
 
     with pytest.raises(mc.BadAIAnswer, match="quota exceeded"):
         await mc.allm("hello")
 
 
 @pytest.mark.asyncio
-async def test_allm_azure_gpt55_uses_chat_completions(setup, mocker):
+async def test_allm_openai_config_flag_enables_responses(setup, mocker):
+    responses_create = mocker.patch(
+        "openai.resources.responses.AsyncResponses.create",
+        new_callable=AsyncMock,
+        return_value=SimpleNamespace(output_text="resp-ok", usage=None),
+    )
+    chat_create = mocker.patch(
+        "openai.resources.chat.AsyncCompletions.create",
+        new_callable=AsyncMock,
+        return_value=_chat_completion(),
+    )
+    _configure(**_OPENAI, LLM_USE_RESPONSES_API=True)
+
+    result = await mc.allm("hi")
+
+    assert str(result) == "resp-ok"
+    responses_create.assert_awaited_once()
+    chat_create.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_allm_per_request_use_responses_api_true(setup, mocker):
+    responses_create = mocker.patch(
+        "openai.resources.responses.AsyncResponses.create",
+        new_callable=AsyncMock,
+        return_value=SimpleNamespace(output_text="resp-ok", usage=None),
+    )
+    _configure(**_OPENAI)  # auto -> Chat Completions
+
+    result = await mc.allm("hi", use_responses_api=True)
+
+    assert str(result) == "resp-ok"
+    responses_create.assert_awaited_once()
+    # request-level flag must not leak into the API payload
+    assert "use_responses_api" not in responses_create.await_args.kwargs
+
+
+@pytest.mark.asyncio
+async def test_allm_azure_gpt56_per_request_opt_out_uses_chat(setup, mocker):
+    responses_create = mocker.patch(
+        "openai.resources.responses.AsyncResponses.create",
+        new_callable=AsyncMock,
+    )
+    chat_create = mocker.patch(
+        "openai.resources.chat.AsyncCompletions.create",
+        new_callable=AsyncMock,
+        return_value=_chat_completion(),
+    )
+    _configure(LLM_USE_RESPONSES_API=True)
+
+    # Same process, same v1 client, but this call opts out to Chat Completions
+    result = await mc.allm("hi", use_responses_api=False)
+
+    assert str(result) == "chat-ok"
+    chat_create.assert_awaited_once()
+    responses_create.assert_not_called()
+    assert "use_responses_api" not in chat_create.await_args.kwargs
+
+
+@pytest.mark.asyncio
+async def test_allm_config_false_disables_responses_on_azure_gpt56(setup, mocker):
+    responses_create = mocker.patch(
+        "openai.resources.responses.AsyncResponses.create",
+        new_callable=AsyncMock,
+    )
+    chat_create = mocker.patch(
+        "openai.resources.chat.AsyncCompletions.create",
+        new_callable=AsyncMock,
+        return_value=_chat_completion(),
+    )
+    _configure(LLM_USE_RESPONSES_API=False)
+
+    result = await mc.allm("hi")
+
+    assert str(result) == "chat-ok"
+    responses_create.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_allm_per_request_responses_unavailable_raises(setup, mocker):
+    mocker.patch(
+        "openai.resources.responses.AsyncResponses.create",
+        new_callable=AsyncMock,
+    )
+    mocker.patch(
+        "openai.resources.chat.AsyncCompletions.create",
+        new_callable=AsyncMock,
+        return_value=_chat_completion(),
+    )
+    # classic AzureOpenAI client (no v1 endpoint) cannot serve Responses
+    _configure(LLM_USE_RESPONSES_API=False)
+
+    with pytest.raises(mc.LLMConfigError):
+        await mc.allm("hi", use_responses_api=True)
+
+
+@pytest.mark.asyncio
+async def test_allm_default_uses_chat_completions(setup, mocker):
     responses_create = mocker.patch(
         "openai.resources.responses.AsyncResponses.create",
         new_callable=AsyncMock,
@@ -250,7 +336,7 @@ async def test_allm_azure_gpt55_uses_chat_completions(setup, mocker):
             __dict__={"usage": None},
         ),
     )
-    _configure_azure_gpt56(MODEL="gpt-5.5", LLM_DEPLOYMENT_ID="gpt-55")
+    _configure()  # no flag -> Chat Completions regardless of model
 
     result = await mc.allm("ok")
 
@@ -274,7 +360,7 @@ async def test_allm_azure_gpt56_streaming_callbacks(setup, mocker):
         new_callable=AsyncMock,
         return_value=stream(),
     )
-    _configure_azure_gpt56()
+    _configure(LLM_USE_RESPONSES_API=True)
 
     chunks = []
 
@@ -294,7 +380,7 @@ async def test_allm_azure_gpt56_multi_turn_input(setup, mocker):
         new_callable=AsyncMock,
         return_value=SimpleNamespace(output_text="done", usage=None),
     )
-    _configure_azure_gpt56()
+    _configure(LLM_USE_RESPONSES_API=True)
 
     await mc.allm([
         mc.SysMsg("You are helpful."),
@@ -308,7 +394,7 @@ async def test_allm_azure_gpt56_multi_turn_input(setup, mocker):
 
 
 def test_responses_client_uses_openai_base_url(setup, mocker):
-    _configure_azure_gpt56()
+    _configure(LLM_USE_RESPONSES_API=True)
     openai_module = importlib.import_module("microcore.llm.openai")
     constructor = mocker.patch.object(openai_module.openai, "OpenAI")
     mocker.patch.object(openai_module.openai, "AsyncOpenAI")

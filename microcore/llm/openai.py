@@ -26,7 +26,7 @@ from .azure_responses import (
     build_responses_client_params,
     build_responses_request,
     extract_responses_text,
-    should_use_azure_responses,
+    should_use_responses_api,
 )
 from .shared import (
     attrs_with_normalized_usage,
@@ -67,7 +67,8 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
                 self.oai_client,
                 options
             )
-        if should_use_azure_responses(config):
+        if should_use_responses_api(config, options["use_responses_api"]):
+            _ensure_responses_available(self.sync_client.responses_api_available)
             return await _generate_via_responses_async(
                 self,
                 prompt,
@@ -131,10 +132,13 @@ class OpenAIClient(BaseAIChatClient):
 
     def __init__(self, config: Config):
         super().__init__(config)
-        if (
-            config.LLM_API_PLATFORM == ApiPlatform.AZURE
-            and should_use_azure_responses(config)
-        ):
+        is_azure = config.LLM_API_PLATFORM == ApiPlatform.AZURE
+        responses_mode = should_use_responses_api(config)
+        # Whether the constructed client can serve the Responses API.
+        # A plain openai.OpenAI client (standard OpenAI, or Azure v1 endpoint) serves
+        # both Chat Completions and Responses; the classic AzureOpenAI client does not.
+        self.responses_api_available = responses_mode or not is_azure
+        if is_azure and responses_mode:
             client_type = openai.OpenAI
             async_client_type = openai.AsyncOpenAI
             entra_token_provider = (
@@ -146,7 +150,7 @@ class OpenAIClient(BaseAIChatClient):
                 config,
                 entra_token_provider=entra_token_provider,
             )
-        elif config.LLM_API_PLATFORM == ApiPlatform.AZURE:
+        elif is_azure:
             client_type = openai.AzureOpenAI
             async_client_type = openai.AsyncAzureOpenAI
             if config.LLM_AZURE_USE_ENTRA_ID:
@@ -226,7 +230,8 @@ class OpenAIClient(BaseAIChatClient):
                 self.oai_client,
                 options
             )
-        if should_use_azure_responses(self.config):
+        if should_use_responses_api(self.config, options["use_responses_api"]):
+            _ensure_responses_available(self.responses_api_available)
             return _generate_via_responses(
                 self,
                 prompt,
@@ -488,6 +493,7 @@ def _generate_via_responses(
 
 def _prepare_llm_arguments(config: Config, kwargs: dict):
     args = {**config.LLM_DEFAULT_ARGS, **kwargs}
+    use_responses_api = args.pop("use_responses_api", None)
     args["model"] = args.get(
         "model",
         (
@@ -499,7 +505,15 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
     callbacks = prepare_callbacks(config, args)
     if args.get("stream"):
         ensure_stream_include_usage(args)
-    return args, {"callbacks": callbacks}
+    return args, {"callbacks": callbacks, "use_responses_api": use_responses_api}
+
+
+def _ensure_responses_available(available: bool) -> None:
+    if not available:
+        raise LLMConfigError(
+            "Responses API is not available for the current client. On Azure, set "
+            "LLM_USE_RESPONSES_API=True so an OpenAI v1 client is built for the endpoint."
+        )
 
 
 def check_for_errors(response):
