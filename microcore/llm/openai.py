@@ -20,6 +20,14 @@ from ..wrappers.llm_response_wrapper import (
     StoredImageGenerationResponse
 )
 from ..utils import is_chat_model, is_image_model
+from .azure_responses import (
+    adapt_responses_events,
+    adapt_responses_events_async,
+    build_responses_client_params,
+    build_responses_request,
+    extract_responses_text,
+    should_use_responses_api,
+)
 from .shared import (
     attrs_with_normalized_usage,
     ensure_stream_include_usage,
@@ -58,6 +66,15 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
                 args,
                 self.oai_client,
                 options
+            )
+        if should_use_responses_api(config, options["use_responses_api"]):
+            _ensure_responses_available(self.sync_client.responses_api_available)
+            return await _generate_via_responses_async(
+                self,
+                prompt,
+                args,
+                options,
+                config,
             )
         if is_chat_model(args["model"], config):
             messages = self.sync_client.convert_prompt_to_chat_input(prompt)
@@ -115,7 +132,25 @@ class OpenAIClient(BaseAIChatClient):
 
     def __init__(self, config: Config):
         super().__init__(config)
-        if config.LLM_API_PLATFORM == ApiPlatform.AZURE:
+        is_azure = config.LLM_API_PLATFORM == ApiPlatform.AZURE
+        responses_mode = should_use_responses_api(config)
+        # Whether the constructed client can serve the Responses API.
+        # A plain openai.OpenAI client (standard OpenAI, or Azure v1 endpoint) serves
+        # both Chat Completions and Responses; the classic AzureOpenAI client does not.
+        self.responses_api_available = responses_mode or not is_azure
+        if is_azure and responses_mode:
+            client_type = openai.OpenAI
+            async_client_type = openai.AsyncOpenAI
+            entra_token_provider = (
+                _build_azure_entra_token_provider(config)
+                if config.LLM_AZURE_USE_ENTRA_ID
+                else None
+            )
+            client_params = build_responses_client_params(
+                config,
+                entra_token_provider=entra_token_provider,
+            )
+        elif is_azure:
             client_type = openai.AzureOpenAI
             async_client_type = openai.AsyncAzureOpenAI
             if config.LLM_AZURE_USE_ENTRA_ID:
@@ -194,6 +229,14 @@ class OpenAIClient(BaseAIChatClient):
                 args,
                 self.oai_client,
                 options
+            )
+        if should_use_responses_api(self.config, options["use_responses_api"]):
+            _ensure_responses_available(self.responses_api_available)
+            return _generate_via_responses(
+                self,
+                prompt,
+                args,
+                options,
             )
         is_chat: bool = is_chat_model(args["model"], self.config)
         if is_chat:
@@ -375,8 +418,82 @@ def _process_streamed_response(
     )
 
 
+async def _generate_via_responses_async(
+    client: AsyncOpenAIClient,
+    prompt: TPrompt,
+    args: dict[str, Any],
+    options: dict[str, Any],
+    config: Config,
+):
+    responses_args = build_responses_request(
+        prompt,
+        client.sync_client.convert_prompt_to_chat_input,
+        args,
+    )
+    response = await client.oai_client.responses.create(**responses_args)
+    check_for_errors(response)
+    if args.get("stream"):
+        return await _a_process_streamed_response(
+            adapt_responses_events_async(response),
+            options["callbacks"],
+            chat_model_used=True,
+            hidden_output_begin=config.HIDDEN_OUTPUT_BEGIN,
+            hidden_output_end=config.HIDDEN_OUTPUT_END,
+        )
+    response_text = extract_responses_text(response)
+    if config.hiding_output():
+        response_text = client.sync_client.remove_hidden_output(response_text)
+    for cb in options["callbacks"]:
+        if asyncio.iscoroutinefunction(cb):
+            await cb(response_text)
+        else:
+            cb(response_text)
+    return LLMResponse(
+        response_text,
+        attrs_with_normalized_usage({"usage": getattr(response, "usage", None)}),
+        response=response,
+        api_type=ApiType.OPENAI,
+    )
+
+
+def _generate_via_responses(
+    client: "OpenAIClient",
+    prompt: TPrompt,
+    args: dict[str, Any],
+    options: dict[str, Any],
+):
+    config = client.config
+    responses_args = build_responses_request(
+        prompt,
+        client.convert_prompt_to_chat_input,
+        args,
+    )
+    response = client.oai_client.responses.create(**responses_args)
+    check_for_errors(response)
+    if args.get("stream"):
+        return _process_streamed_response(
+            adapt_responses_events(response),
+            options["callbacks"],
+            chat_model_used=True,
+            hidden_output_begin=config.HIDDEN_OUTPUT_BEGIN,
+            hidden_output_end=config.HIDDEN_OUTPUT_END,
+        )
+    response_text = extract_responses_text(response)
+    if config.hiding_output():
+        response_text = client.remove_hidden_output(response_text)
+    for cb in options["callbacks"]:
+        cb(response_text)
+    return LLMResponse(
+        response_text,
+        attrs_with_normalized_usage({"usage": getattr(response, "usage", None)}),
+        response=response,
+        api_type=ApiType.OPENAI,
+    )
+
+
 def _prepare_llm_arguments(config: Config, kwargs: dict):
     args = {**config.LLM_DEFAULT_ARGS, **kwargs}
+    use_responses_api = args.pop("use_responses_api", None)
     args["model"] = args.get(
         "model",
         (
@@ -388,7 +505,15 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
     callbacks = prepare_callbacks(config, args)
     if args.get("stream"):
         ensure_stream_include_usage(args)
-    return args, {"callbacks": callbacks}
+    return args, {"callbacks": callbacks, "use_responses_api": use_responses_api}
+
+
+def _ensure_responses_available(available: bool) -> None:
+    if not available:
+        raise LLMConfigError(
+            "Responses API is not available for the current client. On Azure, set "
+            "LLM_USE_RESPONSES_API=True so an OpenAI v1 client is built for the endpoint."
+        )
 
 
 def check_for_errors(response):
