@@ -12,9 +12,9 @@
 
 
 **MicroCore** is a collection of Python adapters for Large Language Models
-and Vector Databases / Semantic Search APIs allowing you to 
-communicate with these services in a convenient way, make them easily switchable 
-and separate business logic from the implementation details.
+and Vector Databases / Semantic Search APIs that lets you
+communicate with these services in a convenient way, makes them easily switchable,
+and separates business logic from the implementation details.
 
 It defines interfaces for features typically used in AI applications,
 which allows you to keep your application as simple as possible and try various models & services
@@ -78,7 +78,8 @@ There are a few options available for configuring microcore:
 -   Define OS environment variables
 
 For the full list of available configuration options, you may also check
-[`microcore/configuration.py`](https://github.com/Nayjest/ai-microcore/blob/main/microcore/configuration.py#L175).
+[`microcore/configuration.py`](https://github.com/Nayjest/ai-microcore/blob/main/microcore/configuration.py)
+(see the `LLMConfig` and `Config` dataclasses).
 
 ### Installing vendor-specific packages
 For models that work via APIs other than the OpenAI API, you may need to install additional packages:
@@ -104,6 +105,12 @@ to propagate.
 Microsoft guide: [Configure Microsoft Entra ID for Azure AI Foundry models](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/configure-entra-id?tabs=python&pivots=ai-foundry-portal).
 
 Configuration example: [.env.azure-openai-entra-id.example](.env.azure-openai-entra-id.example)
+
+#### OpenAI / Azure OpenAI Responses API
+
+By default, MicroCore uses the Chat Completions API for OpenAI-compatible providers.
+Set `LLM_USE_RESPONSES_API=true` to use the [Responses API](https://platform.openai.com/docs/api-reference/responses)
+instead (required for some Azure OpenAI deployments and models available only via `/responses`).
 
 #### Local language models via Hugging Face Transformers
 
@@ -138,6 +145,10 @@ LLM_CLI="gemini --skip-trust -p <request>"
 
 No API key is required. A non-zero exit code from the tool raises `CommandLineLLMError`.
 
+Ready-to-use configuration examples:
+[.env.claude-code.example](.env.claude-code.example),
+[.env.gemini-cli.example](.env.gemini-cli.example)
+
 ### Priority of Configuration Sources
 
 1.  Configuration options passed as arguments to `microcore.configure()` have the highest priority.
@@ -150,11 +161,11 @@ No API key is required. A non-zero exit code from the tool raises `CommandLineLL
 The `test-llm` command validates a configuration file against the live API:
 
 ```bash
-python -m microcore test-llm <.env-file>
+python -m microcore test-llm <.env-file> [<prompt>]
 ```
 
-It issues a single completion request and asserts the response is coherent.
-Exit code `0` indicates success; `1` indicates a configuration error,
+It issues a single completion request; without a custom prompt, it asks for the capital of France
+and verifies the answer. Exit code `0` indicates success; `1` indicates a configuration error,
 request failure, or unexpected response.
 
 ### Vector Databases
@@ -263,13 +274,18 @@ configure(
 )
 ```
 
-### texts.search(collection: str, query: str | list, n_results: int = 5, where: dict = None, \*\*kwargs) → list[str]
-Similarity search
+### texts.search(collection: str, query: str | list, n_results: int = 5, where: dict = None, \*\*kwargs) → SearchResults
+Similarity search. Returned items are strings (`SearchResult`)
+with additional attributes: `id`, `distance`, `metadata`.
+Alias: `texts.find(...)`; `texts.find_all(...)` returns all matching documents (no `n_results` limit).
 
-### texts.find_one(collection: str, query: str | list) → str | None
+### texts.find_one(collection: str, query: str | list) → str | SearchResult | None
 Find most similar text
 
-### texts.get_all(collection: str) → list[str]
+### texts.get(collection: str, ids: list[str] | str = None, limit: int = None, offset: int = None, where: dict = None, \*\*kwargs)
+Get documents by id / metadata filter without similarity search.
+
+### texts.get_all(collection: str) → list[str | SearchResult]
 Return all texts in the collection
 
 ### texts.save(collection: str, text: str, metadata: dict = None, id: str = None)
@@ -281,8 +297,46 @@ Store multiple texts and related metadata in the embeddings database.
 Each item may be a string (text), a `(text, metadata)` tuple, or a `(text, metadata, id)` tuple.
 If `id` is not provided, it will be generated.
 
+### texts.count(collection: str) → int
+Count documents in the collection
+
+### texts.delete(collection: str, what: str | list[str] | dict)
+Delete documents by id, list of ids, or metadata filter
+
 ### texts.clear(collection: str)
 Clear collection
+
+## 🔌 MCP (Model Context Protocol)
+
+MicroCore connects MCP tool servers to **any** LLM backend, including providers
+without native MCP support (the tool definitions are rendered into the prompt,
+and tool calls are parsed from the model output).
+
+```python
+import asyncio
+from microcore import allm, mcp, configure
+
+configure()
+
+async def main():
+    question = "What documentation topics exist for the fastapi/fastapi repository?"
+    # DeepWiki: public MCP server answering questions about GitHub repositories
+    server = await mcp.MCPServer("https://mcp.deepwiki.com/mcp").connect()
+    tool_call = await allm(
+        f"{question}\n"
+        f"Answer with a call to one of the following tools and nothing else.\n{server.tools}"
+    )
+    data = await server.exec(tool_call)
+    print(await allm([question, data]))
+
+asyncio.run(main())
+```
+
+MCP servers may also be predefined in configuration via `MCP_SERVERS` and accessed
+by name through `mcp_server(name)`. See working examples:
+[one-shot tool call](https://github.com/Nayjest/ai-microcore/blob/main/examples/mcp_1shot_deepwiki.py),
+[agent loop](https://github.com/Nayjest/ai-microcore/blob/main/examples/mcp_agent_loop.py),
+[using MCP with various LLMs](https://github.com/Nayjest/ai-microcore/tree/main/examples/ask_various_llms_via_mcp).
 
 ## API providers and models support
 
