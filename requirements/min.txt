@@ -8,5 +8,5 @@ aiohttp>=3.8.6,<4.0
 tiktoken>=0.7.0,<1.0
 mcp>=1.10.1,<2.0
 docstring_parser~=0.16.0
-fastmcp>=2.10.2,<3.0
+fastmcp>=3.2,<4.0
 httpx~=0.28.1
