@@ -18,3 +18,4 @@ package-lock.json
 node_modules
 test.py
 docs
+code-review-report.*
