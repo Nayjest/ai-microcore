@@ -279,11 +279,52 @@ Similarity search. Returned items are strings (`SearchResult`)
 with additional attributes: `id`, `distance`, `metadata`.
 Alias: `texts.find(...)`; `texts.find_all(...)` returns all matching documents (no `n_results` limit).
 
+Optional `where` filters results by metadata (ChromaDB-style operators).
+Supported on both Chroma and Qdrant:
+
+```python
+from microcore import texts
+
+# Equality
+texts.search("docs", "revenue", where={"id": "5_12"})
+
+# Match any of the listed values
+texts.search("docs", "revenue", where={"id": {"$in": ["5_12", "5_13"]}})
+
+# Combine predicates
+texts.search(
+    "docs",
+    "revenue",
+    where={"$and": [{"type": "measure"}, {"id": {"$in": ["5_12", "5_13"]}}]},
+)
+texts.search(
+    "docs",
+    "revenue",
+    where={"$or": [{"id": "5_12"}, {"domain_id": "5_13"}]},
+)
+
+# Nested groups (e.g. allow-list AND an $or of item types)
+texts.search(
+    "docs",
+    "revenue",
+    where={
+        "$and": [
+            {"$or": [{"item_type": "measure"}, {"item_type": "dimension"}]},
+            {"id": {"$in": ["5_12", "5_13"]}},
+        ]
+    },
+)
+```
+
+`where` is optional - when omitted, search is unfiltered. Passing a raw
+`qdrant_client.http.models.Filter` as `where` is also supported for Qdrant.
+
 ### texts.find_one(collection: str, query: str | list) → str | SearchResult | None
 Find most similar text
 
 ### texts.get(collection: str, ids: list[str] | str = None, limit: int = None, offset: int = None, where: dict = None, \*\*kwargs)
 Get documents by id / metadata filter without similarity search.
+Uses the same `where` operators as `texts.search` (`$eq` / plain equality, `$in`, `$and`, `$or`).
 
 ### texts.get_all(collection: str) → list[str | SearchResult]
 Return all texts in the collection
@@ -302,6 +343,7 @@ Count documents in the collection
 
 ### texts.delete(collection: str, what: str | list[str] | dict)
 Delete documents by id, list of ids, or metadata filter
+(same `where` operators when `what` is a dict).
 
 ### texts.clear(collection: str)
 Clear collection

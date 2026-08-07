@@ -6,6 +6,7 @@ if USE_QDRANT:
     from sentence_transformers import SentenceTransformer
     mc.configure(
         LLM_API_TYPE=mc.ApiType.NONE,
+        USE_DOT_ENV=False,
         EMBEDDING_DB_TYPE=mc.EmbeddingDbType.QDRANT,
         EMBEDDING_DB_HOST="localhost",
         EMBEDDING_DB_PORT="6333",
@@ -249,6 +250,53 @@ def test_custom_ids():
     texts.save(cid, "updated doc", id="doc-1")
     assert "updated doc" == texts.get(cid, "doc-1")
     assert 5 == texts.count(cid)
+
+
+def test_in_filter():
+    cid = "test_in_filter"
+    texts.clear(cid)
+    texts.save_many(
+        cid,
+        [
+            (f"<{i}>", {"value": str(i), "parity": "even" if i % 2 == 0 else "odd"})
+            for i in range(10)
+        ],
+    )
+    items = texts.search(cid, "", n_results=20, where={"value": {"$in": ["1", "4", "7"]}})
+    assert sorted(items) == ["<1>", "<4>", "<7>"]
+
+    items = texts.get(cid, where={"value": {"$in": ["2", "999"]}})
+    assert list(items) == ["<2>"]
+
+    items = texts.search(
+        cid,
+        "",
+        n_results=20,
+        where={"$and": [{"parity": "odd"}, {"value": {"$in": ["3", "4"]}}]},
+    )
+    assert list(items) == ["<3>"]
+
+    items = texts.search(
+        cid,
+        "",
+        n_results=20,
+        where={"$or": [{"value": {"$in": ["1", "2"]}}, {"value": "5"}]},
+    )
+    assert sorted(items) == ["<1>", "<2>", "<5>"]
+
+    # Nested $or inside $and (as produced when combining caller filters with an allow-list)
+    items = texts.search(
+        cid,
+        "",
+        n_results=20,
+        where={
+            "$and": [
+                {"$or": [{"value": "1"}, {"value": "2"}]},
+                {"value": {"$in": ["2", "3"]}},
+            ]
+        },
+    )
+    assert list(items) == ["<2>"]
 
 
 def test_or_filter():
