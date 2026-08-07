@@ -11,6 +11,7 @@ from qdrant_client.http.models import (
     Record,
     FieldCondition,
     Filter,
+    MatchAny,
     MatchValue,
     MatchText
 )
@@ -68,7 +69,45 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
         )
 
     @classmethod
-    def _convert_where(  # pylint: disable=too-many-branches
+    def _field_condition(cls, key: str, value) -> FieldCondition:
+        """
+        Convert a single `{field: value}` pair from a ChromaDB-style `where` dict
+        into a Qdrant FieldCondition.
+
+        Supports plain equality and the `$in` operator:
+        `{"field": {"$in": [v1, v2]}}` matches any of the listed values.
+        """
+        if isinstance(value, dict):
+            if set(value.keys()) == {"$in"}:
+                return FieldCondition(key=key, match=MatchAny(any=list(value["$in"])))
+            raise ValueError(
+                f"Unsupported operator(s) {list(value.keys())} "
+                f"in `where` condition for field '{key}'"
+            )
+        return FieldCondition(key=key, match=MatchValue(value=value))
+
+    @classmethod
+    def _clause_to_condition(cls, clause: dict) -> FieldCondition | Filter:
+        """
+        Convert one ChromaDB-style where clause into a Qdrant condition.
+
+        A clause may be a nested ``$and`` / ``$or`` group, a single field
+        predicate, or several field predicates (implicit AND).
+        """
+        if not isinstance(clause, dict) or not clause:
+            raise ValueError("`where` clause must be a non-empty dictionary")
+        if "$or" in clause or "$and" in clause:
+            nested = cls._convert_where(clause)
+            if nested is None:
+                raise ValueError("Empty nested `where` clause")
+            return nested
+        conditions = [cls._field_condition(k, v) for k, v in clause.items()]
+        if len(conditions) == 1:
+            return conditions[0]
+        return Filter(must=conditions)
+
+    @classmethod
+    def _convert_where(
         cls,
         where: dict | None,
         kwargs=None
@@ -87,17 +126,12 @@ class QdrantEmbeddingDB(AbstractEmbeddingDB):
         if where:
             if "$or" in where:
                 _and = False
-                for i in where["$or"]:
-                    for k, v in i.items():
-                        conditions.append(FieldCondition(key=k, match=MatchValue(value=v)))
+                conditions = [cls._clause_to_condition(i) for i in where["$or"]]
             elif "$and" in where:
                 _and = True
-                for i in where["$and"]:
-                    for k, v in i.items():
-                        conditions.append(FieldCondition(key=k, match=MatchValue(value=v)))
+                conditions = [cls._clause_to_condition(i) for i in where["$and"]]
             else:
-                for k, v in where.items():
-                    conditions.append(FieldCondition(key=k, match=MatchValue(value=v)))
+                conditions = [cls._field_condition(k, v) for k, v in where.items()]
 
         # ChromaDB format
         if where_doc:
