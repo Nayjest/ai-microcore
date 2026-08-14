@@ -3,7 +3,8 @@ OpenAI LLM client implementation.
 """
 import asyncio
 import base64
-from typing import Any, Callable
+from typing import Any, Awaitable, Callable
+import inspect
 
 import openai
 from openai.types import CompletionChoice, ImagesResponse
@@ -43,6 +44,35 @@ from ..images import (
     ImageListInterface,
     image_format_to_mime_type
 )
+
+
+def _as_async_str_provider(
+    provider: Callable[[], Any],
+) -> Callable[[], Awaitable[str]]:
+    """Make a sync token provider awaitable for openai.AsyncOpenAI (SDK 1.109+).
+
+    Does not move azure.identity off the event loop: ``provider()`` still blocks,
+    same as before. This only avoids ``await str`` TypeError.
+    """
+    if inspect.iscoroutinefunction(provider):
+        return provider
+
+    async def _provide() -> str:
+        value = provider()
+        if inspect.isawaitable(value):
+            value = await value
+        return value
+
+    return _provide
+
+
+def _async_openai_client_params(params: dict[str, Any]) -> dict[str, Any]:
+    # Only api_key needs wrapping: AsyncOpenAI awaits it unconditionally,
+    # while AsyncAzureOpenAI awaits sync azure_ad_token_provider results itself.
+    out = dict(params)
+    if callable(out.get("api_key")):
+        out["api_key"] = _as_async_str_provider(out["api_key"])
+    return out
 
 
 class AsyncOpenAIClient(BaseAsyncAIClient):
@@ -182,7 +212,9 @@ class OpenAIClient(BaseAIChatClient):
 
         self.oai_client = client_type(**client_params)
         self.aio = AsyncOpenAIClient(
-            oai_connection=async_client_type(**client_params),
+            oai_connection=async_client_type(
+                **_async_openai_client_params(client_params)
+            ),
             sync_client=self
         )
         self.remove_hidden_output: callable = make_remove_hidden_output(config)

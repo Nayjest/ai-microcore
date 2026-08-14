@@ -1,5 +1,6 @@
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
+import asyncio
 import importlib
 
 import pytest
@@ -411,3 +412,38 @@ def test_responses_client_uses_openai_base_url(setup, mocker):
         api_key="resource-key",
         base_url="https://example.openai.azure.com/openai/v1/",
     )
+
+
+def test_async_client_wraps_sync_entra_api_key_provider():
+    """openai 1.109+ awaits api_key; sync Entra provider must be wrapped."""
+    openai_module = importlib.import_module("microcore.llm.openai")
+    cfg = _config(LLM_USE_RESPONSES_API=True, LLM_AZURE_USE_ENTRA_ID=True)
+    with (
+        patch.object(openai_module.openai, "OpenAI"),
+        patch.object(openai_module.openai, "AsyncOpenAI") as async_ctor,
+        patch.object(
+            openai_module,
+            "_build_azure_entra_token_provider",
+            return_value=lambda: "entra-token",
+        ),
+    ):
+        openai_module.OpenAIClient(cfg)
+        async_key = async_ctor.call_args.kwargs["api_key"]
+        assert asyncio.iscoroutinefunction(async_key)
+        assert asyncio.run(async_key()) == "entra-token"
+
+
+def test_wrapped_api_key_survives_openai_refresh_api_key():
+    """Regression for openai 1.109: await _api_key_provider() must not see a str."""
+    import openai
+    from microcore.llm.openai import _as_async_str_provider
+
+    async def _run():
+        client = openai.AsyncOpenAI(
+            api_key=_as_async_str_provider(lambda: "entra-token"),
+            base_url="https://example.invalid/v1",
+        )
+        await client._refresh_api_key()
+        assert client.api_key == "entra-token"
+
+    asyncio.run(_run())
