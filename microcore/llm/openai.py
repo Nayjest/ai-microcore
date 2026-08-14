@@ -54,7 +54,7 @@ def _as_async_str_provider(
     Does not move azure.identity off the event loop: ``provider()`` still blocks,
     same as before. This only avoids ``await str`` TypeError.
     """
-    if asyncio.iscoroutinefunction(provider):
+    if inspect.iscoroutinefunction(provider):
         return provider
 
     async def _provide() -> str:
@@ -67,11 +67,11 @@ def _as_async_str_provider(
 
 
 def _async_openai_client_params(params: dict[str, Any]) -> dict[str, Any]:
+    # Only api_key needs wrapping: AsyncOpenAI awaits it unconditionally,
+    # while AsyncAzureOpenAI awaits sync azure_ad_token_provider results itself.
     out = dict(params)
-    for key in ("api_key", "azure_ad_token_provider"):
-        value = out.get(key)
-        if callable(value):
-            out[key] = _as_async_str_provider(value)
+    if callable(out.get("api_key")):
+        out["api_key"] = _as_async_str_provider(out["api_key"])
     return out
 
 
