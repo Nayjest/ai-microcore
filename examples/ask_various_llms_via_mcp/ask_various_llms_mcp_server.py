@@ -8,8 +8,8 @@ configs = {  # See https://github.com/Nayjest/ai-microcore?tab=readme-ov-file#%E
         "api_key": os.getenv("OPENAI_API_KEY"),
         "api_base": "https://api.openai.com/v1",
     },
-    "grok-4.3": {
-        "model": "grok-4.3-latest",
+    "grok-4.6": {
+        "model": "grok-4.6",
         "api_type": mc.ApiType.OPENAI,
         "api_key": os.getenv("XAI_API_KEY"),
         "api_base": "https://api.x.ai/v1",

@@ -240,33 +240,33 @@ DEFAULT_PLATFORMS = {
 }
 
 HIGH_END_MODELS: dict[ApiPlatform, str] = {
-    ApiPlatform.OPENAI: "gpt-5.6",  # I/O: $5/$30 /M tokens
+    ApiPlatform.OPENAI: "gpt-5.6",  # I/O: $4/$20 /M tokens
     ApiPlatform.ANTHROPIC: "claude-fable-5",  # I/O: $10/$50 /M tokens
     ApiPlatform.GOOGLE_AI_STUDIO: "gemini-2.5-pro",
     ApiPlatform.GOOGLE_VERTEX_AI: "gemini-2.5-pro",
     ApiPlatform.MISTRAL: "mistral-large-latest",
-    ApiPlatform.XAI: "grok-4.3",  # I/O: $1.25 $2.50 /M tokens
+    ApiPlatform.XAI: "grok-4.6",  # I/O: $2/$6 /M tokens
     ApiPlatform.DEEPSEEK: "deepseek-v4-pro",
-    ApiPlatform.CEREBRAS: "gpt-oss-120b",  # I/O: $0.35/$0.75 /M tokens
+    ApiPlatform.CEREBRAS: "gpt-oss-120b",
     ApiPlatform.GROQ: "openai/gpt-oss-120b",  # I/O: $0.15/$0.60 /M tokens
-    ApiPlatform.FIREWORKS: "accounts/fireworks/models/kimi-k2-thinking",  # I/O: $0.60/$2.50 /M
+    ApiPlatform.FIREWORKS: "accounts/fireworks/models/kimi-k2p6",  # I/O: $0.95/$4 /M tokens
     ApiPlatform.PERPLEXITY: "sonar-deep-research",  # I/O: $2/$8 /M tokens
 }
 LOW_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.OPENAI: "gpt-5.6-luna",
     ApiPlatform.ANTHROPIC: "claude-haiku-4-5",  # I/O: $1/$5 /M tokens
-    ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.1-flash-lite",  # I/O: $0.25 $1.50 /M tokens
-    ApiPlatform.GOOGLE_VERTEX_AI: "gemini-3.1-flash-lite",
-    ApiPlatform.XAI: "grok-4-1-fast",  # I/O: $0.20 $0.50 /M tokens
+    ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.5-flash-lite",  # I/O: $0.30/$2.50 /M tokens
+    ApiPlatform.GOOGLE_VERTEX_AI: "gemini-3.5-flash-lite",
+    ApiPlatform.XAI: "grok-4.3",  # I/O: $1.25/$2.50 /M tokens
     ApiPlatform.MISTRAL: "ministral-3b-2512",
     ApiPlatform.DEEPSEEK: "deepseek-v4-flash",
-    ApiPlatform.CEREBRAS: "llama3.1-8b",  # I/O: $0.10/M tokens
-    ApiPlatform.GROQ: "llama-3.1-8b-instant",    # I/O: $0.05/$0.08 /M tokens
+    ApiPlatform.CEREBRAS: "gemma-4-31b",
+    ApiPlatform.GROQ: "openai/gpt-oss-20b",  # I/O: $0.075/$0.30 /M tokens
     ApiPlatform.FIREWORKS: "accounts/fireworks/models/gpt-oss-20b",  # I/O: $0.07 / $0.30 /M tokens
     ApiPlatform.PERPLEXITY: "sonar",  # I/O: $1/$1 /M tokens
 }
 MID_END_MODELS: dict[ApiPlatform, str] = {
-    ApiPlatform.ANTHROPIC: "claude-sonnet-5",  # I/O: $3/$15 /M tokens
+    ApiPlatform.ANTHROPIC: "claude-sonnet-5",  # I/O: $2/$10 /M tokens
     ApiPlatform.PERPLEXITY: "sonar-pro",  # I/O: $3/$15 /M tokens
     ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.5-flash",  # I/O: $1.5/$9 /M tokens
     ApiPlatform.GOOGLE_VERTEX_AI: "gemini-3.5-flash",
