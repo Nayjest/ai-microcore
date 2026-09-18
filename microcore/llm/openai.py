@@ -117,6 +117,9 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
                     response,
                     options["callbacks"],
                     chat_model_used=True,
+                    native_chunk_callbacks=_openai_chunk_callbacks(
+                        options["callbacks"]
+                    ),
                     hidden_output_begin=config.HIDDEN_OUTPUT_BEGIN,
                     hidden_output_end=config.HIDDEN_OUTPUT_END,
                 )
@@ -285,6 +288,9 @@ class OpenAIClient(BaseAIChatClient):
                 response,
                 options["callbacks"],
                 chat_model_used=is_chat,
+                native_chunk_callbacks=(
+                    _openai_chunk_callbacks(options["callbacks"]) if is_chat else []
+                ),
                 hidden_output_begin=self.config.HIDDEN_OUTPUT_BEGIN,
                 hidden_output_end=self.config.HIDDEN_OUTPUT_END,
             )
@@ -370,10 +376,19 @@ def _get_chunk_text(chunk, mode_chat_model: bool):
     return getattr(choice, "text", "")
 
 
+def _openai_chunk_callbacks(callbacks):
+    return [
+        callback.on_openai_chunk
+        for callback in callbacks
+        if hasattr(callback, "on_openai_chunk")
+    ]
+
+
 async def _a_process_streamed_response(
     response,
     callbacks: list[callable],
     chat_model_used: bool,
+    native_chunk_callbacks: list[callable] | None = None,
     hidden_output_begin: str | None = None,
     hidden_output_end: str | None = None,
 ):
@@ -386,6 +401,10 @@ async def _a_process_streamed_response(
         last_chunk = chunk
         if (chunk_usage := getattr(chunk, "usage", None)) is not None:
             usage = chunk_usage
+        for callback in native_chunk_callbacks or []:
+            result = callback(chunk.model_dump(mode="json", exclude_none=True))
+            if inspect.isawaitable(result):
+                await result
         if text_chunk := _get_chunk_text(chunk, chat_model_used):
             if need_to_hide:
                 if text_chunk == hidden_output_begin:
@@ -416,6 +435,7 @@ def _process_streamed_response(
     response,
     callbacks: list[callable],
     chat_model_used: bool,
+    native_chunk_callbacks: list[callable] | None = None,
     hidden_output_begin: str | None = None,
     hidden_output_end: str | None = None,
 ):
@@ -428,6 +448,8 @@ def _process_streamed_response(
         last_chunk = chunk
         if (chunk_usage := getattr(chunk, "usage", None)) is not None:
             usage = chunk_usage
+        for callback in native_chunk_callbacks or []:
+            callback(chunk.model_dump(mode="json", exclude_none=True))
         if text_chunk := _get_chunk_text(chunk, chat_model_used):
             if need_to_hide:
                 if text_chunk == hidden_output_begin:
