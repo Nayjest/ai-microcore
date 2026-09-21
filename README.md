@@ -260,6 +260,10 @@ llm('Hi there', callbacks=[
 ])
 ```
 
+Responses also carry a provider-agnostic `usage` dict (`response.usage`) with prompt, completion
+and total token counts, plus cache and reasoning breakdowns where available.
+See [Token Usage](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/token_usage.md).
+
 ### tpl(file_path, \*\*params) → str
 Renders prompt template with params.
 
@@ -441,6 +445,7 @@ For more detailed information, check out these articles:
 
 - [Custom HTTP Headers](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/http_headers.md)
 - [File Cache](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/file_cache.md)
+- [Token Usage](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/token_usage.md)
 
 ## Python functions as AI tools
 *Usage Example*:
