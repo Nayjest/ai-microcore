@@ -95,11 +95,15 @@ def _usage_cache_and_reasoning(usage: Any) -> tuple[int | None, int | None, int 
         _usage_field(usage, "thoughtsTokenCount"),
         _usage_field(usage, "reasoning_tokens"),
     )
-    return cache_read, cache_write, reasoning, anthropic_read is not None or anthropic_write is not None
+    anthropic_cache = anthropic_read is not None or anthropic_write is not None
+    return cache_read, cache_write, reasoning, anthropic_cache
 
 
 def _usage_prompt_completion_total(usage: Any) -> tuple[int | None, int | None, int | None, bool]:
-    """prompt, completion, total, and whether prompt came from OpenAI-style keys (not input_tokens)."""
+    """prompt, completion, total, and whether prompt came from OpenAI-style keys.
+
+    (i.e. ``prompt_tokens`` / ``prompt_token_count``, not ``input_tokens``)
+    """
     prompt_openai = _first_int(
         _usage_field(usage, "prompt_tokens", "prompt_token_count", "promptTokenCount"),
     )
