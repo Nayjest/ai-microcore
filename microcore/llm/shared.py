@@ -133,8 +133,8 @@ def normalize_usage(usage: Any) -> dict | None:
     - ``cache_read_input_tokens`` — OpenAI ``*_details.cached_tokens``,
       Anthropic ``cache_read_input_tokens``, Gemini ``cached_content_token_count`` /
       ``cachedContentTokenCount``
-    - ``cache_creation_input_tokens`` — Anthropic ``cache_creation_input_tokens``,
-      OpenAI-compatible proxies' ``*_details.cache_write_tokens``
+    - ``cache_creation_input_tokens`` — OpenAI ``*_details.cache_write_tokens``,
+      Anthropic ``cache_creation_input_tokens``
     - ``reasoning_tokens`` — OpenAI ``*_details.reasoning_tokens``,
       Gemini ``thoughts_token_count`` / ``thoughtsTokenCount``
 
