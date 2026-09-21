@@ -260,34 +260,9 @@ llm('Hi there', callbacks=[
 ])
 ```
 
-#### Token usage
-
-`llm()` / `allm()` responses carry a provider-agnostic `usage` dict
-(also populated for streaming responses):
-
-```python
-response = llm('Hi there')
-print(response.usage)
-# {'prompt_tokens': 12, 'completion_tokens': 4, 'total_tokens': 16}
-```
-
-`prompt_tokens`, `completion_tokens` and `total_tokens` are always present
-(`total_tokens` is computed as their sum when the provider omits it).
-Each of the following fields is present only when the provider reports it:
-
-| Field                         | Meaning                                                                                                                                     |
-|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
-| `cache_read_input_tokens`     | Prompt tokens served from the provider's prompt cache                                                                                       |
-| `cache_creation_input_tokens` | Prompt tokens written to the cache by this request                                                                                          |
-| `reasoning_tokens`            | Thinking / reasoning tokens (already included in `completion_tokens`)                                                                       |
-| `cache_included_in_prompt`    | Present with the cache fields. `True` if cached tokens are already counted in `prompt_tokens` (OpenAI, Gemini, DeepSeek), `False` if they are reported separately (Anthropic) |
-
-`cache_included_in_prompt` matters for cost calculation: with Anthropic the billable input is
-`prompt_tokens + cache_read_input_tokens + cache_creation_input_tokens`, while with OpenAI-style
-providers `prompt_tokens` is already the full input and cache fields are a breakdown of it.
-
-The `usage` dict is also passed to `llm_after_handlers` as part of the response,
-so the same code works for logging or cost tracking regardless of the configured backend.
+Responses also carry a provider-agnostic `usage` dict (`response.usage`) with prompt / completion /
+total token counts plus cache and reasoning breakdowns where available,
+see [Token Usage](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/token_usage.md).
 
 ### tpl(file_path, \*\*params) → str
 Renders prompt template with params.
@@ -470,6 +445,7 @@ For more detailed information, check out these articles:
 
 - [Custom HTTP Headers](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/http_headers.md)
 - [File Cache](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/file_cache.md)
+- [Token Usage](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/token_usage.md)
 
 ## Python functions as AI tools
 *Usage Example*:
