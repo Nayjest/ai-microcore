@@ -34,6 +34,7 @@ def test_normalize_usage():
         "total_tokens": 150,
         "cache_read_input_tokens": 20,
         "cache_creation_input_tokens": 5,
+        "cache_included_in_prompt": False,
     }
 
     google = SimpleNamespace(prompt_token_count=7, candidates_token_count=3)
@@ -60,6 +61,100 @@ def test_normalize_usage():
     }
 
 
+def test_normalize_usage_openai_nested_details():
+    usage = {
+        "prompt_tokens": 1000,
+        "completion_tokens": 200,
+        "total_tokens": 1200,
+        "prompt_tokens_details": {
+            "cached_tokens": 300,
+            "cache_write_tokens": 100,
+        },
+        "completion_tokens_details": {
+            "reasoning_tokens": 50,
+        },
+    }
+    assert normalize_usage(usage) == {
+        "prompt_tokens": 1000,
+        "completion_tokens": 200,
+        "total_tokens": 1200,
+        "cache_read_input_tokens": 300,
+        "cache_creation_input_tokens": 100,
+        "reasoning_tokens": 50,
+        "cache_included_in_prompt": True,
+    }
+
+
+def test_normalize_usage_openai_responses_details():
+    usage = {
+        "input_tokens": 100,
+        "output_tokens": 40,
+        "input_tokens_details": {"cached_tokens": 20},
+        "output_tokens_details": {"reasoning_tokens": 10},
+    }
+    assert normalize_usage(usage) == {
+        "prompt_tokens": 100,
+        "completion_tokens": 40,
+        "total_tokens": 140,
+        "cache_read_input_tokens": 20,
+        "reasoning_tokens": 10,
+        "cache_included_in_prompt": True,
+    }
+
+
+def test_normalize_usage_gemini_camel_case():
+    usage = {
+        "promptTokenCount": 80,
+        "candidatesTokenCount": 20,
+        "totalTokenCount": 100,
+        "cachedContentTokenCount": 15,
+        "thoughtsTokenCount": 5,
+    }
+    assert normalize_usage(usage) == {
+        "prompt_tokens": 80,
+        "completion_tokens": 20,
+        "total_tokens": 100,
+        "cache_read_input_tokens": 15,
+        "reasoning_tokens": 5,
+        "cache_included_in_prompt": True,
+    }
+
+
+def test_normalize_usage_gemini_sdk_snake_case():
+    # google.genai UsageMetadata uses snake_case attribute names.
+    usage = SimpleNamespace(
+        prompt_token_count=80,
+        candidates_token_count=20,
+        total_token_count=100,
+        cached_content_token_count=15,
+        thoughts_token_count=5,
+    )
+    assert normalize_usage(usage) == {
+        "prompt_tokens": 80,
+        "completion_tokens": 20,
+        "total_tokens": 100,
+        "cache_read_input_tokens": 15,
+        "reasoning_tokens": 5,
+        "cache_included_in_prompt": True,
+    }
+
+
+def test_normalize_usage_idempotent_preserves_cache_flag():
+    # After the first pass Anthropic usage has prompt_tokens (not input_tokens),
+    # so re-inferring the flag would wrongly flip it to True.
+    raw = {
+        "input_tokens": 100,
+        "output_tokens": 50,
+        "cache_read_input_tokens": 20,
+        "cache_creation_input_tokens": 5,
+    }
+    once = normalize_usage(raw)
+    assert once["cache_included_in_prompt"] is False
+    twice = normalize_usage(once)
+    assert twice == once
+    assert twice["cache_included_in_prompt"] is False
+
+
 @pytest.mark.parametrize(
     "initial,expected",
     [
@@ -82,6 +177,21 @@ def test_streaming_usage_attrs():
             "prompt_tokens": 1,
             "completion_tokens": 2,
             "total_tokens": 3,
+        }
+    }
+    assert streaming_usage_attrs(
+        {
+            "input_tokens": 1,
+            "output_tokens": 2,
+            "cache_read_input_tokens": 3,
+        }
+    ) == {
+        "usage": {
+            "prompt_tokens": 1,
+            "completion_tokens": 2,
+            "total_tokens": 3,
+            "cache_read_input_tokens": 3,
+            "cache_included_in_prompt": False,
         }
     }
 
@@ -127,6 +237,7 @@ def test_anthropic_streaming_response_usage():
         "total_tokens": 20,
         "cache_read_input_tokens": 4,
         "cache_creation_input_tokens": 2,
+        "cache_included_in_prompt": False,
     }
 
 
