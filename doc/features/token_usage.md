@@ -15,7 +15,9 @@ so cost tracking, logging and budgeting code stays the same whichever backend is
 | `reasoning_tokens`            |        | Thinking / reasoning tokens                                                                  |
 | `cache_included_in_prompt`    |        | Present whenever a cache field is present; see [Cost calculation](#cost-calculation)         |
 
-Optional fields are present only when the provider reports them, so use `.get()`.
+Optional token counts are present only when the provider reports them, so use `.get()`.
+`cache_included_in_prompt` is not a provider field: MicroCore derives it from the backend's
+accounting semantics and adds it whenever a cache field is present.
 
 ## Reading usage
 
