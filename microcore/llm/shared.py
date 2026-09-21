@@ -72,6 +72,54 @@ def _first_int(*values: Any) -> int | None:
     return None
 
 
+def _usage_cache_and_reasoning(usage: Any) -> tuple[int | None, int | None, int | None, bool]:
+    """cache_read, cache_write, reasoning, and whether top-level Anthropic cache keys exist."""
+    anthropic_read = _first_int(_usage_field(usage, "cache_read_input_tokens"))
+    anthropic_write = _first_int(_usage_field(usage, "cache_creation_input_tokens"))
+    cache_read = _first_int(
+        _nested_usage_field(usage, "prompt_tokens_details", "cached_tokens"),
+        _nested_usage_field(usage, "input_tokens_details", "cached_tokens"),
+        anthropic_read,
+        _usage_field(usage, "cached_content_token_count"),
+        _usage_field(usage, "cachedContentTokenCount"),
+    )
+    cache_write = _first_int(
+        _nested_usage_field(usage, "prompt_tokens_details", "cache_write_tokens"),
+        _nested_usage_field(usage, "input_tokens_details", "cache_write_tokens"),
+        anthropic_write,
+    )
+    reasoning = _first_int(
+        _nested_usage_field(usage, "completion_tokens_details", "reasoning_tokens"),
+        _nested_usage_field(usage, "output_tokens_details", "reasoning_tokens"),
+        _usage_field(usage, "thoughts_token_count"),
+        _usage_field(usage, "thoughtsTokenCount"),
+        _usage_field(usage, "reasoning_tokens"),
+    )
+    return cache_read, cache_write, reasoning, anthropic_read is not None or anthropic_write is not None
+
+
+def _usage_prompt_completion_total(usage: Any) -> tuple[int | None, int | None, int | None, bool]:
+    """prompt, completion, total, and whether prompt came from OpenAI-style keys (not input_tokens)."""
+    prompt_openai = _first_int(
+        _usage_field(usage, "prompt_tokens", "prompt_token_count", "promptTokenCount"),
+    )
+    input_tokens = _first_int(_usage_field(usage, "input_tokens"))
+    prompt = prompt_openai if prompt_openai is not None else input_tokens
+    completion = _first_int(
+        _usage_field(
+            usage,
+            "completion_tokens",
+            "output_tokens",
+            "candidates_token_count",
+            "candidatesTokenCount",
+        ),
+    )
+    total = _first_int(
+        _usage_field(usage, "total_tokens", "total_token_count", "totalTokenCount"),
+    )
+    return prompt, completion, total, prompt_openai is not None
+
+
 def normalize_usage(usage: Any) -> dict | None:
     """Normalize provider-specific usage to a common dict for downstream logging.
 
@@ -96,68 +144,11 @@ def normalize_usage(usage: Any) -> dict | None:
         return None
 
     existing_cache_included = _usage_field(usage, "cache_included_in_prompt")
+    cache_read, cache_write, reasoning, anthropic_cache = _usage_cache_and_reasoning(usage)
+    prompt, completion, total, openai_style_prompt = _usage_prompt_completion_total(usage)
 
-    cache_read_nested = _first_int(
-        _nested_usage_field(usage, "prompt_tokens_details", "cached_tokens"),
-        _nested_usage_field(usage, "input_tokens_details", "cached_tokens"),
-    )
-    cache_write_nested = _first_int(
-        _nested_usage_field(usage, "prompt_tokens_details", "cache_write_tokens"),
-        _nested_usage_field(usage, "input_tokens_details", "cache_write_tokens"),
-    )
-    anthropic_cache_read = _first_int(_usage_field(usage, "cache_read_input_tokens"))
-    anthropic_cache_write = _first_int(_usage_field(usage, "cache_creation_input_tokens"))
-
-    cache_read = _first_int(
-        cache_read_nested,
-        anthropic_cache_read,
-        _usage_field(usage, "cached_content_token_count"),
-        _usage_field(usage, "cachedContentTokenCount"),
-    )
-    cache_write = _first_int(
-        cache_write_nested,
-        anthropic_cache_write,
-    )
-    reasoning = _first_int(
-        _nested_usage_field(usage, "completion_tokens_details", "reasoning_tokens"),
-        _nested_usage_field(usage, "output_tokens_details", "reasoning_tokens"),
-        _usage_field(usage, "thoughts_token_count"),
-        _usage_field(usage, "thoughtsTokenCount"),
-        _usage_field(usage, "reasoning_tokens"),
-    )
-
-    prompt_from_openai_style = _first_int(
-        _usage_field(usage, "prompt_tokens", "prompt_token_count", "promptTokenCount"),
-    )
-    input_tokens = _first_int(_usage_field(usage, "input_tokens"))
-    prompt = prompt_from_openai_style if prompt_from_openai_style is not None else input_tokens
-
-    completion = _first_int(
-        _usage_field(
-            usage,
-            "completion_tokens",
-            "output_tokens",
-            "candidates_token_count",
-            "candidatesTokenCount",
-        ),
-    )
-    total = _first_int(
-        _usage_field(
-            usage,
-            "total_tokens",
-            "total_token_count",
-            "totalTokenCount",
-        ),
-    )
-
-    if (
-        prompt is None
-        and completion is None
-        and total is None
-        and cache_read is None
-        and cache_write is None
-        and reasoning is None
-    ):
+    counts = (prompt, completion, total, cache_read, cache_write, reasoning)
+    if all(value is None for value in counts):
         return None
 
     if total is None and (prompt is not None or completion is not None):
@@ -182,12 +173,10 @@ def normalize_usage(usage: Any) -> dict | None:
         if existing_cache_included is not None:
             result["cache_included_in_prompt"] = bool(existing_cache_included)
         else:
-            anthropic_outside_input = (
-                prompt_from_openai_style is None
-                and input_tokens is not None
-                and (anthropic_cache_read is not None or anthropic_cache_write is not None)
+            # Raw Anthropic: input_tokens + top-level cache_* (no prompt_tokens yet).
+            result["cache_included_in_prompt"] = not (
+                not openai_style_prompt and prompt is not None and anthropic_cache
             )
-            result["cache_included_in_prompt"] = not anthropic_outside_input
     return result
 
 
