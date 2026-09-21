@@ -260,9 +260,9 @@ llm('Hi there', callbacks=[
 ])
 ```
 
-Responses also carry a provider-agnostic `usage` dict (`response.usage`) with prompt / completion /
-total token counts plus cache and reasoning breakdowns where available,
-see [Token Usage](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/token_usage.md).
+Responses also carry a provider-agnostic `usage` dict (`response.usage`) with prompt, completion
+and total token counts, plus cache and reasoning breakdowns where available.
+See [Token Usage](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/token_usage.md).
 
 ### tpl(file_path, \*\*params) → str
 Renders prompt template with params.

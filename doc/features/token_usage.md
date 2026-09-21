@@ -32,8 +32,9 @@ response = llm("Hi there")
 print(response.usage)
 # {'prompt_tokens': 12, 'completion_tokens': 4, 'total_tokens': 16}
 
-response = await allm("Hi there")
-print(response.usage["total_tokens"])
+async def main():
+    response = await allm("Hi there")
+    print(response.usage["total_tokens"])
 ```
 
 ### Streaming with callbacks
@@ -53,8 +54,9 @@ Returns a list of `LLMResponse`; sum over it as needed:
 ```python
 from microcore import llm_parallel
 
-responses = await llm_parallel(["1+1=", "2+2=", "3+3="])
-total = sum(r.usage["total_tokens"] for r in responses)
+async def main():
+    responses = await llm_parallel(["1+1=", "2+2=", "3+3="])
+    total = sum(r.usage["total_tokens"] for r in responses)
 ```
 
 ### `llm_stream()`
