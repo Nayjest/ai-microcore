@@ -133,8 +133,8 @@ def normalize_usage(usage: Any) -> dict | None:
     - ``cache_read_input_tokens`` — OpenAI ``*_details.cached_tokens``,
       Anthropic ``cache_read_input_tokens``, Gemini ``cached_content_token_count`` /
       ``cachedContentTokenCount``
-    - ``cache_creation_input_tokens`` — OpenAI ``*_details.cache_write_tokens``,
-      Anthropic ``cache_creation_input_tokens``
+    - ``cache_creation_input_tokens`` — Anthropic ``cache_creation_input_tokens``,
+      OpenAI-compatible proxies' ``*_details.cache_write_tokens``
     - ``reasoning_tokens`` — OpenAI ``*_details.reasoning_tokens``,
       Gemini ``thoughts_token_count`` / ``thoughtsTokenCount``
 
@@ -178,8 +178,8 @@ def normalize_usage(usage: Any) -> dict | None:
             result["cache_included_in_prompt"] = bool(existing_cache_included)
         else:
             # Raw Anthropic: input_tokens + top-level cache_* (no prompt_tokens yet).
-            result["cache_included_in_prompt"] = not (
-                not openai_style_prompt and prompt is not None and anthropic_cache
+            result["cache_included_in_prompt"] = (
+                openai_style_prompt or prompt is None or not anthropic_cache
             )
     return result
 
