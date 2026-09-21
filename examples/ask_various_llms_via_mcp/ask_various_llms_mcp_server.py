@@ -2,8 +2,8 @@ import os, pathlib, fastmcp, dotenv, microcore as mc
 
 dotenv.load_dotenv(pathlib.Path(__file__).parent / '.env', override=True)
 configs = {  # See https://github.com/Nayjest/ai-microcore?tab=readme-ov-file#%EF%B8%8F-configuring
-    "gpt-5.6": {
-        "model": "gpt-5.6",
+    "gpt-6-astra": {
+        "model": "gpt-6-astra",
         "api_type": mc.ApiType.OPENAI,
         "api_key": os.getenv("OPENAI_API_KEY"),
         "api_base": "https://api.openai.com/v1",
@@ -14,8 +14,8 @@ configs = {  # See https://github.com/Nayjest/ai-microcore?tab=readme-ov-file#%E
         "api_key": os.getenv("XAI_API_KEY"),
         "api_base": "https://api.x.ai/v1",
     },
-    "deepseek-v4-flash": {
-        "model": "deepseek-v4-flash",
+    "deepseek-flash": {
+        "model": "deepseek-flash",
         "api_type": mc.ApiType.OPENAI,
         "api_key": os.getenv("DEEPSEEK_API_KEY"),
         "api_base": "https://api.deepseek.com/v1",
@@ -26,8 +26,8 @@ configs = {  # See https://github.com/Nayjest/ai-microcore?tab=readme-ov-file#%E
         "api_key": os.getenv("GOOGLE_API_KEY"),
         "api_base": "https://generativelanguage.googleapis.com/v1alpha",
     },
-    "claude-opus-4.8": {
-        "model": "claude-opus-4-8",
+    "claude-opus-5": {
+        "model": "claude-opus-5",
         "api_type": mc.ApiType.ANTHROPIC,
         "api_key": os.getenv("ANTHROPIC_API_KEY"),
         "api_base": "",
