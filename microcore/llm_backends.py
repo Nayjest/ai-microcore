@@ -253,7 +253,7 @@ HIGH_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.PERPLEXITY: "sonar-deep-research",  # I/O: $2/$8 /M tokens
 }
 LOW_END_MODELS: dict[ApiPlatform, str] = {
-    ApiPlatform.OPENAI: "gpt-5.6-luna",  # I/O: $0.20/$1.20 /M tokens
+    ApiPlatform.OPENAI: "gpt-6-luna",  # I/O: $0.10/$0.50 /M tokens
     ApiPlatform.ANTHROPIC: "claude-haiku-4-5",  # I/O: $1/$5 /M tokens
     ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.5-flash-lite",  # I/O: $0.30/$2.50 /M tokens
     ApiPlatform.GOOGLE_VERTEX_AI: "gemini-3.5-flash-lite",
@@ -266,6 +266,7 @@ LOW_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.PERPLEXITY: "sonar",  # I/O: $1/$1 /M tokens
 }
 MID_END_MODELS: dict[ApiPlatform, str] = {
+    ApiPlatform.OPENAI: "gpt-6-sol",  # I/O: $2/$10 /M tokens
     ApiPlatform.ANTHROPIC: "claude-sonnet-5",  # I/O: $2/$10 /M tokens
     ApiPlatform.PERPLEXITY: "sonar-pro",  # I/O: $3/$15 /M tokens
     ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.8-flash",  # I/O: $0.75/$3.75 /M tokens
