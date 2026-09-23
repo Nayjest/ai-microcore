@@ -26,8 +26,8 @@ configs = {  # See https://github.com/Nayjest/ai-microcore?tab=readme-ov-file#%E
         "api_key": os.getenv("GOOGLE_API_KEY"),
         "api_base": "https://generativelanguage.googleapis.com/v1alpha",
     },
-    "claude-opus-5": {
-        "model": "claude-opus-5",
+    "claude-opus-5.5": {
+        "model": "claude-opus-5-5",
         "api_type": mc.ApiType.ANTHROPIC,
         "api_key": os.getenv("ANTHROPIC_API_KEY"),
         "api_base": "",

@@ -230,7 +230,7 @@ ai_response = llm('What is your model name?')
 # - For chat completion models elements are treated as separate messages
 # - For completion LLMs elements are treated as text lines
 llm(['1+2', '='])
-llm('1+2=', model='gpt-5.6')
+llm('1+2=', model='gpt-6-sol')
 
 # To specify a message role, you can use dictionary or classes
 llm(dict(role='system', content='1+2='))
