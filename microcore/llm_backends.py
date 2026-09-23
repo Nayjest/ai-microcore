@@ -241,7 +241,7 @@ DEFAULT_PLATFORMS = {
 
 HIGH_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.OPENAI: "gpt-6-astra",  # I/O: $10/$50 /M tokens
-    ApiPlatform.ANTHROPIC: "claude-fable-5-1",  # I/O: $10/$50 /M tokens
+    ApiPlatform.ANTHROPIC: "claude-opus-5-5",  # I/O: $4/$20 /M tokens
     ApiPlatform.GOOGLE_AI_STUDIO: "gemini-2.5-pro",  # I/O: $1.25/$10 /M tokens
     ApiPlatform.GOOGLE_VERTEX_AI: "gemini-2.5-pro",
     ApiPlatform.MISTRAL: "mistral-large-latest",
