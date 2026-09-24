@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import re
 import anthropic
 from anthropic.types import (
     ContentBlockDeltaEvent,
@@ -161,16 +162,29 @@ def _process_streamed_response(
     return LLMResponse("".join(parts), attrs=attrs, api_type=ApiType.ANTHROPIC)
 
 
+def _default_max_tokens(model: str, stream: bool) -> int:
+    """
+    `max_tokens` for a request that does not set it.
+    Claude models think before they answer, and thinking counts towards `max_tokens`,
+    so the default leaves room for both, within the model's output limit.
+    Without streaming, the Anthropic SDK refuses a `max_tokens` that could take
+    over 10 minutes to generate: above about 21,333, or 8,192 for Opus 4.
+    """
+    model = model.lower().replace(".", "-")  # also "anthropic/claude-3.5-sonnet" etc.
+    if "claude" not in model:  # another model served over the Anthropic API
+        return 4096
+    if re.search(r"claude-(v?[12]|instant|3-(opus|sonnet|haiku))", model):
+        return 4096
+    if "claude-3-5-" in model:
+        return 8192
+    if re.search(r"claude-(opus-4|4-opus)(?!-[2-9](\D|$))", model):  # Opus 4, 4.1
+        return 32_000 if stream else 8192
+    return 64_000 if stream else 20_000
+
+
 def _prepare_llm_arguments(config: Config, kwargs: dict):
     args = {**config.LLM_DEFAULT_ARGS, **kwargs}
     args["model"] = args.get("model", config.MODEL)
-    if "max_tokens" not in args:
-        if "claude-3-5-sonnet" in args["model"]:
-            args["max_tokens"] = 8192
-        elif "claude-3-7-sonnet" in args["model"]:
-            args["max_tokens"] = 16384
-        else:
-            args["max_tokens"] = 4096
     # Remove arguments not supported by Anthropic
     args.pop("seed", None)
     args.pop("n", None)
@@ -182,6 +196,8 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
         )
     show_thinking = args.pop("show_thinking", getattr(config, "SHOW_THINKING", False))
     callbacks = prepare_callbacks(config, args)
+    if "max_tokens" not in args:
+        args["max_tokens"] = _default_max_tokens(args["model"], args.get("stream"))
     return args, {"callbacks": callbacks, "show_thinking": show_thinking}
 
 
