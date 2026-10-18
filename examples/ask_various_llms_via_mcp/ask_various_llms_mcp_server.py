@@ -8,8 +8,8 @@ configs = {  # See https://github.com/Nayjest/ai-microcore?tab=readme-ov-file#%E
         "api_key": os.getenv("OPENAI_API_KEY"),
         "api_base": "https://api.openai.com/v1",
     },
-    "grok-4.6": {
-        "model": "grok-4.6",
+    "grok-4.7": {
+        "model": "grok-4.7",
         "api_type": mc.ApiType.OPENAI,
         "api_key": os.getenv("XAI_API_KEY"),
         "api_base": "https://api.x.ai/v1",
@@ -20,8 +20,8 @@ configs = {  # See https://github.com/Nayjest/ai-microcore?tab=readme-ov-file#%E
         "api_key": os.getenv("DEEPSEEK_API_KEY"),
         "api_base": "https://api.deepseek.com/v1",
     },
-    "gemini-3.1-pro": {
-        "model": "gemini-3.1-pro-preview",
+    "gemini-4-argon": {
+        "model": "gemini-4-argon",
         "api_type": mc.ApiType.GOOGLE,
         "api_key": os.getenv("GOOGLE_API_KEY"),
         "api_base": "https://generativelanguage.googleapis.com/v1alpha",
