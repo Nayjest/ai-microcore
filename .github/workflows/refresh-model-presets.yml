@@ -1,0 +1,195 @@
+name: "Refresh model presets"
+
+# Claude checks the vendors' model docs and updates the presets in microcore/llm_backends.py
+# (instructions: .github/prompts/refresh-model-presets.md). The workflow then bumps the patch
+# version, runs the tests and opens a pull request.
+#
+# Claude reads arbitrary web pages, so it runs in a read-only job with file-editing and web tools
+# only: no shell beyond read-only git, no push access. A separate job applies its patch.
+#
+# PRs opened with the default GITHUB_TOKEN don't trigger other workflows (Tests, Gito review).
+# To have CI start on these PRs automatically, add a fine-grained token with Contents and
+# Pull requests write access to this repository as the MODEL_PRESETS_PR_TOKEN secret.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # Mondays, 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: "Optional hints for Claude, e.g. which vendors released new models"
+        required: false
+        default: ""
+
+concurrency:
+  group: refresh-model-presets
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      changed: ${{ steps.collect.outputs.changed }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+    - name: Skip if a refresh PR is already open
+      id: open_pr
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        open=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --json headRefName,url \
+          --jq '[.[] | select(.headRefName | startswith("refresh-model-presets-")) | .url] | first // ""')
+        if [ -n "$open" ]; then
+          echo "A refresh PR is already open: $open" >> "$GITHUB_STEP_SUMMARY"
+          echo "skip=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - uses: actions/checkout@v6
+      if: steps.open_pr.outputs.skip == 'false'
+      with:
+        persist-credentials: false
+
+    - name: Update presets with Claude
+      if: steps.open_pr.outputs.skip == 'false'
+      uses: anthropics/claude-code-action@v1
+      with:
+        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        github_token: ${{ github.token }}
+        prompt: |
+          Follow the instructions in .github/prompts/refresh-model-presets.md.
+          ${{ inputs.notes && format('Maintainer notes: {0}', inputs.notes) || '' }}
+        claude_args: >-
+          --model claude-opus-5-5
+          --max-turns 120
+          --allowedTools "Read,Edit,Write,Glob,Grep,WebSearch,WebFetch,Bash(git diff *),Bash(git status *),Bash(git log *),Bash(git show *)"
+
+    - name: Collect changes
+      id: collect
+      if: steps.open_pr.outputs.skip == 'false'
+      run: |
+        mkdir -p "$RUNNER_TEMP/out"
+        if [ -f pr-body.md ]; then mv pr-body.md "$RUNNER_TEMP/out/pr-body.md"; fi
+        # Claude may only change library code, tests, docs and examples.
+        git add -A -- microcore tests examples doc README.md ':(glob).env.*.example'
+        other=$(git diff --name-only)
+        if [ -n "$other" ]; then
+          echo "::error::Changes outside the allowed paths:"
+          echo "$other"
+          exit 1
+        fi
+        if git diff --cached --quiet; then
+          echo "Presets are up to date, nothing to do." >> "$GITHUB_STEP_SUMMARY"
+          echo "changed=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+        fi
+
+    - uses: actions/setup-python@v6
+      if: steps.collect.outputs.changed == 'true'
+      with:
+        python-version: "3.13"
+
+    - name: Install dependencies
+      if: steps.collect.outputs.changed == 'true'
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -r requirements/tests.txt flake8
+
+    - name: Bump patch version
+      id: version
+      if: steps.collect.outputs.changed == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        export RELEASED=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq '.tagName | ltrimstr("v")')
+        python - <<'EOF'
+        import os, pathlib, re
+
+        path = pathlib.Path("microcore/__init__.py")
+        src = path.read_text()
+        match = re.search(r'__version__ = "(\d+)\.(\d+)\.(\d+)"', src)
+        major, minor, patch = map(int, match.groups())
+        # Bump only when the current version is already released, otherwise keep the pending one.
+        if f"{major}.{minor}.{patch}" == os.environ["RELEASED"]:
+            patch += 1
+            path.write_text(src.replace(match.group(0), f'__version__ = "{major}.{minor}.{patch}"'))
+        with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+            out.write(f"version={major}.{minor}.{patch}\n")
+        EOF
+        git add microcore/__init__.py
+
+    - name: Test
+      if: steps.collect.outputs.changed == 'true'
+      run: |
+        pytest
+        flake8 microcore
+
+    - name: Save patch and PR description
+      if: steps.collect.outputs.changed == 'true'
+      run: |
+        git diff --cached --binary > "$RUNNER_TEMP/out/changes.patch"
+        if [ ! -f "$RUNNER_TEMP/out/pr-body.md" ]; then
+          printf '## Changes\n\nSee the diff.\n' > "$RUNNER_TEMP/out/pr-body.md"
+        fi
+        cat "$RUNNER_TEMP/out/pr-body.md" >> "$GITHUB_STEP_SUMMARY"
+
+    - uses: actions/upload-artifact@v7
+      if: steps.collect.outputs.changed == 'true'
+      with:
+        name: model-presets-refresh
+        path: ${{ runner.temp }}/out/
+        retention-days: 7
+        if-no-files-found: error
+
+  open-pr:
+    needs: refresh
+    if: needs.refresh.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      VERSION: ${{ needs.refresh.outputs.version }}
+      HAS_PR_TOKEN: ${{ secrets.MODEL_PRESETS_PR_TOKEN != '' }}
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        token: ${{ secrets.MODEL_PRESETS_PR_TOKEN || github.token }}
+
+    - uses: actions/download-artifact@v8
+      with:
+        name: model-presets-refresh
+        path: ${{ runner.temp }}/in
+
+    - name: Commit, push and open the PR
+      env:
+        GH_TOKEN: ${{ secrets.MODEL_PRESETS_PR_TOKEN || github.token }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        set -euo pipefail
+        branch="refresh-model-presets-$VERSION"
+        if git ls-remote --exit-code --heads origin "$branch" > /dev/null; then
+          branch="$branch-$GITHUB_RUN_NUMBER"
+        fi
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git checkout -b "$branch"
+        git apply --index "$RUNNER_TEMP/in/changes.patch"
+        git commit -m "Refresh provider model presets for $VERSION"
+        git push -u origin "$branch"
+
+        body="$RUNNER_TEMP/in/pr-body.md"
+        printf '\n---\nOpened by the [Refresh model presets](%s) workflow.' "$RUN_URL" >> "$body"
+        if [ "$HAS_PR_TOKEN" != "true" ]; then
+          printf ' CI does not start on PRs opened with `GITHUB_TOKEN`; close and reopen this PR to run the checks.' >> "$body"
+        fi
+        url=$(gh pr create --base main --head "$branch" \
+          --title "Refresh provider model presets for $VERSION" --body-file "$body")
+        echo "Opened $url" >> "$GITHUB_STEP_SUMMARY"
