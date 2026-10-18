@@ -1,7 +1,6 @@
 """
 OpenAI LLM client implementation.
 """
-import asyncio
 import base64
 from typing import Any, Awaitable, Callable
 import inspect
@@ -124,7 +123,7 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
             if config.hiding_output():
                 response_text = self.sync_client.remove_hidden_output(response_text)
             for cb in options["callbacks"]:
-                if asyncio.iscoroutinefunction(cb):
+                if inspect.iscoroutinefunction(cb):
                     await cb(response_text)
                 else:
                     cb(response_text)
@@ -399,7 +398,7 @@ async def _a_process_streamed_response(
                         continue
             response_text += text_chunk
             for cb in callbacks:
-                if asyncio.iscoroutinefunction(cb):
+                if inspect.iscoroutinefunction(cb):
                     await cb(text_chunk)
                 else:
                     cb(text_chunk)
@@ -476,7 +475,7 @@ async def _generate_via_responses_async(
     if config.hiding_output():
         response_text = client.sync_client.remove_hidden_output(response_text)
     for cb in options["callbacks"]:
-        if asyncio.iscoroutinefunction(cb):
+        if inspect.iscoroutinefunction(cb):
             await cb(response_text)
         else:
             cb(response_text)

@@ -3,6 +3,7 @@ import logging
 import pytest
 from pathlib import Path
 import subprocess
+import sys
 import microcore as mc
 from microcore.mcp import ToolsCache
 from time import sleep
@@ -20,7 +21,7 @@ def server(request):
     process = None
     try:
         port = 5000 + TRANSPORTS.index(request.param)  # Unique port per transport
-        executable = "python"
+        executable = sys.executable
         cmd = [executable, "ping_server.py", "--port", str(port), "--transport", request.param]
         logging.info(
             f"Starting MCP server with transport: "

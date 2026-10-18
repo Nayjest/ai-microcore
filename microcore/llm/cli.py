@@ -2,6 +2,7 @@
 Command-line interface LLM client implementation.
 """
 import asyncio
+import inspect
 import shlex
 import shutil
 import subprocess
@@ -210,7 +211,7 @@ class AsyncCommandLineClient(BaseAsyncAIClient):
             # Runs in the worker thread; marshal coroutine callbacks back to the
             # event loop and block here until they complete.
             for cb in callbacks:
-                if asyncio.iscoroutinefunction(cb):
+                if inspect.iscoroutinefunction(cb):
                     asyncio.run_coroutine_threadsafe(cb(text), loop).result()
                 else:
                     cb(text)
