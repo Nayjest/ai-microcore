@@ -4,7 +4,8 @@ name: "Refresh model presets"
 # (instructions: .github/prompts/refresh-model-presets.md). The workflow then bumps the patch
 # version, runs the tests and opens a pull request.
 #
-# Claude reads arbitrary web pages, so it runs in a read-only job with file-editing and web tools
+# Claude runs on the Claude subscription token (CLAUDE_CODE_OAUTH_TOKEN, from `claude setup-token`).
+# It reads arbitrary web pages, so it runs in a read-only job with file-editing and web tools
 # only: no shell beyond read-only git, no push access. A separate job applies its patch.
 #
 # PRs opened with the default GITHUB_TOKEN don't trigger other workflows (Tests, Gito review).
@@ -59,7 +60,8 @@ jobs:
       if: steps.open_pr.outputs.skip == 'false'
       uses: anthropics/claude-code-action@v1
       with:
-        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        # The job's read-only token, not the Claude GitHub App's, which can write to the repo.
         github_token: ${{ github.token }}
         prompt: |
           Follow the instructions in .github/prompts/refresh-model-presets.md.
