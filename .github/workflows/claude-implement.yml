@@ -1,0 +1,209 @@
+name: "Claude implement"
+
+# Implements an issue labeled `ai-implement` and opens a PR that closes it (instructions:
+# .github/prompts/implement-issue.md). Starts when the label is added to an open issue, or with an
+# issue number from another workflow or the Actions tab.
+#
+# Claude runs on the Claude subscription token (CLAUDE_CODE_OAUTH_TOKEN) in a job with a read-only
+# token, and its shell commands run with secrets scrubbed from their environment. A separate job
+# commits the changes as github-actions[bot] and opens the PR. Changes under .github/ or .claude/
+# are rejected.
+#
+# PRs opened with the default GITHUB_TOKEN don't trigger other workflows (Tests, reviews). To have
+# CI start on them automatically, add a fine-grained token with Contents and Pull requests write
+# access to this repository as the AI_PR_TOKEN secret.
+
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Number of the issue to implement (must be open and labeled ai-implement)"
+        required: true
+
+concurrency:
+  group: claude-implement-${{ github.event.issue.number || inputs.issue }}
+  cancel-in-progress: false
+
+env:
+  ISSUE: ${{ github.event.issue.number || inputs.issue }}
+
+jobs:
+  implement:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'ai-implement'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      issues: read
+    env:
+      CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: "1"  # keep secrets out of Claude's shell commands
+    outputs:
+      status: ${{ steps.collect.outputs.status }}
+    steps:
+    - name: Read the issue
+      id: issue
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        gh issue view "$ISSUE" --repo "$GITHUB_REPOSITORY" --json title,body,state,labels > "$RUNNER_TEMP/issue.json"
+        ok=$(jq '.state == "OPEN" and any(.labels[]; .name == "ai-implement")' "$RUNNER_TEMP/issue.json")
+        if [ "$ok" != "true" ]; then
+          echo "::error::Issue #$ISSUE must be open and labeled ai-implement"
+          exit 1
+        fi
+        delim="EOF_$(openssl rand -hex 16)"
+        {
+          echo "title=$(jq -r .title "$RUNNER_TEMP/issue.json")"
+          echo "body<<$delim"
+          jq -r .body "$RUNNER_TEMP/issue.json"
+          echo "$delim"
+        } >> "$GITHUB_OUTPUT"
+
+    - uses: actions/checkout@v6
+      with:
+        persist-credentials: false
+
+    - uses: actions/setup-python@v6
+      with:
+        python-version: "3.13"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -r requirements/tests.txt flake8 black
+
+    - name: Implement with Claude
+      uses: anthropics/claude-code-action@v1
+      with:
+        claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        # The job's read-only token, not the Claude GitHub App's, which can write to the repo.
+        github_token: ${{ github.token }}
+        # Runs started by the Check model presets workflow come from github-actions[bot].
+        allowed_bots: github-actions[bot]
+        prompt: |
+          Implement GitHub issue #${{ env.ISSUE }} following .github/prompts/implement-issue.md.
+
+          <issue>
+          # ${{ steps.issue.outputs.title }}
+
+          ${{ steps.issue.outputs.body }}
+          </issue>
+        claude_args: >-
+          --model claude-opus-5-5
+          --max-turns 150
+          --allowedTools "Read,Edit,Write,Glob,Grep,Bash(python *),Bash(pytest *),Bash(flake8 *),Bash(black *),Bash(pylint *),Bash(git diff *),Bash(git status *),Bash(git log *),Bash(git show *)"
+
+    - name: Collect changes
+      id: collect
+      run: |
+        mkdir -p "$RUNNER_TEMP/out"
+        for f in pr-body.md blocked.md; do
+          if [ -f "$f" ]; then mv "$f" "$RUNNER_TEMP/out/$f"; fi
+        done
+        if [ -f "$RUNNER_TEMP/out/blocked.md" ]; then
+          echo "status=blocked" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        protected=$(git status --porcelain -- .github .claude)
+        if [ -n "$protected" ]; then
+          echo "::error::Changes under .github/ or .claude/ are not allowed:"
+          echo "$protected"
+          exit 1
+        fi
+        git add -A
+        if git diff --cached --quiet; then
+          echo "status=unchanged" >> "$GITHUB_OUTPUT"
+        else
+          git diff --cached --stat >> "$GITHUB_STEP_SUMMARY"
+          echo "status=changed" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Test
+      if: steps.collect.outputs.status == 'changed'
+      run: |
+        pytest
+        flake8 microcore
+
+    - name: Save patch
+      if: steps.collect.outputs.status == 'changed'
+      run: git diff --cached --binary > "$RUNNER_TEMP/out/changes.patch"
+
+    - uses: actions/upload-artifact@v7
+      if: steps.collect.outputs.status == 'changed' || steps.collect.outputs.status == 'blocked'
+      with:
+        name: implementation
+        path: ${{ runner.temp }}/out/
+        retention-days: 7
+        if-no-files-found: error
+
+  publish:
+    needs: implement
+    if: always() && needs.implement.result != 'skipped' && needs.implement.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      RESULT: ${{ needs.implement.result }}
+      STATUS: ${{ needs.implement.outputs.status }}
+      HAS_PR_TOKEN: ${{ secrets.AI_PR_TOKEN != '' }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+    - uses: actions/checkout@v6
+      if: env.RESULT == 'success' && env.STATUS == 'changed'
+      with:
+        token: ${{ secrets.AI_PR_TOKEN || github.token }}
+
+    - uses: actions/download-artifact@v8
+      if: env.RESULT == 'success' && (env.STATUS == 'changed' || env.STATUS == 'blocked')
+      with:
+        name: implementation
+        path: ${{ runner.temp }}/in
+
+    - name: Open the PR
+      if: env.RESULT == 'success' && env.STATUS == 'changed'
+      env:
+        PR_TOKEN: ${{ secrets.AI_PR_TOKEN || github.token }}
+      run: |
+        set -euo pipefail
+        title=$(gh issue view "$ISSUE" --repo "$GITHUB_REPOSITORY" --json title --jq .title)
+        slug=$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | cut -c1-40 | sed 's/^-*//; s/-*$//')
+        branch="issue-$ISSUE${slug:+-$slug}"
+        if git ls-remote --exit-code --heads origin "$branch" > /dev/null; then
+          branch="$branch-$GITHUB_RUN_NUMBER"
+        fi
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git checkout -b "$branch"
+        git apply --index "$RUNNER_TEMP/in/changes.patch"
+        git commit -m "$title" -m "Closes #$ISSUE"
+        git push -u origin "$branch"
+
+        body="$RUNNER_TEMP/in/pr-body.md"
+        [ -f "$body" ] || printf 'Implements #%s.\n' "$ISSUE" > "$body"
+        printf '\nCloses #%s\n\n---\nOpened by [this workflow run](%s).' "$ISSUE" "$RUN_URL" >> "$body"
+        if [ "$HAS_PR_TOKEN" != "true" ]; then
+          printf ' CI does not start on PRs opened with `GITHUB_TOKEN`; close and reopen this PR to run the checks.' >> "$body"
+        fi
+        GH_TOKEN="$PR_TOKEN" gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$branch" \
+          --title "$title" --body-file "$body" >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Report back on the issue
+      if: env.RESULT != 'success' || env.STATUS != 'changed'
+      run: |
+        set -euo pipefail
+        comment="$RUNNER_TEMP/comment.md"
+        if [ "$RESULT" != "success" ]; then
+          printf 'The implementation failed, see [the workflow run](%s).\n' "$RUN_URL" > "$comment"
+        elif [ "$STATUS" = "blocked" ]; then
+          { printf 'Not implemented, see [the workflow run](%s):\n\n' "$RUN_URL"; cat "$RUNNER_TEMP/in/blocked.md"; } > "$comment"
+        else
+          printf 'The implementation made no changes, see [the workflow run](%s).\n' "$RUN_URL" > "$comment"
+        fi
+        gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body-file "$comment"
