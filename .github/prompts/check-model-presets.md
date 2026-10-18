@@ -66,9 +66,10 @@ mention the page under "Needs a look".
 
 ## Output
 
-Your tools are Read, Write, Glob, Grep, WebSearch and WebFetch; there is no shell. Check every
-platform before you finish, then write exactly one file in the repository root. If you write
-neither, the workflow fails.
+Your tools are Read, Write, Glob, Grep, WebSearch and WebFetch; there is no shell and there are
+no subagents. The run ends as soon as you stop, so do all the research yourself, then write
+exactly one file in the repository root before your final message. If you write neither, the
+workflow fails.
 
 - If nothing is outdated, write `up-to-date.md` with the "Not changed", "Needs a look" and
   "Sources" sections of the shape below.

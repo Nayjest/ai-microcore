@@ -124,8 +124,11 @@ jobs:
           </issue>
         claude_args: >-
           --model claude-opus-5-5
-          --max-turns 150
+          --max-turns 200
           --allowedTools "Read,Edit,Write,Glob,Grep,Bash(python *),Bash(pytest *),Bash(flake8 *),Bash(black *),Bash(pylint *),Bash(git diff *),Bash(git status *),Bash(git log *),Bash(git show *)"
+          --disallowedTools "Agent,Read(//proc/**)"
+        # Agent: background subagents outlive the one-shot session, so their results are lost.
+        # Read(//proc/**): process environments hold the subscription token.
 
     - name: Report denied tool calls
       if: always() && steps.claude.outputs.execution_file != ''
