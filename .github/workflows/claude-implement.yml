@@ -6,8 +6,8 @@ name: "Claude implement"
 #
 # Claude runs on the Claude subscription token (CLAUDE_CODE_OAUTH_TOKEN) in a job with a read-only
 # token, and its shell commands run with secrets scrubbed from their environment. A separate job
-# commits the changes as github-actions[bot] and opens the PR. Changes under .github/ or .claude/
-# are rejected.
+# commits the changes as github-actions[bot] and opens the PR. Changes to .github/, .claude/ or
+# .mcp.json are rejected. Work always starts from main.
 #
 # PRs opened with the default GITHUB_TOKEN don't trigger other workflows (Tests, reviews). To have
 # CI start on them automatically, add a fine-grained token with Contents and Pull requests write
@@ -23,7 +23,11 @@ on:
         required: true
 
 concurrency:
-  group: claude-implement-${{ github.event.issue.number || inputs.issue }}
+  # Other labels get a group of their own, so their (skipped) runs can't cancel a pending one.
+  group: >-
+    claude-implement-${{ github.event.issue.number || inputs.issue }}-${{
+    (github.event_name == 'workflow_dispatch' || github.event.label.name == 'ai-implement')
+    && 'run' || github.run_id }}
   cancel-in-progress: false
 
 env:
@@ -41,6 +45,7 @@ jobs:
       CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: "1"  # keep secrets out of Claude's shell commands
     outputs:
       status: ${{ steps.collect.outputs.status }}
+      base: ${{ steps.base.outputs.sha }}
     steps:
     - name: Read the issue
       id: issue
@@ -62,9 +67,15 @@ jobs:
           echo "$delim"
         } >> "$GITHUB_OUTPUT"
 
+    # Always work on main, even when started manually from another branch.
     - uses: actions/checkout@v6
       with:
+        ref: main
         persist-credentials: false
+
+    - name: Record the base commit
+      id: base
+      run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
     - uses: actions/setup-python@v6
       with:
@@ -98,6 +109,8 @@ jobs:
 
     - name: Collect changes
       id: collect
+      env:
+        BASE: ${{ steps.base.outputs.sha }}
       run: |
         mkdir -p "$RUNNER_TEMP/out"
         for f in pr-body.md blocked.md; do
@@ -107,19 +120,22 @@ jobs:
           echo "status=blocked" >> "$GITHUB_OUTPUT"
           exit 0
         fi
-        protected=$(git status --porcelain -- .github .claude)
+        git add -A
+        # Compare with the base commit, so anything Claude committed is included too.
+        changed=$(git diff --cached --name-only --no-renames "$BASE")
+        if [ -z "$changed" ]; then
+          echo "status=unchanged" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        # Fails early here; the publish job repeats this check on the patch it pushes.
+        protected=$(printf '%s\n' "$changed" | grep -E '^(\.github/|\.claude/|\.mcp\.json$)' || true)
         if [ -n "$protected" ]; then
-          echo "::error::Changes under .github/ or .claude/ are not allowed:"
+          echo "::error::Changes to workflow or Claude Code configuration are not allowed:"
           echo "$protected"
           exit 1
         fi
-        git add -A
-        if git diff --cached --quiet; then
-          echo "status=unchanged" >> "$GITHUB_OUTPUT"
-        else
-          git diff --cached --stat >> "$GITHUB_STEP_SUMMARY"
-          echo "status=changed" >> "$GITHUB_OUTPUT"
-        fi
+        git diff --cached --stat "$BASE" >> "$GITHUB_STEP_SUMMARY"
+        echo "status=changed" >> "$GITHUB_OUTPUT"
 
     - name: Test
       if: steps.collect.outputs.status == 'changed'
@@ -129,7 +145,9 @@ jobs:
 
     - name: Save patch
       if: steps.collect.outputs.status == 'changed'
-      run: git diff --cached --binary > "$RUNNER_TEMP/out/changes.patch"
+      env:
+        BASE: ${{ steps.base.outputs.sha }}
+      run: git diff --cached --binary "$BASE" > "$RUNNER_TEMP/out/changes.patch"
 
     - uses: actions/upload-artifact@v7
       if: steps.collect.outputs.status == 'changed' || steps.collect.outputs.status == 'blocked'
@@ -158,6 +176,7 @@ jobs:
     - uses: actions/checkout@v6
       if: env.RESULT == 'success' && env.STATUS == 'changed'
       with:
+        ref: ${{ needs.implement.outputs.base }}
         token: ${{ secrets.AI_PR_TOKEN || github.token }}
 
     - uses: actions/download-artifact@v8
@@ -176,12 +195,22 @@ jobs:
         slug=$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | cut -c1-40 | sed 's/^-*//; s/-*$//')
         branch="issue-$ISSUE${slug:+-$slug}"
         if git ls-remote --exit-code --heads origin "$branch" > /dev/null; then
-          branch="$branch-$GITHUB_RUN_NUMBER"
+          branch="$branch-$GITHUB_RUN_NUMBER-$GITHUB_RUN_ATTEMPT"
         fi
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git checkout -b "$branch"
         git apply --index "$RUNNER_TEMP/in/changes.patch"
+
+        # The implement job ran model-controlled code (tests) after its own check, so check the
+        # patch itself before pushing it with write access.
+        protected=$(git diff --cached --name-only --no-renames | grep -E '^(\.github/|\.claude/|\.mcp\.json$)' || true)
+        if [ -n "$protected" ]; then
+          echo "::error::The patch changes workflow or Claude Code configuration:"
+          echo "$protected"
+          exit 1
+        fi
+
         git commit -m "$title" -m "Closes #$ISSUE"
         git push -u origin "$branch"
 
@@ -207,3 +236,9 @@ jobs:
           printf 'The implementation made no changes, see [the workflow run](%s).\n' "$RUN_URL" > "$comment"
         fi
         gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body-file "$comment"
+
+    - name: Report a failure to open the PR
+      if: failure()
+      run: |
+        printf 'Opening the PR failed, see [the workflow run](%s).\n' "$RUN_URL" > "$RUNNER_TEMP/comment.md"
+        gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/comment.md"

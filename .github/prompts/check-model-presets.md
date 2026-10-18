@@ -1,9 +1,10 @@
 # Check provider model presets
 
 Compare the provider model presets with the models the vendors currently offer, and propose
-updates. You run inside the `Check model presets` workflow. You don't edit the repository: you
-write a proposal to `proposal.md`, the workflow files it as a GitHub issue, and another workflow
-implements that issue. Write the proposal so it can be implemented without further research.
+updates. You run inside the `Check model presets` workflow and don't edit the repository. Instead,
+you write a proposal to `proposal.md`. The workflow files it as a GitHub issue, and another
+workflow implements that issue without web access, so the proposal must contain everything the
+implementation needs.
 
 Models released after your training cutoff are real. Take model IDs and prices from the vendors'
 current official documentation, never from memory.
@@ -16,8 +17,8 @@ current official documentation, never from memory.
      the base rate (no batch, cache or long-context pricing), with a short qualifier where the
      vendor has more than one rate, as in `(peak)`. Propose fixes for stale prices on unchanged
      entries too.
-   - Don't propose new platforms or presets. A `MID_END_MODELS` entry may be added for a platform
-     whose vendor has an obvious mid-tier model.
+   - Don't propose new platforms or new preset tiers. You may propose adding a `MID_END_MODELS`
+     entry for a platform whose vendor has an obvious mid-tier model.
 2. **Docs and examples** that name current models and must stay consistent with the presets:
    - the model lists in `.env.*.example` files
    - model examples in `README.md`, such as `llm('1+2=', model=...)`

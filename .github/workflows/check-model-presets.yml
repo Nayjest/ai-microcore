@@ -46,9 +46,11 @@ jobs:
           echo "skip=false" >> "$GITHUB_OUTPUT"
         fi
 
+    # Always check main, even when started manually from another branch.
     - uses: actions/checkout@v6
       if: steps.open_issue.outputs.skip == 'false'
       with:
+        ref: main
         persist-credentials: false
 
     - name: Check presets with Claude
@@ -100,6 +102,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
       with:
+        ref: main
         persist-credentials: false
 
     - uses: actions/download-artifact@v8
