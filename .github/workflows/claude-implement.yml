@@ -129,13 +129,17 @@ jobs:
 
     - name: Report denied tool calls
       if: always() && steps.claude.outputs.execution_file != ''
+      continue-on-error: true  # diagnostics only, never blocks the job
       env:
         EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
       run: |
-        jq -c '.[] | select(.type == "result") | .permission_denials[]? | {tool_name, tool_input}' \
-          "$EXECUTION_FILE" | while read -r denial; do
-          echo "::warning title=Claude tool call denied::$denial"
-        done
+        # The file is a JSON array of SDK messages; a stream of messages is accepted as well.
+        # Captured first, so a jq error fails this step instead of disappearing in a pipe.
+        denials=$(jq -c '(if type == "array" then .[] else . end)
+          | select(.type == "result") | .permission_denials[]? | {tool_name, tool_input}' "$EXECUTION_FILE")
+        while read -r denial; do
+          if [ -n "$denial" ]; then echo "::warning title=Claude tool call denied::$denial"; fi
+        done <<< "$denials"
 
     - name: Collect changes
       id: collect
