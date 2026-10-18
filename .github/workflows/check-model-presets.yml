@@ -70,8 +70,12 @@ jobs:
           ${{ inputs.notes && format('Maintainer notes: {0}', inputs.notes) || '' }}
         claude_args: >-
           --model claude-opus-5-5
-          --max-turns 120
+          --max-turns 200
           --allowedTools "Read,Write,Glob,Grep,WebSearch,WebFetch"
+          --disallowedTools "Agent,Bash,Read(//proc/**)"
+        # Agent: background subagents outlive the one-shot session, so their results are lost.
+        # Bash: read-only commands like ls and cat would otherwise run without an allow rule.
+        # Read(//proc/**): process environments hold the subscription token.
 
     - name: Report denied tool calls
       if: always() && steps.claude.outputs.execution_file != ''

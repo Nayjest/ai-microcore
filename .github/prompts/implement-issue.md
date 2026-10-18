@@ -24,6 +24,9 @@ part, and say so in the PR description.
 
 ## Output
 
+The run ends as soon as you stop, and there are no subagents: finish the work yourself and write
+one of these files before your final message.
+
 - When the change is done, write the pull request description to `pr-body.md` in the repository
   root (the workflow removes it before committing):
 
