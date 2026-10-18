@@ -5,9 +5,9 @@ name: "Claude implement"
 # issue number from another workflow or the Actions tab.
 #
 # Claude runs on the Claude subscription token (CLAUDE_CODE_OAUTH_TOKEN) in a job with a read-only
-# token, and its shell commands run with secrets scrubbed from their environment. A separate job
-# commits the changes as github-actions[bot] and opens the PR. Changes to .github/, .claude/ or
-# .mcp.json are rejected. Work always starts from main.
+# token; its shell commands run in an isolated PID namespace with secrets scrubbed from their
+# environment. A separate job commits the changes as github-actions[bot] and opens the PR.
+# Changes to .github/, .claude/ or .mcp.json are rejected. Work always starts from main.
 #
 # PRs opened with the default GITHUB_TOKEN don't trigger other workflows (Tests, reviews). To have
 # CI start on them automatically, add a fine-grained token with Contents and Pull requests write
@@ -85,6 +85,21 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install -r requirements/tests.txt flake8 black
+
+    # With bubblewrap available, Claude Code runs its shell commands in their own PID namespace,
+    # so they can't read the token from its process environment. Same setup the action does for
+    # untrusted users; Ubuntu 24.04 needs unprivileged user namespaces allowed for it.
+    - name: Install subprocess isolation
+      run: |
+        for i in 1 2 3; do
+          sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends bubblewrap socat && break
+          [ "$i" = 3 ] && exit 1
+          sleep 5
+        done
+        if [ -f /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+        fi
+        bwrap --unshare-pid --dev-bind / / true
 
     - name: Implement with Claude
       uses: anthropics/claude-code-action@v1
@@ -238,7 +253,8 @@ jobs:
         gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body-file "$comment"
 
     - name: Report a failure to open the PR
-      if: failure()
+      # failure() covers this job's steps; implement failures are reported by the step above.
+      if: failure() && env.RESULT == 'success'
       run: |
         printf 'Opening the PR failed, see [the workflow run](%s).\n' "$RUN_URL" > "$RUNNER_TEMP/comment.md"
         gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/comment.md"
