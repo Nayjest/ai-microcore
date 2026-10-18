@@ -31,6 +31,12 @@ PRINT_STREAM = "print_stream"
 
 DEFAULT_LOCAL_ENV_FILE = ".env"
 
+AZURE_ENTRA_CREDENTIAL_MODES = (
+    "default",
+    "client_secret",
+)
+"""Supported values for ``LLM_AZURE_ENTRA_CREDENTIAL``."""
+
 
 def from_env(default=None, dtype=None):
     """
@@ -204,13 +210,88 @@ class LLMConfig(
     i. e. temperature, max_tokens, etc.
     """
 
+    LLM_USE_RESPONSES_API: bool | None = from_env(default=None, dtype=bool)
+    """
+    Controls whether the OpenAI **Responses API** (``/responses``) is used instead of
+    Chat Completions (``/chat/completions``) for ``ApiType.OPENAI`` backends.
+
+    * ``None`` (default) / ``False`` — use Chat Completions.
+    * ``True`` — use the Responses API.
+
+    There is no model-name auto-detection: the application decides when to enable it.
+    For example, GPT-5.6 with function tools requires the Responses API, so enable this
+    flag (globally or per request) for such workloads.
+
+    Can be overridden per request via ``llm(prompt, use_responses_api=True)``.
+
+    On Azure, enabling the Responses API builds an OpenAI v1 client
+    (``{endpoint}/openai/v1/``) which serves both Chat Completions and Responses, so a
+    single process can mix both call styles per request.
+    """
+
     HTTP_HEADERS: dict = from_env(dtype=dict)
     """Additional HTTP headers to add to LLM API requests"""
 
     AZURE_DEPLOYMENT_ID: str = from_env()
 
+    LLM_AZURE_USE_ENTRA_ID: bool = from_env(default=False, dtype=bool)
+    """
+    Use Microsoft Entra ID (Managed Identity / DefaultAzureCredential) instead of
+    ``LLM_API_KEY`` for Azure OpenAI and Foundry inference. Requires RBAC on the
+    resource (typically **Cognitive Services User**; classic Azure OpenAI may use
+    **Cognitive Services OpenAI User** — assign per Microsoft guidance for your resource type).
+
+    Read like other ``LLM_*`` fields: ``configure()`` / ``.env`` / process environment, using the
+    usual priority (see README). From the environment the value is parsed to ``bool`` with
+    ``get_bool_from_env`` (truthy strings are those in ``TRUE_VALUES`` in this module).
+    """
+
+    LLM_AZURE_ENTRA_SCOPE: str = from_env(default="https://ai.azure.com/.default")
+    """
+    OAuth scope for the access token when using ``get_bearer_token_provider``.
+
+    * **Azure AI Foundry** (portal / ``ai.azure.com`` flows): typically
+      ``https://ai.azure.com/.default`` (this default when unset).
+    * **Classic Azure OpenAI** (resource ``*.openai.azure.com``): Microsoft often documents
+      ``https://cognitiveservices.azure.com/.default`` — set ``LLM_AZURE_ENTRA_SCOPE`` if the
+      default token is rejected.
+
+    Same configuration priority as other ``LLM_*`` options.
+    """
+
+    LLM_AZURE_ENTRA_CREDENTIAL: str = from_env(default="default")
+    """
+    Credential mode used to obtain an Entra ID access token.
+
+    Supported values:
+
+    * ``default`` — :class:`~azure.identity.DefaultAzureCredential`. Convenient
+      for local development with ``az login`` / IDE credentials. This mode
+      consults OS environment variables, Azure CLI cache, and other Azure SDK
+      auto-discovery mechanisms. Not recommended for production.
+    * ``client_secret`` — :class:`~azure.identity.ClientSecretCredential`.
+      Requires ``LLM_AZURE_TENANT_ID``, ``LLM_AZURE_CLIENT_ID``,
+      ``LLM_AZURE_CLIENT_SECRET``. This mode is configured entirely by
+      ``LLM_AZURE_*`` fields.
+
+    Same configuration priority as other ``LLM_*`` options.
+    """
+
+    LLM_AZURE_TENANT_ID: str = from_env(default="")
+    """Microsoft Entra ID tenant for Service Principal (`client_secret`) flow."""
+
+    LLM_AZURE_CLIENT_ID: str = from_env(default="")
+    """
+    Application (client) id for Service Principal (`client_secret`) flow.
+    """
+
+    LLM_AZURE_CLIENT_SECRET: str = from_env(default="")
+    """Client secret for ``LLM_AZURE_ENTRA_CREDENTIAL=client_secret``."""
+
     INFERENCE_FUNC: Union[Callable, str] = from_env()
     """Inference function for local models"""
+    LLM_CLI: str = from_env(dtype=str)
+    """CLI command for LLM inference, e.g. 'claude -p <request>'"""
     CHAT_MODE: bool = from_env(dtype=bool)
     """Is it a chat or completion model"""
     INIT_PARAMS: dict = from_env(dtype=dict)
@@ -219,6 +300,8 @@ class LLMConfig(
     HIDDEN_OUTPUT_BEGIN: str = from_env()
     HIDDEN_OUTPUT_END: str = from_env()
     """Remove <think>...</think> from LLM response for models like DeepSeek R1"""
+    SHOW_THINKING: bool = from_env(dtype=bool, default=False)
+    """Include model thinking (reasoning) wrapped in <think>...</think> in LLM responses"""
     CALLBACKS: list[Callable] = field(default_factory=list)
 
     VALIDATE_CONFIG: bool = from_env(dtype=bool, default=True)
@@ -274,11 +357,39 @@ class LLMConfig(
         if self.LLM_API_PLATFORM in ApiPlatform:
             self.LLM_API_BASE = ApiPlatform(self.LLM_API_PLATFORM).default_api_base()
 
-    def _init_llm_options(self):
-        if self.INFERENCE_FUNC:
-            if not self.LLM_API_TYPE:
-                self.LLM_API_TYPE = ApiType.FUNCTION
+    def _init_llm_options_cli(self):
+        if not self.LLM_API_TYPE:
+            self.LLM_API_TYPE = ApiType.CLI
+        elif self.LLM_API_TYPE != ApiType.CLI:
+            logging.warning(
+                f"LLM_CLI is provided but LLM_API_TYPE is set to "
+                f"'{self.LLM_API_TYPE}' instead of '{ApiType.CLI}'. "
+                f"LLM_CLI is only used when LLM_API_TYPE='{ApiType.CLI}' "
+                f"and will be ignored with the current configuration. "
+                f"Either unset LLM_API_TYPE or set it to '{ApiType.CLI}' "
+                f"to use the provided command line interface."
+            )
+        if not self.MODEL:
+            self.MODEL = str(self.LLM_CLI).split()[0] + "-cli"
 
+    def _init_llm_options_inference_func(self):
+        if not self.LLM_API_TYPE:
+            self.LLM_API_TYPE = ApiType.FUNCTION
+        elif self.LLM_API_TYPE != ApiType.FUNCTION:
+            logging.warning(
+                f"INFERENCE_FUNC is provided but LLM_API_TYPE is set to "
+                f"'{self.LLM_API_TYPE}' instead of '{ApiType.FUNCTION}'. "
+                f"INFERENCE_FUNC is only used when LLM_API_TYPE='{ApiType.FUNCTION}' "
+                f"and will be ignored with the current configuration. "
+                f"Either unset LLM_API_TYPE or set it to '{ApiType.FUNCTION}' "
+                f"to use the provided inference function."
+            )
+
+    def _init_llm_options(self):
+        if self.LLM_CLI:
+            self._init_llm_options_cli()
+        if self.INFERENCE_FUNC:
+            self._init_llm_options_inference_func()
         if self.uses_local_model():
             return
 
@@ -309,6 +420,8 @@ class LLMConfig(
         if self.LLM_API_PLATFORM == ApiPlatform.AZURE:
             self.LLM_API_VERSION = self.LLM_API_VERSION or self.OPENAI_API_VERSION
             self.LLM_DEPLOYMENT_ID = self.LLM_DEPLOYMENT_ID or self.AZURE_DEPLOYMENT_ID
+            if self.LLM_AZURE_USE_ENTRA_ID and not (self.LLM_AZURE_ENTRA_SCOPE or "").strip():
+                self.LLM_AZURE_ENTRA_SCOPE = "https://ai.azure.com/.default"
 
         elif self.LLM_API_TYPE == ApiType.ANTHROPIC:
             self.LLM_API_KEY = self.LLM_API_KEY or self.ANTHROPIC_API_KEY
@@ -337,7 +450,7 @@ class LLMConfig(
     def _validate_local_llm(self):
         if self.HTTP_HEADERS:
             logging.warning("HTTP_HEADERS will be ignored for local models")
-        if self.CHAT_MODE is None:
+        if self.CHAT_MODE is None and self.LLM_API_TYPE != ApiType.CLI:
             logging.warning(
                 "When using local models, "
                 "(bool)CHAT_MODE configuration option should be explicitly set"
@@ -378,9 +491,33 @@ class LLMConfig(
                     raise LLMApiDeploymentIdError()
                 if not self.LLM_API_VERSION:
                     raise LLMApiVersionError()
-
-            if not self.LLM_API_KEY:
+                if self.LLM_AZURE_USE_ENTRA_ID:
+                    self._validate_entra_credential_mode()
+                elif not self.LLM_API_KEY:
+                    raise LLMApiKeyError()
+            elif not self.LLM_API_KEY:
                 raise LLMApiKeyError()
+
+    def _validate_entra_credential_mode(self):
+        """Validate ``LLM_AZURE_*`` fields required by the selected Entra mode."""
+        mode = (self.LLM_AZURE_ENTRA_CREDENTIAL or "default").strip().lower()
+        if mode not in AZURE_ENTRA_CREDENTIAL_MODES:
+            raise LLMConfigError(
+                "LLM_AZURE_ENTRA_CREDENTIAL must be one of: "
+                + ", ".join(repr(m) for m in AZURE_ENTRA_CREDENTIAL_MODES)
+            )
+
+        def _require(field_name: str):
+            if not (getattr(self, field_name) or "").strip():
+                raise LLMConfigError(
+                    f"{field_name} is required when "
+                    f"LLM_AZURE_ENTRA_CREDENTIAL='{mode}'"
+                )
+
+        if mode == "client_secret":
+            _require("LLM_AZURE_TENANT_ID")
+            _require("LLM_AZURE_CLIENT_ID")
+            _require("LLM_AZURE_CLIENT_SECRET")
 
     def validate(self):
         """
@@ -439,11 +576,19 @@ class LLMConfig(
             for k, v in dict(self).items()
             if v is not None and v != getattr(default, k) and k != "USE_DOT_ENV"
         }
+        sensitive_markers = (
+            "_key",
+            "_secret",
+            "_password",
+        )
         for k, v in data.items():
-            if "_key" in k and isinstance(v, str):
+            if not isinstance(v, str) or not v:
+                continue
+            if any(marker in k for marker in sensitive_markers):
                 if len(v) <= 3:
-                    continue
-                data[k] = v[: 1 if len(v) <= 12 else 3] + "****" + v[-2:]
+                    data[k] = "***"
+                else:
+                    data[k] = v[: 1 if len(v) <= 12 else 3] + "****" + v[-2:]
         if return_dict:
             return data
 

@@ -17,7 +17,7 @@ from .embedding_db import SearchResult, AbstractEmbeddingDB, SearchResults
 from .file_storage import storage
 from ._env import configure, env, config, min_setup
 from .logging import use_logging
-from .message_types import UserMsg, AssistantMsg, SysMsg, Msg, PartialMsg
+from .message_types import UserMsg, AssistantMsg, SysMsg, Msg, PartialMsg, Role
 from .configuration import (
     LLMApiBaseError,
     LLMApiDeploymentIdError,
@@ -32,37 +32,32 @@ from .llm_backends import ApiPlatform, ApiType
 from .types import BadAIJsonAnswer, BadAIAnswer, LLMContextLengthExceededError
 from .wrappers.prompt_wrapper import PromptWrapper
 from .wrappers.llm_response_wrapper import LLMResponse
-from ._llm_functions import llm, allm, llm_parallel
+from ._llm_functions import llm, allm, llm_parallel, llm_stream
 from .utils import parse, dedent
 from .metrics import Metrics
 from .interactive_setup import interactive_setup
 
 
 def tpl(
-    file: os.PathLike[str] | str,
-    sanitize_utf8=True,
-    **kwargs
+    file: os.PathLike[str] | str, sanitize_utf8=True, **kwargs
 ) -> str | PromptWrapper:
     """Renders a prompt template using the provided parameters."""
     rendered = env().tpl_function(file, **kwargs)
     if sanitize_utf8:
-        rendered = rendered.encode('utf-8', errors='replace').decode('utf-8')
-    return PromptWrapper(rendered, kwargs)
+        rendered = rendered.encode("utf-8", errors="replace").decode("utf-8")
+    return PromptWrapper(rendered, tpl_vars=kwargs, tpl_file=file)
 
 
 def prompt(
-    template_str: str,
-    remove_indent=True,
-    sanitize_utf8=True,
-    **kwargs
+    template_str: str, remove_indent=True, sanitize_utf8=True, **kwargs
 ) -> str | PromptWrapper:
     """Renders a prompt template from string using the provided parameters."""
     if remove_indent:
         template_str = dedent(template_str)
     rendered = env().jinja_env.from_string(template_str).render(**kwargs)
     if sanitize_utf8:
-        rendered = rendered.encode('utf-8', errors='replace').decode('utf-8')
-    return PromptWrapper(rendered, kwargs)
+        rendered = rendered.encode("utf-8", errors="replace").decode("utf-8")
+    return PromptWrapper(rendered, tpl_vars=kwargs, tpl_file=None)
 
 
 fmt = prompt
@@ -130,11 +125,21 @@ class _EmbeddingDBProxy(AbstractEmbeddingDB):
     ) -> list[str | SearchResult] | str | SearchResult | None:
         return env().texts.get(collection, ids, limit, offset, where, **kwargs)
 
-    def save_many(self, collection: str, items: list[tuple[str, dict] | str]):
+    def save_many(
+        self,
+        collection: str,
+        items: list[tuple[str, dict] | tuple[str, dict, str] | str],
+    ):
         return env().texts.save_many(collection, items)
 
-    def save(self, collection: str, text: str, metadata: dict = None):
-        return env().texts.save(collection, text, metadata)
+    def save(
+        self,
+        collection: str,
+        text: str,
+        metadata: dict = None,
+        id: str = None,  # pylint: disable=redefined-builtin
+    ):
+        return env().texts.save(collection, text, metadata, id)
 
     def clear(self, collection: str):
         return env().texts.clear(collection)
@@ -154,6 +159,8 @@ class _EmbeddingDBProxy(AbstractEmbeddingDB):
 
 texts = _EmbeddingDBProxy()
 """Embedding database, see `microcore.embedding_db.AbstractEmbeddingDB`"""
+vector_db = texts
+"""Alias for `texts`"""
 
 
 def mcp_server(name: str) -> mcp.MCPServer:  # noqa, pylint-disable=E0602
@@ -176,10 +183,12 @@ __all__ = [
     "llm",
     "allm",
     "llm_parallel",
+    "llm_stream",
     "tpl",
     "prompt",
     "fmt",
     "texts",
+    "vector_db",
     "configure",
     "min_setup",
     "validate_config",
@@ -208,6 +217,7 @@ __all__ = [
     "LLMContextLengthExceededError",
     "LLMResponse",
     "PromptWrapper",
+    "Role",
     "parse",
     "SearchResult",
     "SearchResults",
@@ -231,4 +241,4 @@ __all__ = [
     # "wrappers",
 ]
 
-__version__ = "5.2.0"
+__version__ = "6.8.3"

@@ -17,6 +17,7 @@ class Role(str, Enum):
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
+    TOOL = "tool"
 
     def __str__(self):
         return self.value
@@ -104,6 +105,12 @@ class UserMsg(Msg):
 class AssistantMsg(Msg):
     """Assistant message."""
     role: str = field(default=Role.ASSISTANT, init=False)
+
+
+@dataclass
+class ToolMsg(Msg):
+    """Tool response (OpenAI chat completions API)."""
+    role: str = field(default=Role.TOOL, init=False)
 
 
 class PartialMsg(AssistantMsg):

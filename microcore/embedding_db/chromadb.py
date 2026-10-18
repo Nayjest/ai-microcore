@@ -77,21 +77,27 @@ class ChromaEmbeddingDB(AbstractEmbeddingDB):
             else SearchResults([])
         )
 
-    def save_many(self, collection: str, items: list[tuple[str, dict] | str]):
+    def save_many(
+        self,
+        collection: str,
+        items: list[tuple[str, dict] | tuple[str, dict, str] | str],
+    ):
         unique = not self.config.EMBEDDING_DB_ALLOW_DUPLICATES
         texts, ids, metadatas = [], [], []
         for i in items:
             if isinstance(i, str):
-                text = i
-                metadata = None
+                text, metadata, item_id = i, None, None
             else:
                 text = i[0]
                 metadata = i[1] or None
-            if unique and text in texts:
-                continue
+                item_id = str(i[2]) if len(i) > 2 and i[2] is not None else None
+            if item_id is None:
+                if unique and text in texts:
+                    continue
+                item_id = str(hash(text)) if unique else str(uuid.uuid4())
             texts.append(text)
             metadatas.append(metadata)
-            ids.append(str(hash(text)) if unique else str(uuid.uuid4()))
+            ids.append(item_id)
         self._get_collection(collection, create=True).upsert(
             documents=texts, ids=ids, metadatas=metadatas
         )

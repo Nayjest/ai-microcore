@@ -1,6 +1,8 @@
 """
 MicroCore environment object / initialization.
 """
+
+import sys
 import os.path
 from dataclasses import dataclass, field, asdict, fields
 from importlib.util import find_spec
@@ -65,6 +67,10 @@ class Env:
         """Initialize Jinja2 environment and template function for templates rendering."""
         self.jinja_env = make_jinja2_env(self)
         self.tpl_function = make_tpl_function(self)
+
+        if 'microcore.ai_modules' in sys.modules:
+            from .ai_modules import register_module_tpl_loaders
+            register_module_tpl_loaders()
 
     @property
     def mcp_registry(self) -> "MCPRegistry":
@@ -140,6 +146,9 @@ class Env:
                     "Run `pip install google-genai`."
                 ) from e
             self.default_client = GoogleClient(self.config)
+        elif self.config.LLM_API_TYPE == ApiType.CLI:
+            from .llm.cli import CommandLineClient
+            self.default_client = CommandLineClient(self.config)
         else:
             from .llm.openai import OpenAIClient
             self.default_client = OpenAIClient(self.config)

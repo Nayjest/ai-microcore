@@ -4,11 +4,15 @@ import os
 import pytest
 import microcore as mc
 
+# Removing these breaks Path.home() on Windows (no pwd-database fallback), see issue #165
+_HOME_ENV_VARS = ("HOME", "USERPROFILE", "HOMEDRIVE", "HOMEPATH")
+
 
 @pytest.fixture()
 def setup(request, mocker):
     saved_env = os.environ.copy()
     os.environ.clear()
+    os.environ.update({k: v for k, v in saved_env.items() if k in _HOME_ENV_VARS})
     mock_openai_chat(mocker)
     mc.configure(
         USE_DOT_ENV=False,
@@ -23,7 +27,7 @@ def setup(request, mocker):
 
 def mock_openai_chat(mocker):
     _openai_version = importlib.metadata.version("openai")
-    if _openai_version.startswith("1."):
+    if _openai_version.startswith("1.") or _openai_version.startswith("2."):
         mocker.patch(
             "openai.resources.AsyncCompletions.create",
             side_effect=_aside_effect_compl_parrot,

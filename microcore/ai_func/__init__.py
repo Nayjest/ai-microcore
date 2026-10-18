@@ -143,18 +143,21 @@ class AIFunctionWrapper:
         self.syntax = syntax
         self.name = name
         self.render_settings = render_settings
+        self._str_cache = None
         functools.update_wrapper(self, func)
 
     def __call__(self, *args, **kwargs):
         return self.func(*args, **kwargs)
 
     def __str__(self) -> str:
-        return describe_ai_func(
-            self.func,
-            syntax=self.syntax,
-            name=self.name,
-            render_settings=self.render_settings
-        )
+        if self._str_cache is None:
+            self._str_cache = describe_ai_func(
+                self.func,
+                syntax=self.syntax,
+                name=self.name,
+                render_settings=self.render_settings,
+            )
+        return self._str_cache
 
     def __repr__(self) -> str:
         return repr(self.func)

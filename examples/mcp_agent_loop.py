@@ -4,22 +4,30 @@ import microcore as mc
 
 mc.configure(
     interactive_setup=True,
-    dot_env_file='~/.env.ai-code-review',
+    dot_env_file="~/.env.ai-code-review",
     use_logging=True,
     mcp_servers=[
-        {"name": "fetch", "url": 'https://remote.mcpservers.org/fetch/mcp', }
-    ]
+        # DeepWiki: public MCP server answering questions about GitHub repositories
+        {
+            "name": "deepwiki",
+            "url": "https://mcp.deepwiki.com/mcp",
+        }
+    ],
 )
 
 
 async def main():
-    mcp = await mc.mcp.server('fetch').connect()
-    prompt = mc.prompt("""
-        How many stars nayjest/ai-microcore has on GitHub?
-        Use tools to answer the question.
+    mcp = await mc.mcp.server("deepwiki").connect()
+    prompt = mc.prompt(
+        """
+        What documentation topics exist for the fastapi/fastapi repository?
+        To use a tool, respond with the corresponding JSON and nothing else.
+        Available tools:
         {{ tools }}
-        """, tools=mcp.tools
-                       )
+        When you have the tool results, answer in plain text.
+        """,
+        tools=mcp.tools,
+    )
     chat = [prompt]
     while True:
         llm_response = await mc.allm(chat)

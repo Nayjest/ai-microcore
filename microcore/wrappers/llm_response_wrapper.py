@@ -1,8 +1,8 @@
-from typing import Any
-from typing import TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 from ..images import FileImage, ImageInterface, ImageListInterface
 from ..types import BadAIAnswer, TPrompt
+from ..llm_backends import ApiType
 from ..utils import (
     ExtendedString,
     ConvertableToMessage,
@@ -45,14 +45,17 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
     prompt: TPrompt
     gen_duration: float
     from_file_cache: bool = False
+    api_type: Optional[ApiType] = None
+    response: Optional[Any] = None
 
     def __new__(cls, string: str, attrs: dict = None, **kwargs):
         attrs = {
             "role": Role.ASSISTANT,
             "content": str(string),
             "prompt": None,
-            # generation duration in seconds (float), used in metrics
-            "gen_duration": None,
+            "gen_duration": None,  # generation duration in seconds (float), used in metrics
+            "api_type": None,
+            "response": None,
             **(attrs or {}),
         }
         obj = ExtendedString.__new__(cls, string, attrs, **kwargs)

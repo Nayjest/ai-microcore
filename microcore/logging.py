@@ -152,6 +152,21 @@ def _stream_log_response(out):
         LoggingConfig.OUTPUT_METHOD(out)
 
 
+def _stream_log_end(out=None):  # pylint: disable=unused-argument
+    """
+    Terminates the line of the streamed LLM response.
+
+    Streaming output is printed chunk by chunk without line breaks,
+    so the line needs to be closed when the response is complete.
+    """
+    global _is_new_request
+    if _is_new_request:
+        # No chunks were streamed, nothing was printed by _stream_log_response()
+        _is_new_request = False
+        return
+    LoggingConfig.OUTPUT_METHOD("\n")
+
+
 def _print_no_nln(s):
     print(s, end='', flush=True)
 
@@ -172,6 +187,8 @@ def use_logging(stream: bool = False):
             env().llm_before_handlers.append(_stream_log_request)
         if _stream_log_response not in config().CALLBACKS:
             env().config.CALLBACKS.append(_stream_log_response)
+        if _stream_log_end not in env().llm_after_handlers:
+            env().llm_after_handlers.append(_stream_log_end)
     else:
         if _log_request not in env().llm_before_handlers:
             env().llm_before_handlers.append(_log_request)
@@ -184,3 +201,5 @@ def use_logging(stream: bool = False):
             env().llm_before_handlers.remove(_stream_log_request)
         if _stream_log_response in config().CALLBACKS:
             config().CALLBACKS.remove(_stream_log_response)
+        if _stream_log_end in env().llm_after_handlers:
+            env().llm_after_handlers.remove(_stream_log_end)

@@ -9,9 +9,9 @@ def test_calc(setup_env):  # noqa
         7 == llm(
             [
                 SysMsg("You are a calculator, answer with number"),
-                UserMsg("1+2="),
+                UserMsg("1+2=?"),
                 AssistantMsg("3"),
-                UserMsg("3+4="),
+                UserMsg("3+4=?"),
             ]
         ).parse_number(dtype=int, position="last")
     )

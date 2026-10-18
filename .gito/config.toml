@@ -1,5 +1,12 @@
 # Override project configuration for AI code reviewer (gito.bot)
 # Bundled configuration can be found here: https://github.com/Nayjest/Gito/blob/main/gito/config.toml
+post_process = """
+for fn in issues:
+    issues[fn] = [
+        i for i in issues[fn]
+        if i["confidence"] <= 2 and i["severity"] <= 3
+    ]
+"""
 [prompt_vars]
 awards = ""  # Disable awards
 requirements = """

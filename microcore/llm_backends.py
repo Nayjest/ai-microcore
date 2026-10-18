@@ -34,8 +34,9 @@ class ApiType(SafeStrEnum):
     GOOGLE = "google"  # new Google SDK
 
     # Local models
-    FUNCTION = "function"
+    FUNCTION = "function"  # Python inference function, requires config.INFERENCE_FUNCTION field
     TRANSFORMERS = "transformers"
+    CLI = "cli"  # external executable over stdio
     NONE = "none"
 
     @staticmethod
@@ -47,7 +48,12 @@ class ApiType(SafeStrEnum):
         Returns:
             bool: True if the API type is local, False otherwise.
         """
-        return api_type in (ApiType.FUNCTION, ApiType.TRANSFORMERS, ApiType.NONE)
+        return api_type in (
+            ApiType.FUNCTION,
+            ApiType.TRANSFORMERS,
+            ApiType.CLI,
+            ApiType.NONE,
+        )
 
     @staticmethod
     def major_remote() -> list["ApiType"]:
@@ -68,6 +74,7 @@ class ApiType(SafeStrEnum):
             ApiType.AZURE: "Azure OpenAI",
             ApiType.FUNCTION: "Local Function",
             ApiType.TRANSFORMERS: "Local Transformers",
+            ApiType.CLI: "CLI Command",
             ApiType.NONE: "No LLM",
         }
         return labels.get(api_type, str(api_type).replace('_', ' ').title())
@@ -233,33 +240,37 @@ DEFAULT_PLATFORMS = {
 }
 
 HIGH_END_MODELS: dict[ApiPlatform, str] = {
-    ApiPlatform.OPENAI: "gpt-5.2",
-    ApiPlatform.ANTHROPIC: "claude-opus-4-6",
-    ApiPlatform.GOOGLE_AI_STUDIO: "gemini-2.5-pro",
-    ApiPlatform.GOOGLE_VERTEX_AI: "gemini-2.5-pro",
+    ApiPlatform.OPENAI: "gpt-6-astra",  # I/O: $10/$50 /M tokens
+    ApiPlatform.ANTHROPIC: "claude-opus-5-5",  # I/O: $4/$20 /M tokens
+    ApiPlatform.GOOGLE_AI_STUDIO: "gemini-4-argon",  # I/O: $2/$10 /M tokens (intro to Nov 2026)
+    ApiPlatform.GOOGLE_VERTEX_AI: "gemini-4-argon",
     ApiPlatform.MISTRAL: "mistral-large-latest",
-    ApiPlatform.XAI: "grok-4",  # I/O: $3 $15 /M tokens
-    ApiPlatform.DEEPSEEK: "deepseek-chat",
-    ApiPlatform.CEREBRAS: "gpt-oss-120b",  # I/O: $0.35/$0.75 /M tokens
+    ApiPlatform.XAI: "grok-4.7",  # I/O: $2/$6 /M tokens
+    ApiPlatform.DEEPSEEK: "deepseek-v4-pro",  # I/O: $1.32/$3.96 /M tokens (peak)
+    ApiPlatform.CEREBRAS: "gpt-oss-120b",
     ApiPlatform.GROQ: "openai/gpt-oss-120b",  # I/O: $0.15/$0.60 /M tokens
-    ApiPlatform.FIREWORKS: "accounts/fireworks/models/kimi-k2-thinking",  # I/O: $0.60/$2.50 /M
+    ApiPlatform.FIREWORKS: "accounts/fireworks/models/kimi-k3",  # I/O: $3/$15 /M tokens
     ApiPlatform.PERPLEXITY: "sonar-deep-research",  # I/O: $2/$8 /M tokens
 }
 LOW_END_MODELS: dict[ApiPlatform, str] = {
-    ApiPlatform.OPENAI: "gpt-5-nano",
-    ApiPlatform.ANTHROPIC: "claude-haiku-4-5",
-    ApiPlatform.GOOGLE_AI_STUDIO: "gemini-2.5-flash-lite",
-    ApiPlatform.GOOGLE_VERTEX_AI: "gemini-2.5-flash-lite",
-    ApiPlatform.XAI: "grok-4-1-fast",  # I/O: $0.20 $0.50 /M tokens
+    ApiPlatform.OPENAI: "gpt-6-luna",  # I/O: $0.10/$0.50 /M tokens
+    ApiPlatform.ANTHROPIC: "claude-haiku-5-5",  # I/O: $0.10/$0.50 /M tokens (prompts up to 100K)
+    ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.5-flash-lite",  # I/O: $0.30/$2.50 /M tokens
+    ApiPlatform.GOOGLE_VERTEX_AI: "gemini-3.5-flash-lite",
+    ApiPlatform.XAI: "grok-4.3",  # I/O: $1.25/$2.50 /M tokens
     ApiPlatform.MISTRAL: "ministral-3b-2512",
-    ApiPlatform.DEEPSEEK: "deepseek-chat",
-    ApiPlatform.CEREBRAS: "llama3.1-8b",  # I/O: $0.10/M tokens
-    ApiPlatform.GROQ: "llama-3.1-8b-instant",    # I/O: $0.05/$0.08 /M tokens
-    ApiPlatform.FIREWORKS: "accounts/fireworks/models/gpt-oss-20b",  # I/O: $0.07 / $0.30 /M tokens
+    ApiPlatform.DEEPSEEK: "deepseek-flash",  # I/O: $0.30/$1.20 /M tokens (peak)
+    ApiPlatform.CEREBRAS: "qwen-3.8-27b",
+    ApiPlatform.GROQ: "openai/gpt-oss-20b",  # I/O: $0.075/$0.30 /M tokens
+    ApiPlatform.FIREWORKS: "accounts/fireworks/models/glm-5p3-flash",  # I/O: $0.15/$0.50 /M tokens
     ApiPlatform.PERPLEXITY: "sonar",  # I/O: $1/$1 /M tokens
 }
 MID_END_MODELS: dict[ApiPlatform, str] = {
+    ApiPlatform.OPENAI: "gpt-6.1-sol",  # I/O: $2/$10 /M tokens
+    ApiPlatform.ANTHROPIC: "claude-sonnet-5-5",  # I/O: $2/$10 /M tokens
     ApiPlatform.PERPLEXITY: "sonar-pro",  # I/O: $3/$15 /M tokens
+    ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.8-flash",  # I/O: $0.75/$3.75 /M tokens (intro to 2026)
+    ApiPlatform.GOOGLE_VERTEX_AI: "gemini-3.8-flash",
 }
 MODEL_PRESETS: dict[ModelPreset, dict[ApiPlatform, str]] = {
     ModelPreset.HIGH_END: HIGH_END_MODELS,

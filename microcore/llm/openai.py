@@ -3,15 +3,16 @@ OpenAI LLM client implementation.
 """
 import asyncio
 import base64
-from typing import Any
+from typing import Any, Awaitable, Callable
+import inspect
 
 import openai
 from openai.types import CompletionChoice, ImagesResponse
 
 from ..lm_client import BaseAIChatClient, BaseAsyncAIClient
 from ..message_types import TMsgContentPart, TMsgContent
-from ..configuration import Config
-from ..llm_backends import ApiPlatform
+from ..configuration import Config, LLMConfigError
+from ..llm_backends import ApiType, ApiPlatform
 from .._prepare_llm_args import prepare_prompt
 from ..types import BadAIAnswer, TPrompt
 from ..wrappers.llm_response_wrapper import (
@@ -20,7 +21,22 @@ from ..wrappers.llm_response_wrapper import (
     StoredImageGenerationResponse
 )
 from ..utils import is_chat_model, is_image_model
-from .shared import make_image_generation_response, make_remove_hidden_output, prepare_callbacks
+from .azure_responses import (
+    adapt_responses_events,
+    adapt_responses_events_async,
+    build_responses_client_params,
+    build_responses_request,
+    extract_responses_text,
+    should_use_responses_api,
+)
+from .shared import (
+    attrs_with_normalized_usage,
+    ensure_stream_include_usage,
+    make_image_generation_response,
+    make_remove_hidden_output,
+    prepare_callbacks,
+    streaming_usage_attrs,
+)
 from ..images import (
     Image,
     FileImage,
@@ -28,6 +44,35 @@ from ..images import (
     ImageListInterface,
     image_format_to_mime_type
 )
+
+
+def _as_async_str_provider(
+    provider: Callable[[], Any],
+) -> Callable[[], Awaitable[str]]:
+    """Make a sync token provider awaitable for openai.AsyncOpenAI (SDK 1.109+).
+
+    Does not move azure.identity off the event loop: ``provider()`` still blocks,
+    same as before. This only avoids ``await str`` TypeError.
+    """
+    if inspect.iscoroutinefunction(provider):
+        return provider
+
+    async def _provide() -> str:
+        value = provider()
+        if inspect.isawaitable(value):
+            value = await value
+        return value
+
+    return _provide
+
+
+def _async_openai_client_params(params: dict[str, Any]) -> dict[str, Any]:
+    # Only api_key needs wrapping: AsyncOpenAI awaits it unconditionally,
+    # while AsyncAzureOpenAI awaits sync azure_ad_token_provider results itself.
+    out = dict(params)
+    if callable(out.get("api_key")):
+        out["api_key"] = _as_async_str_provider(out["api_key"])
+    return out
 
 
 class AsyncOpenAIClient(BaseAsyncAIClient):
@@ -52,6 +97,15 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
                 self.oai_client,
                 options
             )
+        if should_use_responses_api(config, options["use_responses_api"]):
+            _ensure_responses_available(self.sync_client.responses_api_available)
+            return await _generate_via_responses_async(
+                self,
+                prompt,
+                args,
+                options,
+                config,
+            )
         if is_chat_model(args["model"], config):
             messages = self.sync_client.convert_prompt_to_chat_input(prompt)
             response = await self.oai_client.chat.completions.create(
@@ -66,7 +120,7 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
                     hidden_output_begin=config.HIDDEN_OUTPUT_BEGIN,
                     hidden_output_end=config.HIDDEN_OUTPUT_END,
                 )
-            response_text = response.choices[0].message.content
+            response_text: str = response.choices[0].message.content or ""
             if config.hiding_output():
                 response_text = self.sync_client.remove_hidden_output(response_text)
             for cb in options["callbacks"]:
@@ -74,7 +128,12 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
                     await cb(response_text)
                 else:
                     cb(response_text)
-            return LLMResponse(response_text, response.__dict__)
+            return LLMResponse(
+                response_text,
+                attrs_with_normalized_usage(response.__dict__),
+                response=response,
+                api_type=ApiType.OPENAI,
+            )
 
         response = await self.oai_client.completions.create(
             prompt=prepare_prompt(prompt), **args
@@ -84,7 +143,12 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
             return await _a_process_streamed_response(
                 response, options["callbacks"], chat_model_used=False
             )
-        return LLMResponse(response.choices[0].text, response.__dict__)
+        return LLMResponse(
+            response.choices[0].text,
+            attrs_with_normalized_usage(response.__dict__),
+            response=response,
+            api_type=ApiType.OPENAI,
+        )
 
     async def load_models(self) -> dict:
         models_iter = self.oai_client.models.list()
@@ -98,15 +162,41 @@ class OpenAIClient(BaseAIChatClient):
 
     def __init__(self, config: Config):
         super().__init__(config)
-        if config.LLM_API_PLATFORM == ApiPlatform.AZURE:
+        is_azure = config.LLM_API_PLATFORM == ApiPlatform.AZURE
+        responses_mode = should_use_responses_api(config)
+        # Whether the constructed client can serve the Responses API.
+        # A plain openai.OpenAI client (standard OpenAI, or Azure v1 endpoint) serves
+        # both Chat Completions and Responses; the classic AzureOpenAI client does not.
+        self.responses_api_available = responses_mode or not is_azure
+        if is_azure and responses_mode:
+            client_type = openai.OpenAI
+            async_client_type = openai.AsyncOpenAI
+            entra_token_provider = (
+                _build_azure_entra_token_provider(config)
+                if config.LLM_AZURE_USE_ENTRA_ID
+                else None
+            )
+            client_params = build_responses_client_params(
+                config,
+                entra_token_provider=entra_token_provider,
+            )
+        elif is_azure:
             client_type = openai.AzureOpenAI
             async_client_type = openai.AsyncAzureOpenAI
-            client_params = {
-                "api_key": config.LLM_API_KEY,
-                "azure_endpoint": config.LLM_API_BASE,
-                "api_version": config.LLM_API_VERSION,
-                **config.INIT_PARAMS,
-            }
+            if config.LLM_AZURE_USE_ENTRA_ID:
+                client_params = {
+                    "azure_endpoint": config.LLM_API_BASE,
+                    "api_version": config.LLM_API_VERSION,
+                    "azure_ad_token_provider": _build_azure_entra_token_provider(config),
+                    **config.INIT_PARAMS,
+                }
+            else:
+                client_params = {
+                    "api_key": config.LLM_API_KEY,
+                    "azure_endpoint": config.LLM_API_BASE,
+                    "api_version": config.LLM_API_VERSION,
+                    **config.INIT_PARAMS,
+                }
         else:
             client_type = openai.OpenAI
             async_client_type = openai.AsyncOpenAI
@@ -122,7 +212,9 @@ class OpenAIClient(BaseAIChatClient):
 
         self.oai_client = client_type(**client_params)
         self.aio = AsyncOpenAIClient(
-            oai_connection=async_client_type(**client_params),
+            oai_connection=async_client_type(
+                **_async_openai_client_params(client_params)
+            ),
             sync_client=self
         )
         self.remove_hidden_output: callable = make_remove_hidden_output(config)
@@ -170,6 +262,14 @@ class OpenAIClient(BaseAIChatClient):
                 self.oai_client,
                 options
             )
+        if should_use_responses_api(self.config, options["use_responses_api"]):
+            _ensure_responses_available(self.responses_api_available)
+            return _generate_via_responses(
+                self,
+                prompt,
+                args,
+                options,
+            )
         is_chat: bool = is_chat_model(args["model"], self.config)
         if is_chat:
             messages = self.convert_prompt_to_chat_input(prompt)
@@ -198,7 +298,54 @@ class OpenAIClient(BaseAIChatClient):
             response_text = self.remove_hidden_output(response_text)
         for cb in options["callbacks"]:
             cb(response_text)
-        return LLMResponse(response_text, response.__dict__)
+        return LLMResponse(
+            response_text,
+            attrs_with_normalized_usage(response.__dict__),
+            response=response,
+            api_type=ApiType.OPENAI,
+        )
+
+
+def _build_azure_entra_token_provider(config: Config) -> Callable[[], str]:
+    """
+    Build an ``azure_ad_token_provider`` callable from ``LLMConfig`` fields.
+
+    When ``LLM_AZURE_ENTRA_CREDENTIAL`` is ``"client_secret"``, credentials are
+    derived solely from ``LLM_AZURE_*`` config values. When set to ``"default"``,
+    :class:`~azure.identity.DefaultAzureCredential` is used, which consults OS
+    environment variables, Azure CLI cache, and other Azure SDK auto-discovery
+    mechanisms.
+    """
+    try:
+        from azure.identity import (
+            DefaultAzureCredential,
+            ClientSecretCredential,
+            get_bearer_token_provider,
+        )
+    except ModuleNotFoundError as e:
+        raise LLMConfigError(
+            "Azure Entra ID requires the azure-identity package. "
+            "Install with: pip install 'ai-microcore[azure]'"
+        ) from e
+
+    mode = (config.LLM_AZURE_ENTRA_CREDENTIAL or "default").strip().lower()
+    common: dict[str, Any] = {}
+
+    if mode == "default":
+        cred = DefaultAzureCredential()
+    elif mode == "client_secret":
+        cred = ClientSecretCredential(
+            tenant_id=config.LLM_AZURE_TENANT_ID,
+            client_id=config.LLM_AZURE_CLIENT_ID,
+            client_secret=config.LLM_AZURE_CLIENT_SECRET,
+            **common,
+        )
+    else:
+        raise LLMConfigError(
+            f"Unknown LLM_AZURE_ENTRA_CREDENTIAL: {mode!r}. "
+            "Supported modes: 'default', 'client_secret'"
+        )
+    return get_bearer_token_provider(cred, config.LLM_AZURE_ENTRA_SCOPE)
 
 
 def image_to_oai(img: ImageInterface) -> dict:
@@ -233,7 +380,12 @@ async def _a_process_streamed_response(
     response_text: str = ""
     hiding: bool = False
     need_to_hide = hidden_output_begin and hidden_output_end
+    usage = None
+    last_chunk = None
     async for chunk in response:
+        last_chunk = chunk
+        if (chunk_usage := getattr(chunk, "usage", None)) is not None:
+            usage = chunk_usage
         if text_chunk := _get_chunk_text(chunk, chat_model_used):
             if need_to_hide:
                 if text_chunk == hidden_output_begin:
@@ -251,7 +403,13 @@ async def _a_process_streamed_response(
                     await cb(text_chunk)
                 else:
                     cb(text_chunk)
-    return LLMResponse(response_text, {})
+    attrs = streaming_usage_attrs(usage)
+    return LLMResponse(
+        response_text,
+        attrs=attrs,
+        response=last_chunk,
+        api_type=ApiType.OPENAI
+    )
 
 
 def _process_streamed_response(
@@ -264,7 +422,12 @@ def _process_streamed_response(
     response_text: str = ""
     is_hiding: bool = False
     need_to_hide = hidden_output_begin and hidden_output_end
+    usage = None
+    last_chunk = None
     for chunk in response:
+        last_chunk = chunk
+        if (chunk_usage := getattr(chunk, "usage", None)) is not None:
+            usage = chunk_usage
         if text_chunk := _get_chunk_text(chunk, chat_model_used):
             if need_to_hide:
                 if text_chunk == hidden_output_begin:
@@ -278,11 +441,91 @@ def _process_streamed_response(
                         continue
             response_text += text_chunk
             [cb(text_chunk) for cb in callbacks]
-    return LLMResponse(response_text, {})
+    attrs = streaming_usage_attrs(usage)
+    return LLMResponse(
+        response_text,
+        attrs=attrs,
+        response=last_chunk,
+        api_type=ApiType.OPENAI
+    )
+
+
+async def _generate_via_responses_async(
+    client: AsyncOpenAIClient,
+    prompt: TPrompt,
+    args: dict[str, Any],
+    options: dict[str, Any],
+    config: Config,
+):
+    responses_args = build_responses_request(
+        prompt,
+        client.sync_client.convert_prompt_to_chat_input,
+        args,
+    )
+    response = await client.oai_client.responses.create(**responses_args)
+    check_for_errors(response)
+    if args.get("stream"):
+        return await _a_process_streamed_response(
+            adapt_responses_events_async(response),
+            options["callbacks"],
+            chat_model_used=True,
+            hidden_output_begin=config.HIDDEN_OUTPUT_BEGIN,
+            hidden_output_end=config.HIDDEN_OUTPUT_END,
+        )
+    response_text = extract_responses_text(response)
+    if config.hiding_output():
+        response_text = client.sync_client.remove_hidden_output(response_text)
+    for cb in options["callbacks"]:
+        if asyncio.iscoroutinefunction(cb):
+            await cb(response_text)
+        else:
+            cb(response_text)
+    return LLMResponse(
+        response_text,
+        attrs_with_normalized_usage({"usage": getattr(response, "usage", None)}),
+        response=response,
+        api_type=ApiType.OPENAI,
+    )
+
+
+def _generate_via_responses(
+    client: "OpenAIClient",
+    prompt: TPrompt,
+    args: dict[str, Any],
+    options: dict[str, Any],
+):
+    config = client.config
+    responses_args = build_responses_request(
+        prompt,
+        client.convert_prompt_to_chat_input,
+        args,
+    )
+    response = client.oai_client.responses.create(**responses_args)
+    check_for_errors(response)
+    if args.get("stream"):
+        return _process_streamed_response(
+            adapt_responses_events(response),
+            options["callbacks"],
+            chat_model_used=True,
+            hidden_output_begin=config.HIDDEN_OUTPUT_BEGIN,
+            hidden_output_end=config.HIDDEN_OUTPUT_END,
+        )
+    response_text = extract_responses_text(response)
+    if config.hiding_output():
+        response_text = client.remove_hidden_output(response_text)
+    for cb in options["callbacks"]:
+        cb(response_text)
+    return LLMResponse(
+        response_text,
+        attrs_with_normalized_usage({"usage": getattr(response, "usage", None)}),
+        response=response,
+        api_type=ApiType.OPENAI,
+    )
 
 
 def _prepare_llm_arguments(config: Config, kwargs: dict):
     args = {**config.LLM_DEFAULT_ARGS, **kwargs}
+    use_responses_api = args.pop("use_responses_api", None)
     args["model"] = args.get(
         "model",
         (
@@ -292,7 +535,17 @@ def _prepare_llm_arguments(config: Config, kwargs: dict):
         ),
     )
     callbacks = prepare_callbacks(config, args)
-    return args, {"callbacks": callbacks}
+    if args.get("stream"):
+        ensure_stream_include_usage(args)
+    return args, {"callbacks": callbacks, "use_responses_api": use_responses_api}
+
+
+def _ensure_responses_available(available: bool) -> None:
+    if not available:
+        raise LLMConfigError(
+            "Responses API is not available for the current client. On Azure, set "
+            "LLM_USE_RESPONSES_API=True so an OpenAI v1 client is built for the endpoint."
+        )
 
 
 def check_for_errors(response):
@@ -359,8 +612,15 @@ def _image_generation_response(
 ) -> ImageGenerationResponse | None:
     check_for_errors(response)
     images = _oai_image_response_to_images(response)
-    response_attrs = response.__dict__.copy()
-    result = make_image_generation_response(images, save, response_attrs)
+    result = make_image_generation_response(
+        images,
+        save,
+        {
+            **response.__dict__,
+            "api_type": ApiType.OPENAI,
+            "response": response,
+        }
+    )
     for cb in options["callbacks"]:
         cb(result)
     return result

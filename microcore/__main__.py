@@ -1,0 +1,60 @@
+"""
+Command-line entry point for MicroCore.
+
+Usage:
+    python -m microcore test-llm <.env-file> [<prompt>]
+"""
+
+import sys
+import logging
+import microcore as mc
+
+
+def test_llm(env_file: str, prompt: str = None) -> int:
+    """
+    Smoke-test the configured LLM.
+
+    Sends the given prompt if provided, without verifying the response;
+    otherwise asks for the capital of France
+    and verifies the answer contains "Paris".
+    """
+    try:
+        mc.configure(
+            DOT_ENV_FILE=env_file,
+            USE_LOGGING=mc.PRINT_STREAM,
+        )
+        answer = mc.llm(prompt or "What is the capital of France?")
+        if not prompt and "paris" not in str(answer).lower():
+            raise ValueError('LLM response does not contain expected answer ("Paris").')
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        print(mc.ui.red(f"\n[FAIL]: {e}"))
+        return 1
+    print(mc.ui.green("\n[OK]"))
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if not argv or argv[0] in ("-h", "--help", "help"):
+        print((__doc__ or "").strip())
+        return 0
+    command, *args = argv
+    if command in ("test-llm", "test_llm"):
+        if len(args) not in (1, 2):
+            print(
+                mc.ui.red(
+                    "test-llm accepts one or two arguments: <.env-file> [<prompt>]"
+                )
+            )
+            return 1
+        return test_llm(args[0], args[1] if len(args) == 2 else None)
+    print(mc.ui.red(f"Unknown command: {command}"))
+    print((__doc__ or "").strip())
+    return 1
+
+
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s:%(name)s: %(message)s"
+    )
+    sys.exit(main())

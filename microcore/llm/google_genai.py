@@ -20,9 +20,16 @@ from ..wrappers.llm_response_wrapper import (
     StoredImageGenerationResponse
 )
 from ..utils import is_image_model
-from .shared import make_image_generation_response, prepare_callbacks
+from .shared import (
+    attrs_with_normalized_usage,
+    make_image_generation_response,
+    normalize_usage,
+    prepare_callbacks,
+    streaming_usage_attrs,
+)
 from ..lm_client import BaseAsyncAIClient, BaseAIChatClient
 from ..images import Image, ImageInterface
+from ..llm_backends import ApiPlatform, ApiType
 
 
 def _load_service_account_info(config: Config) -> Optional[dict]:
@@ -64,7 +71,7 @@ def _load_service_account_info(config: Config) -> Optional[dict]:
     return None
 
 
-def inject_headers(headers: Mapping[str,str], params: dict) -> None:
+def inject_headers(headers: Mapping[str, str], params: dict) -> None:
     """
     Inject extra HTTP headers into the params dictionary for Google GenAI client.
     """
@@ -81,6 +88,22 @@ def inject_headers(headers: Mapping[str,str], params: dict) -> None:
         http_options.headers.update(headers)
 
 
+def inject_base_url(base_url: str, params: dict) -> None:
+    """
+    Set a custom API endpoint (base URL) for the Google GenAI client.
+
+    Allows pointing the client at an alternative Gemini-compatible endpoint
+    (proxy, gateway, self-hosted) via config.LLM_API_BASE.
+    """
+    if "http_options" not in params:
+        params["http_options"] = {}
+    http_options = params["http_options"]
+    if isinstance(http_options, dict):
+        http_options["base_url"] = base_url
+    elif isinstance(http_options, HttpOptions):
+        http_options.base_url = base_url
+
+
 class GoogleClient(BaseAIChatClient):
     """
     Client for Google GenAI SDK to interact with Google Gemini models.
@@ -95,16 +118,21 @@ class GoogleClient(BaseAIChatClient):
         if config.HTTP_HEADERS:
             inject_headers(config.HTTP_HEADERS, client_params)
 
-        if config.GOOGLE_GENAI_USE_VERTEXAI is not None:
+        if config.LLM_API_BASE:
+            inject_base_url(config.LLM_API_BASE, client_params)
+
+        developer_api = config.LLM_API_PLATFORM == ApiPlatform.GOOGLE_AI_STUDIO
+
+        if not developer_api and config.GOOGLE_GENAI_USE_VERTEXAI is not None:
             client_params["vertexai"] = config.GOOGLE_GENAI_USE_VERTEXAI
 
-        if config.GOOGLE_CLOUD_PROJECT_ID:
+        if not developer_api and config.GOOGLE_CLOUD_PROJECT_ID:
             client_params["project"] = config.GOOGLE_CLOUD_PROJECT_ID
 
-        if config.GOOGLE_CLOUD_LOCATION:
+        if not developer_api and config.GOOGLE_CLOUD_LOCATION:
             client_params["location"] = config.GOOGLE_CLOUD_LOCATION
 
-        if creds_info := _load_service_account_info(config):
+        if not developer_api and (creds_info := _load_service_account_info(config)):
             try:
                 credentials = Credentials.from_service_account_info(
                     creds_info,
@@ -120,7 +148,14 @@ class GoogleClient(BaseAIChatClient):
             if "vertexai" not in client_params:
                 client_params["vertexai"] = True
         else:
+            if developer_api:
+                client_params.pop("credentials", None)
+                client_params.pop("project", None)
+                client_params.pop("location", None)
+                client_params.pop("vertexai", None)
             client_params["api_key"] = config.LLM_API_KEY
+            if developer_api:
+                client_params["vertexai"] = False
 
         self.genai_client = genai.Client(**client_params)
         self.aio = AsyncGoogleClient(self)
@@ -134,8 +169,13 @@ class GoogleClient(BaseAIChatClient):
         return _convert_message_roles(messages)
 
     def _convert_message(self, message: dict) -> dict | Any:
-        message["parts"] = self._convert_message_content(message.pop("content"))
-        return message
+        # OpenAI-shaped messages (lm-proxy / ChatBox): only role + parts are valid for GenAI.
+        role = message.get("role") or "user"
+        content = message.pop("content", None)
+        if content is None:
+            content = ""
+        parts = super()._convert_message_content(content)
+        return {"role": role, "parts": parts}
 
     def _convert_message_content_part(
         self,
@@ -151,6 +191,14 @@ class GoogleClient(BaseAIChatClient):
             return types.Part.from_bytes(data=img.get_bytes(), mime_type=img.mime_type())
         if isinstance(content_part, str):
             return types.Part(text=content_part)
+        if isinstance(content_part, dict):
+            # OpenAI: {"type":"text","text":"..."}; GenAI Part has no "type".
+            t = content_part.get("type")
+            text = content_part.get("text")
+            if text is None and isinstance(content_part.get("content"), str):
+                text = content_part["content"]
+            if t == "text" or (t is None and (text is not None or "text" in content_part)):
+                return types.Part(text="" if text is None else str(text))
         return content_part
 
     def generate(
@@ -169,8 +217,16 @@ class GoogleClient(BaseAIChatClient):
                     )
                 if ctx.is_image_model:
                     images = _google_image_response_to_images(response)
-                    return make_image_generation_response(images, ctx.save, response.__dict__)
-                return LLMResponse(response.text, response.__dict__)
+                    response_attrs = response.__dict__.copy()
+                    response_attrs["response"] = response
+                    response_attrs["api_type"] = ApiType.GOOGLE
+                    return make_image_generation_response(images, ctx.save, response_attrs)
+                return LLMResponse(
+                    response.text,
+                    _attrs_with_google_usage(response),
+                    response=response,
+                    api_type=ApiType.GOOGLE
+                )
             else:
                 response_iterator = ctx.genai_client.models.generate_content_stream(
                     model=ctx.model_name,
@@ -207,8 +263,16 @@ class AsyncGoogleClient(BaseAsyncAIClient):
                     )
                 if ctx.is_image_model:
                     images = _google_image_response_to_images(response)
-                    return make_image_generation_response(images, ctx.save, response.__dict__)
-                return LLMResponse(response.text, response.__dict__)
+                    response_attrs = response.__dict__.copy()
+                    response_attrs["response"] = response
+                    response_attrs["api_type"] = ApiType.GOOGLE
+                    return make_image_generation_response(images, ctx.save, response_attrs)
+                return LLMResponse(
+                    response.text,
+                    _attrs_with_google_usage(response),
+                    response=response,
+                    api_type=ApiType.GOOGLE
+                )
             else:
                 response_iterator = await ctx.genai_client.aio.models.generate_content_stream(
                     model=ctx.model_name,
@@ -250,6 +314,9 @@ class _GenerationContext:
         if "extra_headers" in kwargs:  # OpenAI compatible extra headers injection
             extra_headers = kwargs.pop("extra_headers")
             inject_headers(extra_headers, kwargs)
+
+        kwargs.pop("stream_options", None)
+
         return _GenerationContext(
             model_name=model_name,
             save=kwargs.pop("save", True),
@@ -274,21 +341,31 @@ def _google_image_response_to_images(response: genai.types.GenerateContentRespon
 
 
 def _convert_message_roles(messages: list[dict]):
-    """
-    Convert roles to Google Vertex roles
-    (system,user,assistant) -> (user, model).
-    """
-    for msg in messages:
-        if msg["role"] == Role.SYSTEM:
-            msg["role"] = "user"
-        elif msg["role"] == Role.ASSISTANT:
-            msg["role"] = "model"
+    # GenAI chat roles are user | model (OpenAI: developer/tool/function → user).
+    for m in messages:
+        r = m.get("role")
+        if r in (Role.SYSTEM, "developer", "function", Role.TOOL):
+            m["role"] = "user"
+        elif r == Role.ASSISTANT:
+            m["role"] = "model"
     return messages
+
+
+def _attrs_with_google_usage(response) -> dict:
+    attrs = dict(response.__dict__) if hasattr(response, "__dict__") else {}
+    if (metadata := getattr(response, "usage_metadata", None)) is not None:
+        attrs["usage"] = metadata
+    return attrs_with_normalized_usage(attrs)
 
 
 async def _a_process_streamed_response(response, callbacks: list[callable]):
     response_text: str = ""
+    usage: dict | None = None
+    last_chunk = None
     async for chunk in response:
+        last_chunk = chunk
+        if chunk_usage := normalize_usage(getattr(chunk, "usage_metadata", None)):
+            usage = chunk_usage
         if text_chunk := chunk.text:
             response_text += text_chunk
             for cb in callbacks:
@@ -296,13 +373,30 @@ async def _a_process_streamed_response(response, callbacks: list[callable]):
                     await cb(text_chunk)
                 else:
                     cb(text_chunk)
-    return LLMResponse(response_text, {})
+    attrs = streaming_usage_attrs(usage)
+    return LLMResponse(
+        response_text,
+        attrs,
+        api_type=ApiType.GOOGLE,
+        response=last_chunk,
+    )
 
 
 def _process_streamed_response(response, callbacks: list[callable]):
     response_text: str = ""
+    usage: dict | None = None
+    last_chunk = None
     for chunk in response:
+        last_chunk = chunk
+        if chunk_usage := normalize_usage(getattr(chunk, "usage_metadata", None)):
+            usage = chunk_usage
         if text_chunk := chunk.text:
             response_text += text_chunk
             [cb(text_chunk) for cb in callbacks]
-    return LLMResponse(response_text, {})
+    attrs = streaming_usage_attrs(usage)
+    return LLMResponse(
+        response_text,
+        attrs,
+        response=last_chunk,
+        api_type=ApiType.GOOGLE
+    )
