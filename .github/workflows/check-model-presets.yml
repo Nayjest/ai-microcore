@@ -1,0 +1,143 @@
+name: "Check model presets"
+
+# Claude compares the presets in microcore/llm_backends.py with the vendors' current models
+# (instructions: .github/prompts/check-model-presets.md). When something is outdated, the workflow
+# files an issue with the proposed changes and a patch version bump, labels it `ai-implement` and
+# `model-presets`, and starts the Claude implement workflow on it.
+#
+# Claude runs on the Claude subscription token (CLAUDE_CODE_OAUTH_TOKEN). It reads arbitrary web
+# pages, so it runs in a job with a read-only token and no shell; a separate job files the issue.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # Mondays, 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: "Optional hints for Claude, e.g. which vendors released new models"
+        required: false
+        default: ""
+
+concurrency:
+  group: check-model-presets
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      issues: read
+    outputs:
+      proposed: ${{ steps.collect.outputs.proposed }}
+    steps:
+    - name: Skip if a model presets issue is already open
+      id: open_issue
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label model-presets \
+          --json url --jq 'first.url // ""')
+        if [ -n "$open" ]; then
+          echo "A model presets issue is already open: $open" >> "$GITHUB_STEP_SUMMARY"
+          echo "skip=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    # Always check main, even when started manually from another branch.
+    - uses: actions/checkout@v6
+      if: steps.open_issue.outputs.skip == 'false'
+      with:
+        ref: main
+        persist-credentials: false
+
+    - name: Check presets with Claude
+      if: steps.open_issue.outputs.skip == 'false'
+      uses: anthropics/claude-code-action@v1
+      with:
+        claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        # The job's read-only token, not the Claude GitHub App's, which can write to the repo.
+        github_token: ${{ github.token }}
+        prompt: |
+          Follow the instructions in .github/prompts/check-model-presets.md.
+          ${{ inputs.notes && format('Maintainer notes: {0}', inputs.notes) || '' }}
+        claude_args: >-
+          --model claude-opus-5-5
+          --max-turns 120
+          --allowedTools "Read,Write,Glob,Grep,WebSearch,WebFetch"
+
+    - name: Collect the proposal
+      id: collect
+      if: steps.open_issue.outputs.skip == 'false'
+      run: |
+        mkdir -p "$RUNNER_TEMP/out"
+        if [ -s proposal.md ]; then
+          mv proposal.md "$RUNNER_TEMP/out/proposal.md"
+          cat "$RUNNER_TEMP/out/proposal.md" >> "$GITHUB_STEP_SUMMARY"
+          echo "proposed=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "Presets are up to date, nothing to propose." >> "$GITHUB_STEP_SUMMARY"
+          echo "proposed=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - uses: actions/upload-artifact@v7
+      if: steps.collect.outputs.proposed == 'true'
+      with:
+        name: model-presets-proposal
+        path: ${{ runner.temp }}/out/proposal.md
+        retention-days: 7
+        if-no-files-found: error
+
+  file-issue:
+    needs: research
+    if: needs.research.outputs.proposed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      actions: write  # to start the Claude implement workflow
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        ref: main
+        persist-credentials: false
+
+    - uses: actions/download-artifact@v8
+      with:
+        name: model-presets-proposal
+        path: ${{ runner.temp }}/in
+
+    - name: File the issue and start the implementation
+      env:
+        GH_TOKEN: ${{ github.token }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        set -euo pipefail
+        # Bump the patch version only when the current one is already released.
+        released=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq '.tagName | ltrimstr("v")')
+        current=$(sed -n 's/^__version__ = "\([0-9.]*\)".*/\1/p' microcore/__init__.py)
+        if [ "$current" = "$released" ]; then
+          version=$(echo "$current" | awk -F. '{ print $1 "." $2 "." $3 + 1 }')
+          version_note="Bump \`__version__\` in \`microcore/__init__.py\` from \`$current\` to \`$version\`."
+        else
+          version=$current
+          version_note="Keep \`__version__\` at \`$current\`, which isn't released yet."
+        fi
+
+        body="$RUNNER_TEMP/in/proposal.md"
+        printf '\n## Version\n- %s\n\n---\nFiled by [this workflow run](%s).\n' "$version_note" "$RUN_URL" >> "$body"
+
+        gh label create ai-implement --repo "$GITHUB_REPOSITORY" --color 5319E7 \
+          --description "Implemented automatically by the Claude implement workflow" 2>/dev/null || true
+        gh label create model-presets --repo "$GITHUB_REPOSITORY" --color 1D76DB \
+          --description "Provider model preset updates" 2>/dev/null || true
+
+        url=$(gh issue create --repo "$GITHUB_REPOSITORY" --title "Refresh provider model presets for $version" \
+          --body-file "$body" --label ai-implement --label model-presets)
+        echo "Filed $url" >> "$GITHUB_STEP_SUMMARY"
+
+        # Issues filed with GITHUB_TOKEN don't trigger the `labeled` event, so start it directly.
+        gh workflow run claude-implement.yml --repo "$GITHUB_REPOSITORY" -f issue="${url##*/}"
