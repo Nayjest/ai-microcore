@@ -102,11 +102,16 @@ jobs:
         bwrap --unshare-pid --dev-bind / / true
 
     - name: Implement with Claude
+      id: claude
       uses: anthropics/claude-code-action@v1
       with:
         claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         # The job's read-only token, not the Claude GitHub App's, which can write to the repo.
         github_token: ${{ github.token }}
+        # Stream Claude's messages and tool calls to the log (GitHub masks secret values there),
+        # and put a readable report in the run summary.
+        show_full_output: "true"
+        display_report: "true"
         # Runs started by the Check model presets workflow come from github-actions[bot].
         allowed_bots: github-actions[bot]
         prompt: |
@@ -121,6 +126,16 @@ jobs:
           --model claude-opus-5-5
           --max-turns 150
           --allowedTools "Read,Edit,Write,Glob,Grep,Bash(python *),Bash(pytest *),Bash(flake8 *),Bash(black *),Bash(pylint *),Bash(git diff *),Bash(git status *),Bash(git log *),Bash(git show *)"
+
+    - name: Report denied tool calls
+      if: always() && steps.claude.outputs.execution_file != ''
+      env:
+        EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+      run: |
+        jq -c '.[] | select(.type == "result") | .permission_denials[]? | {tool_name, tool_input}' \
+          "$EXECUTION_FILE" | while read -r denial; do
+          echo "::warning title=Claude tool call denied::$denial"
+        done
 
     - name: Collect changes
       id: collect

@@ -66,11 +66,15 @@ mention the page under "Needs a look".
 
 ## Output
 
-If nothing is outdated, don't write `proposal.md`.
+Your tools are Read, Write, Glob, Grep, WebSearch and WebFetch; there is no shell. Check every
+platform before you finish, then write exactly one file in the repository root. If you write
+neither, the workflow fails.
 
-Otherwise write `proposal.md` in the repository root. It becomes the issue body, so write it for
-the person or agent implementing it: every change names the file, the location and the exact new
-text. Use this shape, in plain Markdown:
+- If nothing is outdated, write `up-to-date.md`: one line per platform with what you checked and
+  the source, plus anything you couldn't confirm.
+- Otherwise write `proposal.md`. It becomes the issue body, so write it for the person or agent
+  implementing it: every change names the file, the location and the exact new text. Use this
+  shape, in plain Markdown:
 
 ```markdown
 Update the provider model presets and the docs that name them.
