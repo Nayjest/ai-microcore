@@ -1,10 +1,10 @@
 # Check provider model presets
 
-Compare the provider model presets with the models the vendors currently offer, and propose
-updates. You run inside the `Check model presets` workflow and don't edit the repository. Instead,
-you write a proposal to `proposal.md`. The workflow files it as a GitHub issue, and another
-workflow implements that issue without web access, so the proposal must contain everything the
-implementation needs.
+Compare the provider model presets with the models the vendors currently offer. You run inside
+the `Check model presets` workflow and don't edit project files. Instead, you write one result
+file (see Output): `proposal.md` when something is outdated, or `up-to-date.md` when nothing is.
+The workflow files a proposal as a GitHub issue, and another workflow implements that issue
+without web access, so a proposal must contain everything the implementation needs.
 
 Models released after your training cutoff are real. Take model IDs and prices from the vendors'
 current official documentation, never from memory.
@@ -70,8 +70,8 @@ Your tools are Read, Write, Glob, Grep, WebSearch and WebFetch; there is no shel
 platform before you finish, then write exactly one file in the repository root. If you write
 neither, the workflow fails.
 
-- If nothing is outdated, write `up-to-date.md`: one line per platform with what you checked and
-  the source, plus anything you couldn't confirm.
+- If nothing is outdated, write `up-to-date.md` with the "Not changed", "Needs a look" and
+  "Sources" sections of the shape below.
 - Otherwise write `proposal.md`. It becomes the issue body, so write it for the person or agent
   implementing it: every change names the file, the location and the exact new text. Use this
   shape, in plain Markdown:
