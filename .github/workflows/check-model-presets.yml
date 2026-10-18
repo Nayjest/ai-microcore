@@ -54,12 +54,17 @@ jobs:
         persist-credentials: false
 
     - name: Check presets with Claude
+      id: claude
       if: steps.open_issue.outputs.skip == 'false'
       uses: anthropics/claude-code-action@v1
       with:
         claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         # The job's read-only token, not the Claude GitHub App's, which can write to the repo.
         github_token: ${{ github.token }}
+        # Stream Claude's messages and tool calls to the log (GitHub masks secret values there),
+        # and put a readable report in the run summary.
+        show_full_output: "true"
+        display_report: "true"
         prompt: |
           Follow the instructions in .github/prompts/check-model-presets.md.
           ${{ inputs.notes && format('Maintainer notes: {0}', inputs.notes) || '' }}
@@ -67,6 +72,20 @@ jobs:
           --model claude-opus-5-5
           --max-turns 120
           --allowedTools "Read,Write,Glob,Grep,WebSearch,WebFetch"
+
+    - name: Report denied tool calls
+      if: always() && steps.claude.outputs.execution_file != ''
+      continue-on-error: true  # diagnostics only, never blocks the job
+      env:
+        EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+      run: |
+        # The file is a JSON array of SDK messages; a stream of messages is accepted as well.
+        # Captured first, so a jq error fails this step instead of disappearing in a pipe.
+        denials=$(jq -c '(if type == "array" then .[] else . end)
+          | select(.type == "result") | .permission_denials[]? | {tool_name, tool_input}' "$EXECUTION_FILE")
+        while read -r denial; do
+          if [ -n "$denial" ]; then echo "::warning title=Claude tool call denied::$denial"; fi
+        done <<< "$denials"
 
     - name: Collect the proposal
       id: collect
@@ -77,9 +96,12 @@ jobs:
           mv proposal.md "$RUNNER_TEMP/out/proposal.md"
           cat "$RUNNER_TEMP/out/proposal.md" >> "$GITHUB_STEP_SUMMARY"
           echo "proposed=true" >> "$GITHUB_OUTPUT"
-        else
-          echo "Presets are up to date, nothing to propose." >> "$GITHUB_STEP_SUMMARY"
+        elif [ -s up-to-date.md ]; then
+          { echo "## Presets are up to date"; echo; cat up-to-date.md; } >> "$GITHUB_STEP_SUMMARY"
           echo "proposed=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "::error::Claude finished without writing proposal.md or up-to-date.md; see the Claude report in the run summary."
+          exit 1
         fi
 
     - uses: actions/upload-artifact@v7

@@ -14,9 +14,10 @@ part, and say so in the PR description.
 - Follow the conventions in `AGENTS.md`. The public API is what `microcore/__init__.py` exports,
   and the code must keep working on Python 3.10.
 - Keep the change focused on the issue. Don't refactor or reformat code you don't need to touch.
-- `requirements/tests.txt` is installed, plus `flake8` and `black`. You have no web access: if the
-  task needs information that is in neither the issue nor the repository, stop and report it as
-  below.
+- `requirements/tests.txt` is installed, plus `flake8` and `black`. Your shell is limited to
+  `python`, `pytest`, `flake8`, `black`, `pylint` and read-only `git` (`diff`, `status`, `log`,
+  `show`); use Read, Glob and Grep to explore. You have no web access: if the task needs
+  information that is in neither the issue nor the repository, stop and report it as below.
 - Before finishing, run `pytest` (the basic suite) and `flake8 microcore`, and fix any failures
   your change caused. Add or update tests when the change alters behavior.
 - Review your own diff with `git diff`.
