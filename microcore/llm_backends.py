@@ -242,10 +242,10 @@ DEFAULT_PLATFORMS = {
 HIGH_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.OPENAI: "gpt-6-astra",  # I/O: $10/$50 /M tokens
     ApiPlatform.ANTHROPIC: "claude-opus-5-5",  # I/O: $4/$20 /M tokens
-    ApiPlatform.GOOGLE_AI_STUDIO: "gemini-2.5-pro",  # I/O: $1.25/$10 /M tokens
-    ApiPlatform.GOOGLE_VERTEX_AI: "gemini-2.5-pro",
+    ApiPlatform.GOOGLE_AI_STUDIO: "gemini-4-argon",  # I/O: $2/$10 /M tokens (intro to Nov 2026)
+    ApiPlatform.GOOGLE_VERTEX_AI: "gemini-4-argon",
     ApiPlatform.MISTRAL: "mistral-large-latest",
-    ApiPlatform.XAI: "grok-4.6",  # I/O: $2/$6 /M tokens
+    ApiPlatform.XAI: "grok-4.7",  # I/O: $2/$6 /M tokens
     ApiPlatform.DEEPSEEK: "deepseek-v4-pro",  # I/O: $1.32/$3.96 /M tokens (peak)
     ApiPlatform.CEREBRAS: "gpt-oss-120b",
     ApiPlatform.GROQ: "openai/gpt-oss-120b",  # I/O: $0.15/$0.60 /M tokens
@@ -254,7 +254,7 @@ HIGH_END_MODELS: dict[ApiPlatform, str] = {
 }
 LOW_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.OPENAI: "gpt-6-luna",  # I/O: $0.10/$0.50 /M tokens
-    ApiPlatform.ANTHROPIC: "claude-haiku-4-5",  # I/O: $1/$5 /M tokens
+    ApiPlatform.ANTHROPIC: "claude-haiku-5-5",  # I/O: $0.10/$0.50 /M tokens (prompts up to 100K)
     ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.5-flash-lite",  # I/O: $0.30/$2.50 /M tokens
     ApiPlatform.GOOGLE_VERTEX_AI: "gemini-3.5-flash-lite",
     ApiPlatform.XAI: "grok-4.3",  # I/O: $1.25/$2.50 /M tokens
@@ -266,10 +266,10 @@ LOW_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.PERPLEXITY: "sonar",  # I/O: $1/$1 /M tokens
 }
 MID_END_MODELS: dict[ApiPlatform, str] = {
-    ApiPlatform.OPENAI: "gpt-6-sol",  # I/O: $2/$10 /M tokens
-    ApiPlatform.ANTHROPIC: "claude-sonnet-5",  # I/O: $2/$10 /M tokens
+    ApiPlatform.OPENAI: "gpt-6.1-sol",  # I/O: $2/$10 /M tokens
+    ApiPlatform.ANTHROPIC: "claude-sonnet-5-5",  # I/O: $2/$10 /M tokens
     ApiPlatform.PERPLEXITY: "sonar-pro",  # I/O: $3/$15 /M tokens
-    ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.8-flash",  # I/O: $0.75/$3.75 /M tokens
+    ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.8-flash",  # I/O: $0.75/$3.75 /M tokens (intro to 2026)
     ApiPlatform.GOOGLE_VERTEX_AI: "gemini-3.8-flash",
 }
 MODEL_PRESETS: dict[ModelPreset, dict[ApiPlatform, str]] = {

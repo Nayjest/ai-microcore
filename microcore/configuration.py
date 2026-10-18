@@ -288,7 +288,6 @@ class LLMConfig(
     LLM_AZURE_CLIENT_SECRET: str = from_env(default="")
     """Client secret for ``LLM_AZURE_ENTRA_CREDENTIAL=client_secret``."""
 
-
     INFERENCE_FUNC: Union[Callable, str] = from_env()
     """Inference function for local models"""
     LLM_CLI: str = from_env(dtype=str)
