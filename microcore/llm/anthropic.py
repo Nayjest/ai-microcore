@@ -1,5 +1,5 @@
 import logging
-import asyncio
+import inspect
 import re
 import anthropic
 from anthropic.types import (
@@ -125,7 +125,7 @@ async def _a_process_streamed_response(
     async def send(chunk_text: str):
         parts.append(chunk_text)
         for cb in callbacks:
-            if asyncio.iscoroutinefunction(cb):
+            if inspect.iscoroutinefunction(cb):
                 await cb(chunk_text)
             else:
                 cb(chunk_text)
@@ -263,7 +263,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
 
         response_text = _get_response_text(response, options["show_thinking"])
         for cb in options["callbacks"]:
-            if asyncio.iscoroutinefunction(cb):
+            if inspect.iscoroutinefunction(cb):
                 await cb(response_text)
             else:
                 cb(response_text)

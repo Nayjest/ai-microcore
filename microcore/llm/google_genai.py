@@ -1,7 +1,7 @@
 """
 Client for Google GenAI SDK to interact with Google Gemini models.
 """
-import asyncio
+import inspect
 import json
 from typing import Any, Optional, Mapping
 from dataclasses import dataclass
@@ -369,7 +369,7 @@ async def _a_process_streamed_response(response, callbacks: list[callable]):
         if text_chunk := chunk.text:
             response_text += text_chunk
             for cb in callbacks:
-                if asyncio.iscoroutinefunction(cb):
+                if inspect.iscoroutinefunction(cb):
                     await cb(text_chunk)
                 else:
                     cb(text_chunk)

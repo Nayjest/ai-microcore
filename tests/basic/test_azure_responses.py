@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 import asyncio
+import inspect
 import importlib
 
 import pytest
@@ -429,7 +430,7 @@ def test_async_client_wraps_sync_entra_api_key_provider():
     ):
         openai_module.OpenAIClient(cfg)
         async_key = async_ctor.call_args.kwargs["api_key"]
-        assert asyncio.iscoroutinefunction(async_key)
+        assert inspect.iscoroutinefunction(async_key)
         assert asyncio.run(async_key()) == "entra-token"
 
 
