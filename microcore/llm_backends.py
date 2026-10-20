@@ -271,6 +271,7 @@ MID_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.PERPLEXITY: "sonar-pro",  # I/O: $3/$15 /M tokens
     ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.8-flash",  # I/O: $0.75/$3.75 /M tokens (intro to 2026)
     ApiPlatform.GOOGLE_VERTEX_AI: "gemini-3.8-flash",
+    ApiPlatform.MISTRAL: "mistral-medium-3-5",  # I/O: $1.50/$7.50 /M tokens
 }
 MODEL_PRESETS: dict[ModelPreset, dict[ApiPlatform, str]] = {
     ModelPreset.HIGH_END: HIGH_END_MODELS,
