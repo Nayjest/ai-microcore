@@ -18,12 +18,17 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Pre-release Python versions are experimental: their failures do not fail the workflow
+    continue-on-error: ${{ matrix.experimental == true }}
     env:
       IS_MAIN_PUSH: ${{ matrix.python-version == '3.11' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        include:
+          - python-version: "3.15"
+            experimental: true
 
     steps:
     - uses: actions/checkout@v6
@@ -33,6 +38,7 @@ jobs:
       uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
+        allow-prereleases: ${{ matrix.experimental == true }}
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
