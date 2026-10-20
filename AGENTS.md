@@ -37,7 +37,7 @@ python -m microcore test-llm <.env-file> [<prompt>]   # smoke-test a provider co
 Note `pyproject.toml` sets `testpaths = ["tests/basic"]` and `asyncio_mode = "auto"`, so a bare
 `pytest` only runs the basic suite. Other suites: `tests/extended`, `tests/cache`, `tests/local`
 (Transformers), `tests/apis` (live). CI (`.github/workflows/tests.yml`) runs the basic suite on
-Python 3.10–3.13 and pylint separately.
+Python 3.10–3.14 and pylint separately.
 
 ## Architecture
 
