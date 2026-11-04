@@ -169,6 +169,16 @@ It issues a single completion request; without a custom prompt, it asks for the 
 and verifies the answer. Exit code `0` indicates success; `1` indicates a configuration error,
 request failure, or unexpected response.
 
+### Disabling Colored Output
+
+Set the `NO_COLOR` OS environment variable to any non-empty value to strip ANSI color codes
+from all console and log output (see [no-color.org](https://no-color.org)).
+This is useful for CI logs and terminals that don't support colors:
+
+```bash
+NO_COLOR=1 python my_app.py
+```
+
 ### Vector Databases
 
 Vector database functions are available via `microcore.texts`.
