@@ -18,7 +18,11 @@ from ..message_types import Role
 from ..types import LLMAsyncFunctionType, LLMFunctionType
 from ..wrappers.llm_response_wrapper import LLMResponse
 from ..llm_backends import ApiType
-from .shared import attrs_with_normalized_usage, prepare_callbacks, streaming_usage_attrs
+from .shared import (
+    attrs_with_normalized_usage,
+    prepare_callbacks,
+    streaming_usage_attrs,
+)
 
 THINK_OPEN, THINK_CLOSE = "<think>", "</think>\n"
 PART_SEPARATOR = "\n"
@@ -182,12 +186,76 @@ def _default_max_tokens(model: str, stream: bool) -> int:
     return 64_000 if stream else 20_000
 
 
-def _prepare_llm_arguments(config: Config, kwargs: dict):
+def _supports_sampling_parameters(model: str) -> bool:
+    # Dotted versions and provider-prefixed IDs are also accepted by gateways.
+    model = model.lower().replace(".", "-")
+    if re.search(r"claude-mythos-preview(?:\W|$)", model):
+        return False
+    match = re.search(
+        r"claude-(opus|sonnet|haiku|fable|mythos)-(\d+)(?:-(\d{1,2})(?!\d))?(?!\d)",
+        model,
+    )
+    if not match:
+        return True
+    version = (int(match[2]), int(match[3] or 0))
+    # Date suffixes (e.g. opus-4-20250514) are not minor versions.
+    first_without_sampling = {
+        "opus": (4, 7),
+        "sonnet": (5, 0),
+        "haiku": (5, 5),
+        "fable": (5, 0),
+        "mythos": (5, 0),
+    }
+    return version < first_without_sampling[match[1]]
+
+
+def _filter_sampling_parameters(config: Config, args: dict, client_headers=None):
+    # Use the SDK's actual default API version, including client overrides.
+    # Direct argument-preparation calls can resolve explicit config headers too.
+    sources = (
+        [client_headers]
+        if client_headers is not None
+        else [config.INIT_PARAMS.get("default_headers"), config.HTTP_HEADERS]
+    )
+    headers = {
+        key.lower(): value
+        for source in [*sources, args.get("extra_headers")]
+        for key, value in (source or {}).items()
+    }
+    version = headers.get("anthropic-version", "2023-06-01")
+    # https://platform.claude.com/docs/en/api/migration-2026-10-21
+    if (
+        isinstance(version, str) and version >= "2026-10-21"
+    ) or not _supports_sampling_parameters(args["model"]):
+        for name in ("temperature", "top_p", "top_k"):
+            args.pop(name, None)
+    elif "claude-" in args["model"].lower():
+        # https://platform.claude.com/docs/en/build-with-claude/thinking#sampling-parameters
+        thinking = args.get("thinking")
+        if isinstance(thinking, dict) and thinking.get("type") in (
+            "enabled",
+            "adaptive",
+        ):
+            args.pop("temperature", None)
+            args.pop("top_k", None)
+            top_p = args.get("top_p")
+            if not isinstance(top_p, (int, float)) or not 0.95 <= top_p <= 1:
+                args.pop("top_p", None)
+
+
+def _prepare_llm_arguments(config: Config, kwargs: dict, client_headers=None):
     args = {**config.LLM_DEFAULT_ARGS, **kwargs}
+    if args.get("extra_headers"):
+        # Match the SDK's version header without changing auth/custom header names.
+        args["extra_headers"] = {
+            ("anthropic-version" if key.lower() == "anthropic-version" else key): value
+            for key, value in args["extra_headers"].items()
+        }
     args["model"] = args.get("model", config.MODEL)
     # Remove arguments not supported by Anthropic
     args.pop("seed", None)
     args.pop("n", None)
+    _filter_sampling_parameters(config, args, client_headers)
     if "temperature" in args and "top_p" in args:
         del args["top_p"]
         logging.warning(
@@ -242,16 +310,20 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
         "base_url": config.LLM_API_BASE,
         **config.INIT_PARAMS,
     }
-    if config.HTTP_HEADERS:
-        if "default_headers" not in client_params:
-            client_params["default_headers"] = {}
-        client_params["default_headers"].update(config.HTTP_HEADERS)
+    if client_params.get("default_headers") or config.HTTP_HEADERS:
+        client_params["default_headers"] = {
+            ("anthropic-version" if key.lower() == "anthropic-version" else key): value
+            for source in (client_params.get("default_headers"), config.HTTP_HEADERS)
+            for key, value in (source or {}).items()
+        }
 
     sync_client = anthropic.Anthropic(**client_params)
     async_client = anthropic.AsyncAnthropic(**client_params)
 
     async def allm(prompt, **kwargs):
-        args, options = _prepare_llm_arguments(config, kwargs)
+        args, options = _prepare_llm_arguments(
+            config, kwargs, async_client.default_headers
+        )
         args["system"], args["messages"] = _extract_sys_msg(
             prompt_to_message_dicts(prompt)
         )
@@ -275,7 +347,9 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
         )
 
     def llm(prompt, **kwargs):
-        args, options = _prepare_llm_arguments(config, kwargs)
+        args, options = _prepare_llm_arguments(
+            config, kwargs, sync_client.default_headers
+        )
         args["system"], args["messages"] = _extract_sys_msg(
             prompt_to_message_dicts(prompt)
         )
