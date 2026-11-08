@@ -47,14 +47,19 @@ def _config(**params):
 
 
 def test_prepare_llm_arguments_default_max_tokens():
-    args, _ = _prepare_llm_arguments(_config(), {})
+    args, _ = _prepare_llm_arguments(_config(), {}, "2023-06-01")
     assert (args["stream"], args["max_tokens"]) == (False, 20_000)
     # A callback turns streaming on, which allows the larger default
-    args, _ = _prepare_llm_arguments(_config(), {"callback": print})
+    args, _ = _prepare_llm_arguments(_config(), {"callback": print}, "2023-06-01")
     assert (args["stream"], args["max_tokens"]) == (True, 64_000)
 
 
 def test_prepare_llm_arguments_explicit_max_tokens():
     config = _config(LLM_DEFAULT_ARGS={"max_tokens": 1000})
-    assert _prepare_llm_arguments(config, {})[0]["max_tokens"] == 1000
-    assert _prepare_llm_arguments(config, {"max_tokens": 500})[0]["max_tokens"] == 500
+    assert _prepare_llm_arguments(config, {}, "2023-06-01")[0]["max_tokens"] == 1000
+    assert (
+        _prepare_llm_arguments(config, {"max_tokens": 500}, "2023-06-01")[0][
+            "max_tokens"
+        ]
+        == 500
+    )
