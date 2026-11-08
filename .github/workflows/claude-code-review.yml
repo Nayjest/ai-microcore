@@ -43,6 +43,12 @@ jobs:
           plugins: 'code-review@claude-code-plugins'
           prompt: '/code-review:code-review --comment ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
           claude_args: '--allowedTools "mcp__github_inline_comment__create_inline_comment"'
+          # The code-review plugin launches subagents, which run in the background by default.
+          # The action ends the session on the first result, before they report back, so the
+          # review silently never runs (anthropics/claude-code-action#1646, #1499).
+          # Forcing foreground subagents keeps the whole review in one turn. A step-level `env:`
+          # does not reach Claude Code for this variable; it must go through `settings`.
+          settings: '{"env": {"CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1"}}'
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
 
