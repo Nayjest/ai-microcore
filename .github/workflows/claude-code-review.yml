@@ -17,13 +17,12 @@ jobs:
     # Fork PRs require maintainer approval before any fork code touches the secrets below.
     # Same-repo PRs resolve to an empty environment name, which is a no-op, and run unattended.
     environment: ${{ github.event.pull_request.head.repo.full_name != github.repository && 'external-pr' || '' }}
+    # Claude posts with this job's GITHUB_TOKEN (see `github_token` below), so it needs 'write'
+    # here. No `id-token`: the Claude GitHub App's OIDC token exchange is not used.
     permissions:
       contents: read
-      # 'write' only matters for fork PRs, which post with GITHUB_TOKEN (see below).
       pull-requests: write
       issues: read
-      # Same-repo PRs authenticate as the Claude GitHub App through the OIDC token exchange.
-      id-token: write
     env:
       IS_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
 
@@ -65,11 +64,13 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # The action only runs for actors with write access. Fork PR authors don't have it, and
-          # the bypass below requires `github_token`, so fork PRs post with GITHUB_TOKEN (as
-          # github-actions[bot]) and the action also scrubs secrets from Claude's subprocesses.
-          # Same-repo PRs pass empty values and keep the Claude GitHub App token.
-          github_token: ${{ env.IS_FORK == 'true' && secrets.GITHUB_TOKEN || '' }}
+          # The Claude GitHub App's token exchange rejects OIDC tokens from `pull_request_target`
+          # ("Invalid OIDC token", anthropics/claude-code-action#713, #1886), so reviews post with
+          # this job's GITHUB_TOKEN, as github-actions[bot].
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # The action only runs for actors with write access. Fork PR authors don't have it, so
+          # they are let through here; the 'external-pr' approval is the real gate. Setting this
+          # also makes the action scrub secrets from Claude's subprocesses.
           allowed_non_write_users: ${{ env.IS_FORK == 'true' && github.event.pull_request.user.login || '' }}
           # PRs opened by the Claude implement workflow come from github-actions[bot]; re-running
           # or approving their runs keeps it as the actor.
