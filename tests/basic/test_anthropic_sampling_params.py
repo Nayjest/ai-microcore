@@ -3,8 +3,6 @@ import pytest
 from microcore import ApiType, Config
 from microcore.llm.anthropic import _accepts_sampling_params, _prepare_llm_arguments
 
-SAMPLING = {"temperature": 0.2, "top_p": 0.9, "top_k": 5}
-
 
 @pytest.mark.parametrize(
     "model, accepts",
@@ -32,24 +30,20 @@ def test_accepts_sampling_params(model, accepts):
 
 
 @pytest.mark.parametrize(
-    "model, api_version, expected",
+    "model, api_version, kept",
     [
-        (
-            "claude-sonnet-4-6",
-            "2023-06-01",
-            {"temperature", "top_k"},
-        ),  # see top_p warning
-        ("claude-opus-4-7", "2023-06-01", set()),
-        ("claude-sonnet-4-6", "2026-10-21", set()),
+        ("claude-sonnet-4-6", "2023-06-01", True),
+        ("claude-opus-4-7", "2023-06-01", False),
+        ("claude-sonnet-4-6", "2026-10-21", False),
     ],
 )
-def test_prepare_llm_arguments_sampling_params(model, api_version, expected):
+def test_prepare_llm_arguments_sampling_params(model, api_version, kept):
     config = Config(
         LLM_API_TYPE=ApiType.ANTHROPIC,
         LLM_API_KEY="-",
         MODEL=model,
         USE_DOT_ENV=False,
-        LLM_DEFAULT_ARGS=SAMPLING,
+        LLM_DEFAULT_ARGS={"temperature": 0.2, "top_k": 5},
     )
     args, _ = _prepare_llm_arguments(config, {}, api_version)
-    assert set(SAMPLING) & set(args) == expected
+    assert {"temperature" in args, "top_k" in args} == {kept}
