@@ -1,8 +1,8 @@
 name: Claude Code Review
 
 on:
-  # `pull_request_target` (unlike `pull_request`) gives fork PRs access to secrets and an OIDC
-  # token, and always runs this workflow file as it is on the base branch.
+  # `pull_request_target` (unlike `pull_request`) gives fork PRs access to secrets, and always
+  # runs this workflow file as it is on the base branch.
   pull_request_target:
     types: [opened, synchronize, ready_for_review, reopened]
 
