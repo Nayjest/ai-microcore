@@ -9,6 +9,11 @@ class CantLoadTikTokenEncoding(RuntimeError):
     ...
 
 
+# Encoding is resolved on every token count, so an unknown model would
+# otherwise repeat the same warning many times per run.
+_unresolved_models: set[str] = set()
+
+
 def _resolve_tiktoken_encoding(
     for_model: str = None, encoding: str | tiktoken.Encoding = None
 ) -> tiktoken.Encoding:
@@ -29,10 +34,12 @@ def _resolve_tiktoken_encoding(
                 return tiktoken.get_encoding("o200k_base")
             return tiktoken.encoding_for_model(for_model)
         except (KeyError, requests.exceptions.ConnectionError):
-            logging.warning(
-                f"Can't resolve tiktoken encoding for '{for_model}'. "
-                f"Default encoding will be used."
-            )
+            if for_model not in _unresolved_models:
+                _unresolved_models.add(for_model)
+                logging.warning(
+                    f"Can't resolve tiktoken encoding for '{for_model}'. "
+                    f"Default encoding will be used."
+                )
     encoding = encoding or "cl100k_base"
     try:
         return tiktoken.get_encoding(encoding)
