@@ -18,7 +18,11 @@ from ..message_types import Role
 from ..types import LLMAsyncFunctionType, LLMFunctionType
 from ..wrappers.llm_response_wrapper import LLMResponse
 from ..llm_backends import ApiType
-from .shared import attrs_with_normalized_usage, prepare_callbacks, streaming_usage_attrs
+from .shared import (
+    attrs_with_normalized_usage,
+    prepare_callbacks,
+    streaming_usage_attrs,
+)
 
 THINK_OPEN, THINK_CLOSE = "<think>", "</think>\n"
 PART_SEPARATOR = "\n"
@@ -182,12 +186,32 @@ def _default_max_tokens(model: str, stream: bool) -> int:
     return 64_000 if stream else 20_000
 
 
-def _prepare_llm_arguments(config: Config, kwargs: dict):
+def _accepts_sampling_params(model: str, api_version: str) -> bool:
+    """
+    Whether a request may carry `temperature`, `top_p` and `top_k`.
+    API version 2026-10-21 (Anthropic SDK 2+) removed them for every model;
+    earlier versions reject non-default values on Claude 4.7+ and Claude Mythos Preview.
+    See https://platform.claude.com/docs/en/about-claude/model-deprecations
+    """
+    if api_version >= "2026-10-21":
+        return False
+    model = model.lower().replace(".", "-")  # also "anthropic/claude-opus-4.7" etc.
+    if "claude-mythos-preview" in model:
+        return False
+    # "claude-<family>-<major>[-<minor>]", a date suffix is not a minor version
+    version = re.search(r"claude-[a-z]+-(\d+)(?:-(\d)(?!\d))?", model)
+    return not version or (int(version[1]), int(version[2] or 0)) < (4, 7)
+
+
+def _prepare_llm_arguments(config: Config, kwargs: dict, api_version: str):
     args = {**config.LLM_DEFAULT_ARGS, **kwargs}
     args["model"] = args.get("model", config.MODEL)
     # Remove arguments not supported by Anthropic
     args.pop("seed", None)
     args.pop("n", None)
+    if not _accepts_sampling_params(args["model"], api_version):
+        for name in ("temperature", "top_p", "top_k"):
+            args.pop(name, None)
     if "temperature" in args and "top_p" in args:
         del args["top_p"]
         logging.warning(
@@ -249,9 +273,10 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
 
     sync_client = anthropic.Anthropic(**client_params)
     async_client = anthropic.AsyncAnthropic(**client_params)
+    api_version = sync_client.default_headers["anthropic-version"]
 
     async def allm(prompt, **kwargs):
-        args, options = _prepare_llm_arguments(config, kwargs)
+        args, options = _prepare_llm_arguments(config, kwargs, api_version)
         args["system"], args["messages"] = _extract_sys_msg(
             prompt_to_message_dicts(prompt)
         )
@@ -275,7 +300,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
         )
 
     def llm(prompt, **kwargs):
-        args, options = _prepare_llm_arguments(config, kwargs)
+        args, options = _prepare_llm_arguments(config, kwargs, api_version)
         args["system"], args["messages"] = _extract_sys_msg(
             prompt_to_message_dicts(prompt)
         )
