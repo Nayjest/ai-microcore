@@ -3,7 +3,7 @@ import subprocess
 import sys
 from unittest.mock import patch
 
-from microcore.ui import info, debug, error, ask_yn, colors_disabled
+from microcore.ui import info, debug, error, ask_yn
 
 _COLOR_SCRIPT = (
     "import logging, microcore.ui as ui;"
@@ -26,13 +26,6 @@ def _run_color_script(no_color: str | None) -> str:
         check=True,
     )
     return result.stdout + result.stderr
-
-
-def test_colors_disabled_flag():
-    with patch.dict(os.environ, {"NO_COLOR": "1"}):
-        assert colors_disabled() is True
-    with patch.dict(os.environ, {"NO_COLOR": ""}):
-        assert colors_disabled() is False
 
 
 def test_no_color_strips_ansi_codes():

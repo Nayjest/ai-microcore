@@ -12,19 +12,7 @@ from colorama import Fore, Style, init
 from .utils import is_notebook
 
 
-def colors_disabled() -> bool:
-    """
-    Check whether colored output is disabled via the ``NO_COLOR`` environment variable.
-
-    Follows the https://no-color.org convention:
-    any non-empty value of ``NO_COLOR`` disables ANSI colors.
-    """
-    return bool(os.environ.get("NO_COLOR"))
-
-
-if colors_disabled():
-    # Strip ANSI sequences from everything written to stdout / stderr,
-    # including logging output and direct colorama.Fore usage.
+if os.getenv("NO_COLOR"):  # https://no-color.org
     init(strip=True, convert=False)
 elif not is_notebook():
     init(strip=False)
