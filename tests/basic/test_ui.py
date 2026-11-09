@@ -3,42 +3,31 @@ import subprocess
 import sys
 from unittest.mock import patch
 
+import pytest
+
 from microcore.ui import info, debug, error, ask_yn
 
-_COLOR_SCRIPT = (
-    "import logging, microcore.ui as ui;"
-    "print(ui.red('red text'));"
-    "ui.error('error text');"
-    "logging.basicConfig();"
-    "logging.getLogger().warning(ui.yellow('log text'))"
-)
 
-
-def _run_color_script(no_color: str | None) -> str:
-    env = {k: v for k, v in os.environ.items() if k != "NO_COLOR"}
-    if no_color is not None:
-        env["NO_COLOR"] = no_color
+# An empty NO_COLOR means "not set" (https://no-color.org)
+@pytest.mark.parametrize("no_color, has_colors", [("1", False), ("", True)])
+def test_no_color(no_color, has_colors):
+    script = (
+        "import logging, microcore.ui as ui;"
+        "print(ui.red('red text'));"
+        "ui.error('error text');"
+        "logging.basicConfig();"
+        "logging.getLogger().warning(ui.yellow('log text'))"
+    )
     result = subprocess.run(
-        [sys.executable, "-c", _COLOR_SCRIPT],
-        env=env,
+        [sys.executable, "-c", script],
+        env={**os.environ, "NO_COLOR": no_color},
         capture_output=True,
         text=True,
         check=True,
     )
-    return result.stdout + result.stderr
-
-
-def test_no_color_strips_ansi_codes():
-    output = _run_color_script("1")
-    assert "red text" in output
-    assert "error text" in output
-    assert "log text" in output
-    assert "\x1b[" not in output
-
-
-def test_colors_kept_without_no_color():
-    output = _run_color_script(None)
-    assert "\x1b[" in output
+    output = result.stdout + result.stderr
+    assert all(text in output for text in ("red text", "error text", "log text"))
+    assert ("\x1b[" in output) == has_colors
 
 
 def test_info():
