@@ -443,6 +443,7 @@ Text generation using HF/Transformers model locally (example with Qwen 3 0.6B).
 
 For more detailed information, check out these articles:
 
+- [Colored Output](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/colored_output.md)
 - [Custom HTTP Headers](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/http_headers.md)
 - [File Cache](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/file_cache.md)
 - [Token Usage](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/token_usage.md)
