@@ -213,7 +213,9 @@ def llm(
 
                 - callback: callable - callback function
                 to be called on each chunk of text,
-                enables response streaming if supported by the LLM API
+                enables response streaming if supported by the LLM API.
+                For direct OpenAI Chat Completions streams, callback may expose
+                on_openai_chunk(chunk) to receive JSON-safe native chunks.
                 - callbacks: list[callable] - collection of callbacks
                 to be called on each chunk of text,
                 enables response streaming if supported by the LLM API
@@ -313,7 +315,9 @@ async def allm(
 
             - callback: callable - callback function
             to be called on each chunk of text,
-            enables response streaming if supported by the LLM API
+            enables response streaming if supported by the LLM API.
+            For direct OpenAI Chat Completions streams, callback may expose
+            on_openai_chunk(chunk) to receive JSON-safe native chunks.
             - callbacks: list[callable] - collection of callbacks
             to be called on each chunk of text,
             enables response streaming if supported by the LLM API
