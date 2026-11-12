@@ -1,5 +1,7 @@
 # File cache
 
+With `USE_LOGGING=print_stream`, a cache hit logs the complete response once.
+
 A lightweight general-purpose file-based caching system for Python objects
 designed for cross-cutting concerns within the ai-microcore horizontal functionality.  
 
