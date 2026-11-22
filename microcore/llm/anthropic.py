@@ -1,3 +1,4 @@
+import json
 import logging
 import inspect
 import re
@@ -6,26 +7,37 @@ from anthropic.types import (
     ContentBlockDeltaEvent,
     ContentBlockStartEvent,
     ContentBlockStopEvent,
+    InputJSONDelta,
     MessageDeltaEvent,
     MessageStartEvent,
-    SignatureDelta,
+    TextDelta,
     ThinkingDelta,
 )
 
 from ..configuration import Config
 from .._prepare_llm_args import prompt_to_message_dicts
-from ..message_types import Role
+from ..message_types import Role, ToolCall
 from ..types import LLMAsyncFunctionType, LLMFunctionType
 from ..wrappers.llm_response_wrapper import LLMResponse
 from ..llm_backends import ApiType
 from .shared import (
     attrs_with_normalized_usage,
     prepare_callbacks,
+    resolve_finish_reason,
     streaming_usage_attrs,
+    ToolCallAccumulator,
 )
 
 THINK_OPEN, THINK_CLOSE = "<think>", "</think>\n"
 PART_SEPARATOR = "\n"
+FINISH_REASONS = {  # Anthropic stop reason: finish reason in Chat Completions terms
+    "end_turn": "stop",
+    "stop_sequence": "stop",
+    "max_tokens": "length",
+    "model_context_window_exceeded": "length",
+    "tool_use": "tool_calls",
+    "refusal": "content_filter",
+}
 
 
 def _get_response_text(response, show_thinking: bool = False) -> str:
@@ -45,6 +57,27 @@ def _get_response_text(response, show_thinking: bool = False) -> str:
     return PART_SEPARATOR.join(parts)
 
 
+def _finish_reason(stop_reason: str | None, tool_calls: list[ToolCall]) -> str | None:
+    """
+    Finish reason in Chat Completions terms.
+    Stop reasons without a counterpart (e.g. pause_turn) are returned as they are.
+    """
+    return resolve_finish_reason(FINISH_REASONS.get(stop_reason, stop_reason), tool_calls)
+
+
+def _result_attrs(response) -> dict:
+    """Tool calls and finish reason of a non-streamed response, as LLMResponse attributes."""
+    tool_calls = [
+        ToolCall(name=block.name, arguments=json.dumps(block.input), id=block.id)
+        for block in response.content
+        if getattr(block, "type", None) == "tool_use"
+    ]
+    return {
+        "tool_calls": tool_calls,
+        "finish_reason": _finish_reason(getattr(response, "stop_reason", None), tool_calls),
+    }
+
+
 class _StreamFormatter:
     """
     Transforms raw stream events into output chunks,
@@ -61,13 +94,11 @@ class _StreamFormatter:
         self.opened = False  # current block has produced output
 
     def _delta_content(self, chunk) -> str:
-        if isinstance(chunk.delta, ThinkingDelta):
-            if self.show_thinking:
-                return chunk.delta.thinking or ""
-            return ""
-        if isinstance(chunk.delta, SignatureDelta):
-            return ""
-        return chunk.delta.text or ""
+        if isinstance(chunk.delta, TextDelta):
+            return chunk.delta.text or ""
+        if isinstance(chunk.delta, ThinkingDelta) and self.show_thinking:
+            return chunk.delta.thinking or ""
+        return ""  # tool input, signature, citations
 
     def process(self, chunk) -> list[str]:
         """Returns output chunks to emit for the given stream event."""
@@ -120,11 +151,46 @@ def _update_stream_usage(chunk, usage: dict) -> dict:
     return usage
 
 
+class _StreamResult:
+    """
+    Collects what the final LLMResponse needs besides the text:
+    usage, tool calls and finish reason.
+    """
+
+    def __init__(self):
+        self.usage: dict = {}
+        self.tool_calls = ToolCallAccumulator()
+        self.stop_reason: str | None = None
+
+    def update(self, chunk) -> None:
+        self.usage = _update_stream_usage(chunk, self.usage)
+        if isinstance(chunk, ContentBlockStartEvent):
+            block = chunk.content_block
+            if getattr(block, "type", None) == "tool_use":
+                self.tool_calls.add(chunk.index, block.id, block.name)
+        elif isinstance(chunk, ContentBlockDeltaEvent):
+            # server tools (e.g. web search) stream their input too, but are not tool calls
+            if isinstance(chunk.delta, InputJSONDelta) and chunk.index in self.tool_calls:
+                self.tool_calls.add(chunk.index, arguments=chunk.delta.partial_json)
+        elif isinstance(chunk, MessageDeltaEvent):
+            self.stop_reason = chunk.delta.stop_reason or self.stop_reason
+
+    def response(self, text: str) -> LLMResponse:
+        tool_calls = self.tool_calls.tool_calls()
+        return LLMResponse(
+            text,
+            attrs=streaming_usage_attrs(self.usage),
+            api_type=ApiType.ANTHROPIC,
+            tool_calls=tool_calls,
+            finish_reason=_finish_reason(self.stop_reason, tool_calls),
+        )
+
+
 async def _a_process_streamed_response(
     response, callbacks: list[callable], show_thinking: bool = False
 ):
     parts: list[str] = []
-    usage: dict = {}
+    result = _StreamResult()
 
     async def send(chunk_text: str):
         parts.append(chunk_text)
@@ -136,20 +202,19 @@ async def _a_process_streamed_response(
 
     formatter = _StreamFormatter(show_thinking)
     async for chunk in response:
-        usage = _update_stream_usage(chunk, usage)
+        result.update(chunk)
         for piece in formatter.process(chunk):
             await send(piece)
     for piece in formatter.finish():
         await send(piece)
-    attrs = streaming_usage_attrs(usage)
-    return LLMResponse("".join(parts), attrs=attrs, api_type=ApiType.ANTHROPIC)
+    return result.response("".join(parts))
 
 
 def _process_streamed_response(
     response, callbacks: list[callable], show_thinking: bool = False
 ):
     parts: list[str] = []
-    usage: dict = {}
+    result = _StreamResult()
 
     def send(chunk_text: str):
         parts.append(chunk_text)
@@ -157,13 +222,12 @@ def _process_streamed_response(
 
     formatter = _StreamFormatter(show_thinking)
     for chunk in response:
-        usage = _update_stream_usage(chunk, usage)
+        result.update(chunk)
         for piece in formatter.process(chunk):
             send(piece)
     for piece in formatter.finish():
         send(piece)
-    attrs = streaming_usage_attrs(usage)
-    return LLMResponse("".join(parts), attrs=attrs, api_type=ApiType.ANTHROPIC)
+    return result.response("".join(parts))
 
 
 def _default_max_tokens(model: str, stream: bool) -> int:
@@ -297,6 +361,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             attrs_with_normalized_usage(response.__dict__),
             api_type=ApiType.ANTHROPIC,
             response=response,
+            **_result_attrs(response),
         )
 
     def llm(prompt, **kwargs):
@@ -318,6 +383,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
             attrs_with_normalized_usage(response.__dict__),
             api_type=ApiType.ANTHROPIC,
             response=response,
+            **_result_attrs(response),
         )
 
     return llm, allm

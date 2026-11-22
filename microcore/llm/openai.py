@@ -9,7 +9,7 @@ import openai
 from openai.types import CompletionChoice, ImagesResponse
 
 from ..lm_client import BaseAIChatClient, BaseAsyncAIClient
-from ..message_types import TMsgContentPart, TMsgContent
+from ..message_types import TMsgContentPart, TMsgContent, ToolCall
 from ..configuration import Config, LLMConfigError
 from ..llm_backends import ApiType, ApiPlatform
 from .._prepare_llm_args import prepare_prompt
@@ -26,6 +26,7 @@ from .azure_responses import (
     build_responses_client_params,
     build_responses_request,
     extract_responses_text,
+    responses_result_attrs,
     should_use_responses_api,
 )
 from .shared import (
@@ -34,7 +35,9 @@ from .shared import (
     make_image_generation_response,
     make_remove_hidden_output,
     prepare_callbacks,
+    resolve_finish_reason,
     streaming_usage_attrs,
+    ToolCallAccumulator,
 )
 from ..images import (
     Image,
@@ -119,7 +122,8 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
                     hidden_output_begin=config.HIDDEN_OUTPUT_BEGIN,
                     hidden_output_end=config.HIDDEN_OUTPUT_END,
                 )
-            response_text: str = response.choices[0].message.content or ""
+            choice = response.choices[0]
+            response_text: str = choice.message.content or ""
             if config.hiding_output():
                 response_text = self.sync_client.remove_hidden_output(response_text)
             for cb in options["callbacks"]:
@@ -132,6 +136,7 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
                 attrs_with_normalized_usage(response.__dict__),
                 response=response,
                 api_type=ApiType.OPENAI,
+                **_choice_result_attrs(choice),
             )
 
         response = await self.oai_client.completions.create(
@@ -147,6 +152,7 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
             attrs_with_normalized_usage(response.__dict__),
             response=response,
             api_type=ApiType.OPENAI,
+            **_choice_result_attrs(response.choices[0]),
         )
 
     async def load_models(self) -> dict:
@@ -289,7 +295,7 @@ class OpenAIClient(BaseAIChatClient):
             )
         choice = response.choices[0]
         if is_chat and not isinstance(choice, CompletionChoice):
-            response_text = choice.message.content
+            response_text = choice.message.content or ""  # None when the model only calls tools
         else:
             response_text = choice.text
 
@@ -302,6 +308,7 @@ class OpenAIClient(BaseAIChatClient):
             attrs_with_normalized_usage(response.__dict__),
             response=response,
             api_type=ApiType.OPENAI,
+            **_choice_result_attrs(choice),
         )
 
 
@@ -357,16 +364,110 @@ def image_to_oai(img: ImageInterface) -> dict:
     }
 
 
-def _get_chunk_text(chunk, mode_chat_model: bool):
-    # Azure API gives first chunk with empty choices
-    if len(chunk.choices) == 0:
-        return ""
-    choice = chunk.choices[0]
-    if mode_chat_model:
-        if hasattr(choice, "delta"):
-            return getattr(choice.delta, "content", "")
-        return ""
-    return getattr(choice, "text", "")
+def _choice_result_attrs(choice) -> dict[str, Any]:
+    """Tool calls and finish reason of a non-streamed choice, as LLMResponse attributes."""
+    tool_calls = [
+        ToolCall(name=call.function.name, arguments=call.function.arguments, id=call.id)
+        for call in getattr(getattr(choice, "message", None), "tool_calls", None) or []
+        if getattr(call, "function", None)
+    ]
+    return {
+        "tool_calls": tool_calls,
+        "finish_reason": resolve_finish_reason(
+            getattr(choice, "finish_reason", None), tool_calls
+        ),
+    }
+
+
+def _make_hidden_output_filter(
+    begin: str | None, end: str | None
+) -> Callable[[str], str]:
+    """
+    Makes a function that returns the visible part of a streamed text chunk:
+    the chunks from the begin marker to the end marker are dropped.
+    """
+    if not (begin and end):
+        return lambda text: text
+    hiding = False
+
+    def visible(text: str) -> str:
+        nonlocal hiding
+        if text == begin:
+            hiding = True
+            return ""
+        if hiding:
+            hiding = text != end
+            return ""
+        return text
+
+    return visible
+
+
+class _StreamReader:
+    """
+    Reads the chunks of a streamed response: Chat Completions, legacy Completions,
+    or Responses API events adapted to the Chat Completions shape.
+
+    Gives the text of each chunk and collects what the final LLMResponse needs.
+    Shared by the sync and async stream loops.
+    """
+
+    def __init__(
+        self,
+        chat_model_used: bool,
+        hidden_output_begin: str | None = None,
+        hidden_output_end: str | None = None,
+    ):
+        self.chat_model_used = chat_model_used
+        self.visible = _make_hidden_output_filter(hidden_output_begin, hidden_output_end)
+        self.text = ""
+        self.usage = None
+        self.last_chunk = None
+        self.finish_reason = None
+        self.tool_calls = ToolCallAccumulator()
+
+    def read(self, chunk) -> str:
+        """Returns the text of the chunk to pass to callbacks, empty if it has none."""
+        self.last_chunk = chunk
+        if (usage := getattr(chunk, "usage", None)) is not None:
+            self.usage = usage
+        if not chunk.choices:  # Azure API gives first chunk with empty choices
+            return ""
+        choice = chunk.choices[0]
+        self.finish_reason = getattr(choice, "finish_reason", None) or self.finish_reason
+        if self.chat_model_used:
+            delta = getattr(choice, "delta", None)
+            text = getattr(delta, "content", None)
+            self._read_tool_calls(getattr(delta, "tool_calls", None) or [])
+        else:
+            text = getattr(choice, "text", None)
+        text = self.visible(text) if text else ""
+        self.text += text
+        return text
+
+    def _read_tool_calls(self, deltas: list) -> None:
+        for call in deltas:
+            index = getattr(call, "index", None)
+            if index is None:  # some servers send each call whole, without an index
+                index = len(self.tool_calls)
+            function = getattr(call, "function", None)
+            self.tool_calls.add(
+                index,
+                getattr(call, "id", None),
+                getattr(function, "name", None),
+                getattr(function, "arguments", None),
+            )
+
+    def response(self) -> LLMResponse:
+        tool_calls = self.tool_calls.tool_calls()
+        return LLMResponse(
+            self.text,
+            attrs=streaming_usage_attrs(self.usage),
+            response=self.last_chunk,
+            api_type=ApiType.OPENAI,
+            tool_calls=tool_calls,
+            finish_reason=resolve_finish_reason(self.finish_reason, tool_calls),
+        )
 
 
 async def _a_process_streamed_response(
@@ -376,39 +477,15 @@ async def _a_process_streamed_response(
     hidden_output_begin: str | None = None,
     hidden_output_end: str | None = None,
 ):
-    response_text: str = ""
-    hiding: bool = False
-    need_to_hide = hidden_output_begin and hidden_output_end
-    usage = None
-    last_chunk = None
+    reader = _StreamReader(chat_model_used, hidden_output_begin, hidden_output_end)
     async for chunk in response:
-        last_chunk = chunk
-        if (chunk_usage := getattr(chunk, "usage", None)) is not None:
-            usage = chunk_usage
-        if text_chunk := _get_chunk_text(chunk, chat_model_used):
-            if need_to_hide:
-                if text_chunk == hidden_output_begin:
-                    hiding = True
-                    continue
-                if hiding:
-                    if text_chunk == hidden_output_end:
-                        hiding = False
-                        text_chunk = ""
-                    else:
-                        continue
-            response_text += text_chunk
+        if text_chunk := reader.read(chunk):
             for cb in callbacks:
                 if inspect.iscoroutinefunction(cb):
                     await cb(text_chunk)
                 else:
                     cb(text_chunk)
-    attrs = streaming_usage_attrs(usage)
-    return LLMResponse(
-        response_text,
-        attrs=attrs,
-        response=last_chunk,
-        api_type=ApiType.OPENAI
-    )
+    return reader.response()
 
 
 def _process_streamed_response(
@@ -418,35 +495,11 @@ def _process_streamed_response(
     hidden_output_begin: str | None = None,
     hidden_output_end: str | None = None,
 ):
-    response_text: str = ""
-    is_hiding: bool = False
-    need_to_hide = hidden_output_begin and hidden_output_end
-    usage = None
-    last_chunk = None
+    reader = _StreamReader(chat_model_used, hidden_output_begin, hidden_output_end)
     for chunk in response:
-        last_chunk = chunk
-        if (chunk_usage := getattr(chunk, "usage", None)) is not None:
-            usage = chunk_usage
-        if text_chunk := _get_chunk_text(chunk, chat_model_used):
-            if need_to_hide:
-                if text_chunk == hidden_output_begin:
-                    is_hiding = True
-                    continue
-                if is_hiding:
-                    if text_chunk == hidden_output_end:
-                        is_hiding = False
-                        text_chunk = ""
-                    else:
-                        continue
-            response_text += text_chunk
+        if text_chunk := reader.read(chunk):
             [cb(text_chunk) for cb in callbacks]
-    attrs = streaming_usage_attrs(usage)
-    return LLMResponse(
-        response_text,
-        attrs=attrs,
-        response=last_chunk,
-        api_type=ApiType.OPENAI
-    )
+    return reader.response()
 
 
 async def _generate_via_responses_async(
@@ -484,6 +537,7 @@ async def _generate_via_responses_async(
         attrs_with_normalized_usage({"usage": getattr(response, "usage", None)}),
         response=response,
         api_type=ApiType.OPENAI,
+        **responses_result_attrs(response),
     )
 
 
@@ -519,6 +573,7 @@ def _generate_via_responses(
         attrs_with_normalized_usage({"usage": getattr(response, "usage", None)}),
         response=response,
         api_type=ApiType.OPENAI,
+        **responses_result_attrs(response),
     )
 
 

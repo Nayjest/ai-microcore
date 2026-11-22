@@ -264,6 +264,10 @@ Responses also carry a provider-agnostic `usage` dict (`response.usage`) with pr
 and total token counts, plus cache and reasoning breakdowns where available.
 See [Token Usage](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/token_usage.md).
 
+Native tool calls requested by the model and the reason the generation stopped
+are provider-agnostic too: `response.tool_calls` and `response.finish_reason`.
+See [Tool Calls and Finish Reason](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/tool_calls.md).
+
 ### tpl(file_path, \*\*params) → str
 Renders prompt template with params.
 
@@ -447,6 +451,7 @@ For more detailed information, check out these articles:
 - [Custom HTTP Headers](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/http_headers.md)
 - [File Cache](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/file_cache.md)
 - [Token Usage](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/token_usage.md)
+- [Tool Calls and Finish Reason](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/tool_calls.md)
 
 ## Python functions as AI tools
 *Usage Example*:

@@ -9,7 +9,7 @@ from ..utils import (
     extract_number,
     file_link,
 )
-from ..message_types import Role, AssistantMsg
+from ..message_types import Role, AssistantMsg, ToolCall
 
 if TYPE_CHECKING:
     from ..mcp import MCPConnection, MCPAnswer
@@ -34,6 +34,16 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
 
     Also, it contains all fields returned by the API accessible as attributes.
 
+    Provider-agnostic attributes, set the same way by every backend,
+    for streamed and non-streamed responses:
+
+    - usage: token counts, see doc/features/token_usage.md
+    - tool_calls: function calls requested through native tool calling, empty if none
+    - finish_reason: "stop", "length", "tool_calls" or "content_filter"
+      (None if the backend does not report it)
+
+    See doc/features/tool_calls.md
+
     See fields returned by the OpenAI:
 
     - https://platform.openai.com/docs/api-reference/completions/object
@@ -47,6 +57,8 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
     from_file_cache: bool = False
     api_type: Optional[ApiType] = None
     response: Optional[Any] = None
+    tool_calls: list[ToolCall]
+    finish_reason: Optional[str] = None
 
     def __new__(cls, string: str, attrs: dict = None, **kwargs):
         attrs = {
@@ -56,6 +68,8 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
             "gen_duration": None,  # generation duration in seconds (float), used in metrics
             "api_type": None,
             "response": None,
+            "tool_calls": [],
+            "finish_reason": None,
             **(attrs or {}),
         }
         obj = ExtendedString.__new__(cls, string, attrs, **kwargs)

@@ -12,7 +12,7 @@ from google.genai.types import HttpOptions
 from google.oauth2.service_account import Credentials
 
 from ..configuration import Config, LLMCredentialError
-from ..message_types import Role, TMsgContentPart
+from ..message_types import Role, TMsgContentPart, ToolCall
 from ..types import BadAIAnswer, TPrompt
 from ..wrappers.llm_response_wrapper import (
     LLMResponse,
@@ -25,11 +25,31 @@ from .shared import (
     make_image_generation_response,
     normalize_usage,
     prepare_callbacks,
+    resolve_finish_reason,
     streaming_usage_attrs,
 )
 from ..lm_client import BaseAsyncAIClient, BaseAIChatClient
 from ..images import Image, ImageInterface
 from ..llm_backends import ApiPlatform, ApiType
+
+FINISH_REASONS = {  # Google finish reason: finish reason in Chat Completions terms
+    "STOP": "stop",
+    "MAX_TOKENS": "length",
+    **dict.fromkeys(
+        (
+            "SAFETY",
+            "RECITATION",
+            "BLOCKLIST",
+            "PROHIBITED_CONTENT",
+            "SPII",
+            "IMAGE_SAFETY",
+            "IMAGE_PROHIBITED_CONTENT",
+            "IMAGE_RECITATION",
+        ),
+        "content_filter",
+    ),
+    "FINISH_REASON_UNSPECIFIED": None,
+}
 
 
 def _load_service_account_info(config: Config) -> Optional[dict]:
@@ -222,10 +242,11 @@ class GoogleClient(BaseAIChatClient):
                     response_attrs["api_type"] = ApiType.GOOGLE
                     return make_image_generation_response(images, ctx.save, response_attrs)
                 return LLMResponse(
-                    response.text,
+                    response.text or "",  # None when the model only calls tools
                     _attrs_with_google_usage(response),
                     response=response,
-                    api_type=ApiType.GOOGLE
+                    api_type=ApiType.GOOGLE,
+                    **_result_attrs(response),
                 )
             else:
                 response_iterator = ctx.genai_client.models.generate_content_stream(
@@ -268,10 +289,11 @@ class AsyncGoogleClient(BaseAsyncAIClient):
                     response_attrs["api_type"] = ApiType.GOOGLE
                     return make_image_generation_response(images, ctx.save, response_attrs)
                 return LLMResponse(
-                    response.text,
+                    response.text or "",  # None when the model only calls tools
                     _attrs_with_google_usage(response),
                     response=response,
-                    api_type=ApiType.GOOGLE
+                    api_type=ApiType.GOOGLE,
+                    **_result_attrs(response),
                 )
             else:
                 response_iterator = await ctx.genai_client.aio.models.generate_content_stream(
@@ -358,14 +380,70 @@ def _attrs_with_google_usage(response) -> dict:
     return attrs_with_normalized_usage(attrs)
 
 
+def _tool_calls(response) -> list[ToolCall]:
+    return [
+        ToolCall(name=call.name, arguments=json.dumps(call.args or {}), id=call.id)
+        for call in getattr(response, "function_calls", None) or []
+    ]
+
+
+def _finish_reason(response) -> str | None:
+    """
+    Finish reason of the response in Chat Completions terms.
+    Reasons without a counterpart are returned in lower case (e.g. "malformed_function_call").
+    """
+    candidates = getattr(response, "candidates", None)
+    reason = candidates[0].finish_reason if candidates else None
+    if reason is None:
+        return None
+    reason = str(getattr(reason, "value", reason))
+    return FINISH_REASONS.get(reason, reason.lower())
+
+
+def _result_attrs(response) -> dict:
+    """Tool calls and finish reason of a non-streamed response, as LLMResponse attributes."""
+    tool_calls = _tool_calls(response)
+    return {
+        "tool_calls": tool_calls,
+        "finish_reason": resolve_finish_reason(_finish_reason(response), tool_calls),
+    }
+
+
+class _StreamResult:
+    """
+    Collects what the final LLMResponse needs besides the text:
+    usage, tool calls and finish reason.
+    """
+
+    def __init__(self):
+        self.usage: dict | None = None
+        self.tool_calls: list[ToolCall] = []
+        self.finish_reason: str | None = None
+        self.last_chunk = None
+
+    def update(self, chunk) -> None:
+        self.last_chunk = chunk
+        if chunk_usage := normalize_usage(getattr(chunk, "usage_metadata", None)):
+            self.usage = chunk_usage
+        self.tool_calls += _tool_calls(chunk)  # function calls are not split between chunks
+        self.finish_reason = _finish_reason(chunk) or self.finish_reason
+
+    def response(self, text: str) -> LLMResponse:
+        return LLMResponse(
+            text,
+            streaming_usage_attrs(self.usage),
+            response=self.last_chunk,
+            api_type=ApiType.GOOGLE,
+            tool_calls=self.tool_calls,
+            finish_reason=resolve_finish_reason(self.finish_reason, self.tool_calls),
+        )
+
+
 async def _a_process_streamed_response(response, callbacks: list[callable]):
     response_text: str = ""
-    usage: dict | None = None
-    last_chunk = None
+    result = _StreamResult()
     async for chunk in response:
-        last_chunk = chunk
-        if chunk_usage := normalize_usage(getattr(chunk, "usage_metadata", None)):
-            usage = chunk_usage
+        result.update(chunk)
         if text_chunk := chunk.text:
             response_text += text_chunk
             for cb in callbacks:
@@ -373,30 +451,15 @@ async def _a_process_streamed_response(response, callbacks: list[callable]):
                     await cb(text_chunk)
                 else:
                     cb(text_chunk)
-    attrs = streaming_usage_attrs(usage)
-    return LLMResponse(
-        response_text,
-        attrs,
-        api_type=ApiType.GOOGLE,
-        response=last_chunk,
-    )
+    return result.response(response_text)
 
 
 def _process_streamed_response(response, callbacks: list[callable]):
     response_text: str = ""
-    usage: dict | None = None
-    last_chunk = None
+    result = _StreamResult()
     for chunk in response:
-        last_chunk = chunk
-        if chunk_usage := normalize_usage(getattr(chunk, "usage_metadata", None)):
-            usage = chunk_usage
+        result.update(chunk)
         if text_chunk := chunk.text:
             response_text += text_chunk
             [cb(text_chunk) for cb in callbacks]
-    attrs = streaming_usage_attrs(usage)
-    return LLMResponse(
-        response_text,
-        attrs,
-        response=last_chunk,
-        api_type=ApiType.GOOGLE
-    )
+    return result.response(response_text)

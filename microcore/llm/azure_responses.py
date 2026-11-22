@@ -7,7 +7,9 @@ from types import SimpleNamespace
 from typing import Any, AsyncIterator, Callable, Iterator
 
 from ..configuration import Config, LLMApiBaseError, LLMApiKeyError
+from ..message_types import ToolCall
 from ..types import TPrompt
+from .shared import resolve_finish_reason
 
 _RESPONSES_EXCLUDED_ARGS = frozenset({
     "messages",
@@ -157,26 +159,69 @@ def extract_responses_text(response: Any) -> str:
     return str(getattr(response, "output_text", None) or "")
 
 
-def get_responses_stream_delta(event: Any) -> str:
-    if getattr(event, "type", None) != "response.output_text.delta":
-        return ""
-    return str(getattr(event, "delta", None) or "")
+def extract_responses_tool_calls(response: Any) -> list[ToolCall]:
+    return [
+        ToolCall(name=item.name, arguments=item.arguments, id=item.call_id)
+        for item in getattr(response, "output", None) or []
+        if getattr(item, "type", None) == "function_call"
+    ]
 
 
-def get_responses_stream_usage(event: Any) -> Any | None:
-    if getattr(event, "type", None) != "response.completed":
-        return None
-    response = getattr(event, "response", None)
-    return getattr(response, "usage", None) if response is not None else None
+def responses_finish_reason(response: Any) -> str | None:
+    """Finish reason of a response in Chat Completions terms."""
+    status = getattr(response, "status", None)
+    if status == "incomplete":
+        reason = getattr(getattr(response, "incomplete_details", None), "reason", None)
+        return "length" if reason == "max_output_tokens" else reason or status
+    return "stop" if status == "completed" else status
+
+
+def responses_result_attrs(response: Any) -> dict[str, Any]:
+    """Tool calls and finish reason of a response, as LLMResponse attributes."""
+    tool_calls = extract_responses_tool_calls(response)
+    return {
+        "tool_calls": tool_calls,
+        "finish_reason": resolve_finish_reason(responses_finish_reason(response), tool_calls),
+    }
+
+
+def _chunk(finish_reason: str | None = None, usage: Any = None, **delta) -> SimpleNamespace:
+    """A stream chunk in the shape of a Chat Completions chunk."""
+    return SimpleNamespace(
+        choices=[SimpleNamespace(delta=SimpleNamespace(**delta), finish_reason=finish_reason)],
+        usage=usage,
+    )
+
+
+def _tool_call_chunk(
+    index: int,
+    call_id: str | None = None,
+    name: str | None = None,
+    arguments: str | None = None,
+) -> SimpleNamespace:
+    function = SimpleNamespace(name=name, arguments=arguments)
+    return _chunk(tool_calls=[SimpleNamespace(index=index, id=call_id, function=function)])
 
 
 def _responses_event_to_chunk(event: Any) -> SimpleNamespace | None:
-    if text := get_responses_stream_delta(event):
-        return SimpleNamespace(
-            choices=[SimpleNamespace(delta=SimpleNamespace(content=text))]
+    """Converts a Responses API stream event to the shape of a Chat Completions chunk."""
+    event_type = getattr(event, "type", None)
+    if event_type == "response.output_text.delta":
+        text = str(getattr(event, "delta", None) or "")
+        return _chunk(content=text) if text else None
+    if event_type == "response.output_item.added":
+        item = event.item
+        if getattr(item, "type", None) != "function_call":
+            return None
+        return _tool_call_chunk(event.output_index, item.call_id, item.name, item.arguments)
+    if event_type == "response.function_call_arguments.delta":
+        return _tool_call_chunk(event.output_index, arguments=event.delta)
+    if event_type in ("response.completed", "response.incomplete"):
+        response = getattr(event, "response", None)
+        return _chunk(
+            finish_reason=responses_finish_reason(response),
+            usage=getattr(response, "usage", None),
         )
-    if usage := get_responses_stream_usage(event):
-        return SimpleNamespace(usage=usage, choices=[])
     return None
 
 

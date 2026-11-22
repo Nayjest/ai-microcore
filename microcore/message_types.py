@@ -113,6 +113,27 @@ class ToolMsg(Msg):
     role: str = field(default=Role.TOOL, init=False)
 
 
+@dataclass
+class ToolCall:
+    """
+    A function call requested by the model through the provider's native tool calling.
+
+    Attributes:
+        name: Name of the function to call.
+        arguments: Function arguments as JSON text, as the model produced them.
+        id: Identifier the provider expects back with the function result, if it uses one.
+    """
+    name: str
+    arguments: str = ""
+    id: str | None = None
+
+    @property
+    def args(self) -> dict:
+        """Function arguments parsed from JSON."""
+        from .json_parsing import parse_json
+        return parse_json(self.arguments) if self.arguments else {}
+
+
 class PartialMsg(AssistantMsg):
     """A message that is not fully formed yet."""
 
