@@ -153,7 +153,13 @@ def _stream_log_response(out):
 
 
 def _stream_log_end(out=None):
-    """Print a cached response or terminate the line of a streamed response."""
+    """
+    Terminates the line of the streamed LLM response.
+
+    Streaming output is printed chunk by chunk without line breaks,
+    so the line needs to be closed when the response is complete.
+    Responses served from the file cache are not streamed, so they are printed here in full.
+    """
     global _is_new_request
     if getattr(out, "from_file_cache", False):
         _log_response(out)
