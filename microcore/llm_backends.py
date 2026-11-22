@@ -244,7 +244,7 @@ HIGH_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.ANTHROPIC: "claude-opus-5-5",  # I/O: $4/$20 /M tokens
     ApiPlatform.GOOGLE_AI_STUDIO: "gemini-4-argon",  # I/O: $2/$10 /M tokens (intro to Nov 2026)
     ApiPlatform.GOOGLE_VERTEX_AI: "gemini-4-argon",
-    ApiPlatform.MISTRAL: "mistral-large-latest",
+    ApiPlatform.MISTRAL: "mistral-large-latest",  # I/O: $0.70/$2.10 /M tokens
     ApiPlatform.XAI: "grok-4.7",  # I/O: $2/$6 /M tokens
     ApiPlatform.DEEPSEEK: "deepseek-v4-pro",  # I/O: $1.32/$3.96 /M tokens (peak)
     ApiPlatform.CEREBRAS: "gpt-oss-120b",
