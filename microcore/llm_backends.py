@@ -258,7 +258,7 @@ LOW_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.5-flash-lite",  # I/O: $0.30/$2.50 /M tokens
     ApiPlatform.GOOGLE_VERTEX_AI: "gemini-3.5-flash-lite",
     ApiPlatform.XAI: "grok-4.3",  # I/O: $1.25/$2.50 /M tokens
-    ApiPlatform.MISTRAL: "ministral-3b-2512",
+    ApiPlatform.MISTRAL: "ministral-3b-2512",  # I/O: $0.10/$0.10 /M tokens
     ApiPlatform.DEEPSEEK: "deepseek-flash",  # I/O: $0.30/$1.20 /M tokens (peak)
     ApiPlatform.CEREBRAS: "qwen-3.8-27b",
     ApiPlatform.GROQ: "openai/gpt-oss-20b",  # I/O: $0.075/$0.30 /M tokens
@@ -271,7 +271,7 @@ MID_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.PERPLEXITY: "sonar-pro",  # I/O: $3/$15 /M tokens
     ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.8-flash",  # I/O: $0.75/$3.75 /M tokens (intro to 2026)
     ApiPlatform.GOOGLE_VERTEX_AI: "gemini-3.8-flash",
-    ApiPlatform.MISTRAL: "mistral-medium-3-5",  # I/O: $1.50/$7.50 /M tokens
+    ApiPlatform.MISTRAL: "mistral-small-2603",  # I/O: $0.15/$0.60 /M tokens
 }
 MODEL_PRESETS: dict[ModelPreset, dict[ApiPlatform, str]] = {
     ModelPreset.HIGH_END: HIGH_END_MODELS,
