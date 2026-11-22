@@ -2,6 +2,7 @@ import re
 from typing import Any
 
 from ..images import FileImage, Image
+from ..message_types import ToolCall
 from ..wrappers.llm_response_wrapper import ImageGenerationResponse, StoredImageGenerationResponse
 from ..configuration import Config
 
@@ -198,6 +199,52 @@ def attrs_with_normalized_usage(attrs: dict) -> dict:
         else:
             result.pop("usage", None)
     return result
+
+
+class ToolCallAccumulator:
+    """
+    Assembles tool calls from the fragments of a streamed response.
+
+    Fragments of the same call share a key (its position in the provider's stream);
+    the calls are returned in key order.
+    """
+
+    def __init__(self):
+        self._calls: dict[int, ToolCall] = {}
+
+    def add(
+        self,
+        key: int,
+        call_id: str | None = None,
+        name: str | None = None,
+        arguments: str | None = None,
+    ) -> None:
+        call = self._calls.setdefault(key, ToolCall(name=""))
+        call.id = call_id or call.id
+        call.name = name or call.name
+        call.arguments += arguments or ""
+
+    def __len__(self) -> int:
+        return len(self._calls)
+
+    def __contains__(self, key: int) -> bool:
+        return key in self._calls
+
+    def tool_calls(self) -> list[ToolCall]:
+        calls = [self._calls[key] for key in sorted(self._calls)]
+        for call in calls:
+            call.arguments = call.arguments or "{}"  # a call without arguments
+        return calls
+
+
+def resolve_finish_reason(reason: str | None, tool_calls: list[ToolCall]) -> str | None:
+    """
+    Reports a regular stop that carries tool calls as "tool_calls".
+
+    Gemini, the Responses API and some OpenAI-compatible servers
+    have no dedicated finish reason for it.
+    """
+    return "tool_calls" if tool_calls and reason == "stop" else reason
 
 
 def ensure_stream_include_usage(args: dict) -> None:

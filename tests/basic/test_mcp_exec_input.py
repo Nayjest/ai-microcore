@@ -6,11 +6,15 @@ the remaining fields become the tool arguments.
 
 This is what allows connecting MCP tools to LLM backends without native
 tool-calling support: the model's text output is passed to exec() as is.
+
+A tool called natively is accepted as well: as an LLMResponse that carries
+`tool_calls`, or as a single ToolCall.
 """
 
 import pytest
 
 import microcore as mc
+from microcore import ToolCall
 from microcore.mcp import MCPConnection, WrongMcpUsage
 from microcore.wrappers.llm_response_wrapper import LLMResponse
 
@@ -57,3 +61,26 @@ async def test_exec_rejects_non_json_llm_response(conn):
 async def test_exec_rejects_call_without_tool_name(conn):
     with pytest.raises(WrongMcpUsage):
         await conn.exec({"query": "python"})
+
+
+async def test_exec_accepts_llm_response_with_native_tool_calls(conn):
+    llm_output = LLMResponse(
+        "", tool_calls=[ToolCall("search", '{"query": "python"}'), ToolCall("other")]
+    )
+    await conn.exec(llm_output)
+    assert conn._client.called_with == ("search", {"query": "python"})
+
+
+async def test_exec_accepts_tool_call(conn):
+    await conn.exec(ToolCall("search", '{"query": "python"}', "call_1"))
+    assert conn._client.called_with == ("search", {"query": "python"})
+
+
+async def test_exec_keeps_native_argument_named_as_the_tool_name_field(conn):
+    await conn.exec(ToolCall("phone", '{"call": "mom"}'))
+    assert conn._client.called_with == ("phone", {"call": "mom"})
+
+
+async def test_exec_rejects_tool_call_with_broken_arguments(conn):
+    with pytest.raises(WrongMcpUsage):
+        await conn.exec(ToolCall("search", '{"query'))

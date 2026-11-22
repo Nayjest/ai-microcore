@@ -9,7 +9,7 @@ from ..utils import (
     extract_number,
     file_link,
 )
-from ..message_types import Role, AssistantMsg
+from ..message_types import Role, AssistantMsg, ToolCall
 
 if TYPE_CHECKING:
     from ..mcp import MCPConnection, MCPAnswer
@@ -34,6 +34,16 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
 
     Also, it contains all fields returned by the API accessible as attributes.
 
+    Provider-agnostic attributes, set the same way by every backend,
+    for streamed and non-streamed responses:
+
+    - usage: token counts, see doc/features/token_usage.md
+    - tool_calls: function calls requested through native tool calling, empty if none
+    - finish_reason: "stop", "length", "tool_calls" or "content_filter"
+      (None if the backend does not report it)
+
+    See doc/features/tool_calls.md
+
     See fields returned by the OpenAI:
 
     - https://platform.openai.com/docs/api-reference/completions/object
@@ -47,6 +57,8 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
     from_file_cache: bool = False
     api_type: Optional[ApiType] = None
     response: Optional[Any] = None
+    tool_calls: list[ToolCall]
+    finish_reason: Optional[str] = None
 
     def __new__(cls, string: str, attrs: dict = None, **kwargs):
         attrs = {
@@ -56,6 +68,8 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
             "gen_duration": None,  # generation duration in seconds (float), used in metrics
             "api_type": None,
             "response": None,
+            "tool_calls": [],
+            "finish_reason": None,
             **(attrs or {}),
         }
         obj = ExtendedString.__new__(cls, string, attrs, **kwargs)
@@ -103,21 +117,32 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
     async def to_mcp(self, mcp: "MCPConnection") -> "MCPAnswer":
         return await mcp.exec(self)
 
-    def is_tool_call(self):
+    def is_tool_call(self) -> bool:
+        """
+        Whether the model requested a tool call, either natively (see `tool_calls`)
+        or in the text of the response (see microcore.ai_func).
+        """
         from ..ai_func import extract_tool_params
-        return bool(extract_tool_params(self))
+        return bool(self.tool_calls or extract_tool_params(self))
 
     def as_tool_call(
         self,
         toolset=None,
     ) -> tuple[str, list, dict] | None:
         """
-        Extracts tool call from the LLM response.
+        Returns the tool call requested by the model as (name, args, kwargs),
+        or None if there is none.
+
+        A native tool call (see `tool_calls`) comes first; if there are several, the first one.
+        Otherwise the call is extracted from the text of the response (see microcore.ai_func).
         Args:
-            toolset: Optional ToolSet to use for extraction.
+            toolset: Optional ToolSet to use for extraction from the text.
             If not provided, uses default extractor.
         """
         from ..ai_func import extract_tool_params, ToolSet
+        if self.tool_calls:
+            call = self.tool_calls[0]
+            return call.name, [], call.args
         if isinstance(toolset, ToolSet):
             return toolset.extract_tool_params(self)
         return extract_tool_params(self)

@@ -66,8 +66,10 @@ used for Azure endpoints and models that require it.
 and `Msg`/`SysMsg`/`UserMsg`/`AssistantMsg` from `message_types.py` into provider message
 format). Responses are wrapped by `wrappers/llm_response_wrapper.py` (`LLMResponse`) — a `str`
 subclass that also carries `.choices` and other response fields, so the return value is a string
-but exposes full metadata. `env().llm_before_handlers` / `llm_after_handlers` are hook lists for
-cross-cutting behavior (logging, metrics, caching).
+but exposes full metadata. `usage`, `tool_calls` and `finish_reason` are provider-agnostic:
+every backend sets them in the same form, for streamed and non-streamed responses alike
+(shared helpers live in `llm/shared.py`). `env().llm_before_handlers` / `llm_after_handlers` are
+hook lists for cross-cutting behavior (logging, metrics, caching).
 
 **Templating.** `tpl(file, **params)` renders Jinja2 templates (`microcore/templating/`) from
 `PROMPT_TEMPLATES_PATH` (default `./tpl`); `prompt(str, **params)` (alias `fmt`) renders from a
