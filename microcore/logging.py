@@ -152,18 +152,22 @@ def _stream_log_response(out):
         LoggingConfig.OUTPUT_METHOD(out)
 
 
-def _stream_log_end(out=None):  # pylint: disable=unused-argument
+def _stream_log_end(out=None):
     """
     Terminates the line of the streamed LLM response.
 
     Streaming output is printed chunk by chunk without line breaks,
     so the line needs to be closed when the response is complete.
+    Responses served from the file cache are not streamed, so they are printed here in full.
     """
     global _is_new_request
-    if _is_new_request:
+    if getattr(out, "from_file_cache", False):
+        _log_response(out)
+    elif _is_new_request:
         # No chunks were streamed, nothing was printed by _stream_log_response()
         _is_new_request = False
         return
+    _is_new_request = False
     LoggingConfig.OUTPUT_METHOD("\n")
 
 
