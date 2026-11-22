@@ -264,8 +264,8 @@ Responses also carry a provider-agnostic `usage` dict (`response.usage`) with pr
 and total token counts, plus cache and reasoning breakdowns where available.
 See [Token Usage](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/token_usage.md).
 
-Native tool calls requested by the model and the reason the generation stopped
-are provider-agnostic too: `response.tool_calls` and `response.finish_reason`.
+Tool calls requested by the model and the reason the generation stopped
+are provider-agnostic too: `response.is_tool_call()`, `response.tool_calls` and `response.finish_reason`.
 See [Tool Calls and Finish Reason](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/tool_calls.md).
 
 ### tpl(file_path, \*\*params) → str
@@ -389,6 +389,10 @@ by name through `mcp_server(name)`. See working examples:
 [agent loop](https://github.com/Nayjest/ai-microcore/blob/main/examples/mcp_agent_loop.py),
 [using MCP with various LLMs](https://github.com/Nayjest/ai-microcore/tree/main/examples/ask_various_llms_via_mcp).
 
+Tools can also be [Python functions](#python-functions-as-ai-tools) or be passed to the provider natively.
+Tool calls are read the same way in all cases, see
+[Tool Calls and Finish Reason](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/tool_calls.md).
+
 ## API providers and models support
 
 MicroCore supports major API providers via various chat completion / text completion APIs.
@@ -501,6 +505,21 @@ Returns:
 }
 
 ```
+Put the tools into a prompt and run the call the model answers with:
+```python
+from microcore import llm
+from microcore.ai_func import ToolSet
+
+toolset = ToolSet([search_products])
+response = llm(
+    "Find a red t-shirt that is in stock.\n"
+    f"Answer with a call to one of the following tools and nothing else.\n{toolset}"
+)
+if response.is_tool_call():
+    products = toolset.call(*response.as_tool_call())
+```
+Tool calls are read the same way for [MCP tools](#-mcp-model-context-protocol) and for native tool calling, see
+[Tool Calls and Finish Reason](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/tool_calls.md).
 
 ## 🤖 AI Modules
 **This is an experimental feature.**
