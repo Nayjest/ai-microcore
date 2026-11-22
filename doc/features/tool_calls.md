@@ -5,6 +5,33 @@ in the same provider-agnostic form, together with the reason the generation stop
 Code that reads them stays the same whichever backend is configured,
 and whether the response was streamed or not.
 
+## Two ways to give tools to a model
+
+|                        | Tools described in the prompt                              | Native tool calling                                       |
+|------------------------|------------------------------------------------------------|-----------------------------------------------------------|
+| How                    | `@ai_func`, `ToolSet` or MCP tools rendered into the prompt | `tools=...` passed to `llm()` in the provider's format     |
+| The model answers      | In the text of the response (JSON or a tag)                | In a separate field of the provider's response            |
+| Backends               | Any, including CLI and local models                        | OpenAI and compatible APIs, Responses API, Anthropic, Gemini |
+| `response.tool_calls`  | Empty                                                      | The calls                                                 |
+
+This page is about the second way. Whichever way was used,
+the same methods tell whether the model called a tool and run it:
+
+```python
+if response.is_tool_call():
+    name, args, kwargs = response.as_tool_call()
+    result = toolset.call(name, args, kwargs)  # or: await mcp.exec(response)
+```
+
+For a natively called tool, `as_tool_call()` and `mcp.exec(response)` use the first of
+`response.tool_calls`; otherwise they read the call from the text.
+To run each of several native calls, pass them one by one:
+
+```python
+for call in response.tool_calls:
+    result = await mcp.exec(call)
+```
+
 ## Fields
 
 | Field           | Type             | Meaning                                                            |
@@ -79,8 +106,8 @@ A reason that has no counterpart in this list is returned as the provider report
 - **Tools executed by the provider** (web search, code execution, etc.) are not tool calls
   for your application and are not listed in `tool_calls`.
 
-For provider-independent tool usage that also works with models
-without native tool calling, see `@ai_func` and the MCP integration.
+Tools described in the prompt (`@ai_func`, MCP) have neither limitation:
+their definitions and results are plain text, the same for every backend.
 
 ## Provider notes
 

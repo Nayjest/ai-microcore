@@ -52,6 +52,7 @@ from openai.types.responses.response import IncompleteDetails
 
 import microcore as mc
 from microcore import ToolCall
+from microcore.ai_func import ToolSet, ai_func
 from microcore.llm.shared import ToolCallAccumulator, resolve_finish_reason
 
 from . import setup  # noqa
@@ -686,3 +687,59 @@ async def test_google_stream_async(google_config, mocker):
     assert response == "Checking."
     assert response.tool_calls == [WEATHER_CALL, TIME_CALL]
     assert response.finish_reason == "tool_calls"
+
+
+# ---------------------------------------------------------------- one way to read both kinds
+
+
+def get_weather(city: str):
+    """Returns the weather in the city."""
+    return f"Sunny in {city}"
+
+
+def test_native_tool_call_is_a_tool_call(setup):
+    response = mc.LLMResponse("", tool_calls=[WEATHER_CALL, TIME_CALL])
+    assert response.is_tool_call()
+    assert response.as_tool_call() == ("get_weather", [], {"city": "Kyiv"})
+
+    toolset = ToolSet([ai_func(get_weather)], verbose=False)
+    assert toolset.call(*response.as_tool_call(toolset)) == "Sunny in Kyiv"
+
+
+def test_tool_call_in_text_is_read_as_before(setup):
+    response = mc.LLMResponse('{"call": "get_weather", "city": "Kyiv"}')
+    assert response.tool_calls == []
+    assert response.is_tool_call()
+    assert response.as_tool_call() == ("get_weather", [], {"city": "Kyiv"})
+
+    toolset = ToolSet([ai_func(get_weather)], verbose=False)
+    assert toolset.call(*response.as_tool_call(toolset)) == "Sunny in Kyiv"
+
+
+def test_plain_answer_is_not_a_tool_call(setup):
+    response = mc.LLMResponse("It is sunny.")
+    assert not response.is_tool_call()
+    assert response.as_tool_call() is None
+
+
+def test_native_tool_call_comes_before_the_one_in_text(setup):
+    response = mc.LLMResponse('{"call": "get_time"}', tool_calls=[WEATHER_CALL])
+    assert response.as_tool_call() == ("get_weather", [], {"city": "Kyiv"})
+
+
+def test_native_tool_call_does_not_parse_the_text(setup):
+    """Parsing the text of a response made with `retries` may repeat the LLM request."""
+    response = mc.LLMResponse("Let me check.", tool_calls=[WEATHER_CALL])
+    response._retry_callback = lambda: pytest.fail("The LLM request was repeated")
+    assert response.is_tool_call()
+    assert response.as_tool_call() == ("get_weather", [], {"city": "Kyiv"})
+
+
+def test_response_cached_by_an_older_version(setup):
+    """Responses pickled before `tool_calls` and `finish_reason` existed get the defaults."""
+    response = mc.LLMResponse('{"call": "get_weather", "city": "Kyiv"}')
+    del response.tool_calls, response.finish_reason
+    restored = pickle.loads(pickle.dumps(response))
+    assert restored.tool_calls == []
+    assert restored.finish_reason is None
+    assert restored.as_tool_call() == ("get_weather", [], {"city": "Kyiv"})

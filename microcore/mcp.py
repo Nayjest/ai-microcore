@@ -11,6 +11,7 @@ import mcp.types
 
 from .utils import ExtendedString, ConvertableToMessage
 from .ai_func import AiFuncSyntax
+from .message_types import ToolCall
 from . import ui
 from .types import BadAIAnswer, BadAIJsonAnswer
 from .wrappers.llm_response_wrapper import LLMResponse
@@ -162,30 +163,44 @@ class MCPConnection:
 
     async def exec(
         self,
-        params: dict | LLMResponse,
+        params: dict | str | LLMResponse | ToolCall,
         timeout: datetime.timedelta | float | int | None = None,
         progress_handler: Optional["ProgressHandler"] = None,
     ):
+        """
+        Executes a tool call given in any form an LLM may produce it:
+        a dict, a JSON string, an LLMResponse (with a native tool call or with JSON in its text),
+        or a ToolCall.
+        """
         tool_field = env().config.AI_SYNTAX_FUNCTION_NAME_FIELD
-        if isinstance(params, LLMResponse):
+        if isinstance(params, LLMResponse) and params.tool_calls:
+            params = params.tool_calls[0]  # the model called the tool natively
+        if isinstance(params, ToolCall):
             try:
-                params = params.parse_json(
-                    raise_errors=True,
-                    required_fields=[tool_field],
-                )
+                name, params = params.name, params.args
             except BadAIJsonAnswer as e:
                 raise WrongMcpUsage(str(e)) from e
-        elif isinstance(params, str):
-            try:
-                params = parse_json(
-                    params,
-                    raise_errors=True,
-                    required_fields=[tool_field]
-                )
-            except BadAIJsonAnswer as e:
-                raise WrongMcpUsage(str(e)) from e
-        params = dict(params)
-        if not (name := params.pop(tool_field, "")):
+        else:
+            if isinstance(params, LLMResponse):
+                try:
+                    params = params.parse_json(
+                        raise_errors=True,
+                        required_fields=[tool_field],
+                    )
+                except BadAIJsonAnswer as e:
+                    raise WrongMcpUsage(str(e)) from e
+            elif isinstance(params, str):
+                try:
+                    params = parse_json(
+                        params,
+                        raise_errors=True,
+                        required_fields=[tool_field]
+                    )
+                except BadAIJsonAnswer as e:
+                    raise WrongMcpUsage(str(e)) from e
+            params = dict(params)
+            name = params.pop(tool_field, "")
+        if not name:
             raise WrongMcpUsage(
                 f"Wrong MCP tool usage:\n"
                 f"Tool name should be passed in '{tool_field}' field."
