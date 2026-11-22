@@ -137,7 +137,7 @@ so a cache hit returns them as well.
 - **Tools executed by the provider** (web search, code execution, etc.) are not tool calls
   for your application and are not listed in `tool_calls`.
 
-Tools described in the prompt have none of these limits:
+The first two do not apply to tools described in the prompt:
 their definitions and results are plain text, the same for every backend.
 
 ## Finish reason

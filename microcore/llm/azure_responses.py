@@ -204,7 +204,14 @@ def _tool_call_chunk(
 
 
 def _responses_event_to_chunk(event: Any) -> SimpleNamespace | None:
-    """Converts a Responses API stream event to the shape of a Chat Completions chunk."""
+    """
+    Converts a Responses API stream event to the shape of a Chat Completions chunk,
+    as far as `_StreamReader` in openai.py reads it.
+
+    A tool call is keyed by its output index: unique per call, but not counted from zero.
+    The finish reason is given without regard to tool calls; the reader resolves it
+    once the calls are collected.
+    """
     event_type = getattr(event, "type", None)
     if event_type == "response.output_text.delta":
         text = str(getattr(event, "delta", None) or "")
