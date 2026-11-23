@@ -87,9 +87,14 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
                 try:
                     validator(res)
                 except Exception as e:
-                    raise BadAIAnswer(f"Language model response validation failed: {e}") from None
+                    raise BadAIAnswer(
+                        f"Language model response validation failed: {e}"
+                    ) from None
         except Exception as e:  # pylint: disable=W0718
-            if hasattr(self, "_retry_callback"):
+            # Only retry when the caller expects errors to be raised.
+            # Callers such as is_tool_call()/as_tool_call() pass raise_errors=False
+            # and must not trigger additional LLM requests.
+            if raise_errors and hasattr(self, "_retry_callback"):
                 res = self._retry_callback()
                 if isinstance(res, DictFromLLMResponse):
                     return res
@@ -123,6 +128,7 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
         or in the text of the response (see microcore.ai_func).
         """
         from ..ai_func import extract_tool_params
+
         return bool(self.tool_calls or extract_tool_params(self))
 
     def as_tool_call(
@@ -140,6 +146,7 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
             If not provided, uses default extractor.
         """
         from ..ai_func import extract_tool_params, ToolSet
+
         if self.tool_calls:
             call = self.tool_calls[0]
             return call.name, [], call.args
@@ -165,7 +172,9 @@ class ImageGenerationResponse(LLMResponse, ImageListInterface, ImageInterface): 
     def get_bytes(self) -> bytes | None:
         return self.image().get_bytes() if self.image() else None
 
-    def __new__(cls, str_repr: str = "<images>", images: list[ImageInterface] = None, **kwargs):
+    def __new__(
+        cls, str_repr: str = "<images>", images: list[ImageInterface] = None, **kwargs
+    ):
         images = images or []
         obj = LLMResponse.__new__(cls, str_repr, _images=images, **kwargs)
         return obj
@@ -180,19 +189,16 @@ class StoredImageGenerationResponse(ImageGenerationResponse):
 
     _images: list[FileImage]
 
-    def __new__(cls, str_repr: str = "<images>", images: list[FileImage] = None, **kwargs):
+    def __new__(
+        cls, str_repr: str = "<images>", images: list[FileImage] = None, **kwargs
+    ):
         images = images or []
         if len(images) == 1:
             str_repr = file_link(images[0].file)
         elif len(images) > 1:
-            str_repr = "\n".join(
-                file_link(i.file) for i in images
-            )
+            str_repr = "\n".join(file_link(i.file) for i in images)
         obj = ImageGenerationResponse.__new__(
-            cls,
-            images=images,
-            str_repr=str_repr,
-            **kwargs
+            cls, images=images, str_repr=str_repr, **kwargs
         )
         return obj
 
