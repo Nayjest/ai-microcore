@@ -19,6 +19,7 @@ async def test_llm_mocked_parrot(setup):
     assert res == "completion:ok"
     assert res.response.choices[0]["text"] == "completion:ok"
 
+
 @pytest.mark.asyncio
 async def test_llm_no_streaming(setup):
     t = ""
@@ -72,14 +73,31 @@ def test_llm_with_parsing_json_and_retries(setup):
         t += text
 
     with pytest.raises(mc.BadAIJsonAnswer):
-        mc.llm('{a=1-2}', retries=2, stream=False, callbacks=[fn, afn]).parse_json()
-    assert t == '{a=1-2}' * 3 * 2
+        mc.llm("{a=1-2}", retries=2, stream=False, callbacks=[fn, afn]).parse_json()
+    assert t == "{a=1-2}" * 3 * 2
 
     t = ""
     with pytest.raises(mc.BadAIJsonAnswer):
-        mc.llm('{a=1-2}', retries=3, parse_json=True, callback=afn, stream=False)
-    assert t == '{a=1-2}' * 4
+        mc.llm("{a=1-2}", retries=3, parse_json=True, callback=afn, stream=False)
+    assert t == "{a=1-2}" * 4
 
-    assert mc.llm('{a=1-2}').parse_json(raise_errors=False) is False
+    assert mc.llm("{a=1-2}").parse_json(raise_errors=False) is False
 
-    assert mc.llm('{a=1-2}', retries=2).parse_json(raise_errors=False) is False
+    assert mc.llm("{a=1-2}", retries=2).parse_json(raise_errors=False) is False
+
+
+def test_is_tool_call_does_not_retry_on_plain_text(setup):
+    """Checking for a tool call must not re-send the request when retries remain."""
+    requests = []
+
+    def fake_llm(prompt, **kwargs):
+        requests.append(prompt)
+        return "The weather in Kyiv is sunny."
+
+    mc.configure(INFERENCE_FUNC=fake_llm, CHAT_MODE=True, USE_LOGGING=False)
+    response = mc.llm("What is the weather in Kyiv?", retries=2)
+    assert len(requests) == 1
+    assert response.is_tool_call() is False
+    assert len(requests) == 1
+    assert response.as_tool_call() is None
+    assert len(requests) == 1
