@@ -113,6 +113,9 @@ By default, MicroCore uses the Chat Completions API for OpenAI-compatible provid
 Set `LLM_USE_RESPONSES_API=true` to use the [Responses API](https://platform.openai.com/docs/api-reference/responses)
 instead (required for some Azure OpenAI deployments and models available only via `/responses`).
 
+When replaying an assistant tool call in Chat Completions history, the message can omit
+`content` or set it to `None`. MicroCore preserves that form when sending the message.
+
 #### Local language models via Hugging Face Transformers
 
 You will need to install transformers and a deep learning library of your choice
