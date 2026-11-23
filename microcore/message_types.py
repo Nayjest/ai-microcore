@@ -1,6 +1,9 @@
 """
 Message classes for OpenAI-like Chat APIs.
 """
+
+from __future__ import annotations
+
 import abc
 from enum import Enum
 from dataclasses import dataclass, field
@@ -14,6 +17,7 @@ class Role(str, Enum):
     """
     Enum representing the possible roles in a chat message.
     """
+
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
@@ -31,9 +35,12 @@ class _PydanticPassthrough:
     """
     Mixin that allows Pydantic to accept instances of this class without transformation.
     """
+
     @classmethod
     def __get_pydantic_core_schema__(
-        cls, source_type: Any, handler: GetCoreSchemaHandler  # pylint: disable=unused-argument
+        cls,
+        source_type: Any,
+        handler: GetCoreSchemaHandler,  # pylint: disable=unused-argument
     ) -> core_schema.CoreSchema:
         return core_schema.any_schema()
 
@@ -54,6 +61,7 @@ class MsgMultipartContent(MsgContent, abc.ABC):
     """
     Abstract base class for multipart message content.
     """
+
     @abc.abstractmethod
     def parts(self) -> list[MsgContentPart]:
         """
@@ -74,6 +82,7 @@ class Msg(_PydanticPassthrough):
     """
     Represents a message in a chat conversation.
     """
+
     role: str = field(default=DEFAULT_MESSAGE_ROLE)
     content: TMsgContent = field(default="")
 
@@ -92,24 +101,31 @@ class Msg(_PydanticPassthrough):
 @dataclass
 class SysMsg(Msg):
     """System message."""
+
     role: str = field(default=Role.SYSTEM, init=False)
 
 
 @dataclass
 class UserMsg(Msg):
     """User message."""
+
     role: str = field(default=Role.USER, init=False)
 
 
 @dataclass
 class AssistantMsg(Msg):
     """Assistant message."""
+
     role: str = field(default=Role.ASSISTANT, init=False)
+    tool_calls: list[ToolCall] = field(default_factory=list)
+    _provider_data: Any = field(default=None, repr=False, compare=False)
+    _api_type: Any = field(default=None, repr=False, compare=False)
 
 
 @dataclass
 class ToolMsg(Msg):
     """Tool response (OpenAI chat completions API)."""
+
     role: str = field(default=Role.TOOL, init=False)
 
 
@@ -123,6 +139,7 @@ class ToolCall:
         arguments: Function arguments as JSON text, as the model produced them.
         id: Identifier the provider expects back with the function result, if it uses one.
     """
+
     name: str
     arguments: str = ""
     id: str | None = None
@@ -131,7 +148,30 @@ class ToolCall:
     def args(self) -> dict:
         """Function arguments parsed from JSON."""
         from .json_parsing import parse_json
+
         return parse_json(self.arguments) if self.arguments else {}
+
+
+@dataclass
+class ToolDefinition:
+    """A provider-independent function tool definition."""
+
+    name: str
+    description: str = ""
+    parameters: dict[str, Any] = field(
+        default_factory=lambda: {"type": "object", "properties": {}}
+    )
+
+
+@dataclass(init=False)
+class ToolResult(Msg):
+    """The result of a native tool call, ready to send back to the model."""
+
+    call: ToolCall
+
+    def __init__(self, call: ToolCall, content: TMsgContent):
+        super().__init__(role=Role.TOOL, content=content)
+        self.call = call
 
 
 class PartialMsg(AssistantMsg):

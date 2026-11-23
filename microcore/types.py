@@ -1,14 +1,19 @@
 from typing import TYPE_CHECKING, Callable, Any, Awaitable, Union, List
 from os import PathLike
 
-from .message_types import Msg
+from .message_types import Msg, ToolResult
 
 if TYPE_CHECKING:
     from .wrappers.prompt_wrapper import PromptWrapper  # noqa: F401
     from .wrappers.llm_response_wrapper import LLMResponse  # noqa: F401
 
 TPrompt = Union[
-    dict, Msg, str, "PromptWrapper", List[Union[dict, Msg, str, "PromptWrapper"]]
+    dict,
+    Msg,
+    ToolResult,
+    str,
+    "PromptWrapper",
+    List[Union[dict, Msg, ToolResult, str, "PromptWrapper"]],
 ]
 """Type for prompt argument in LLM requests"""
 TplFunctionType = Callable[[Union[PathLike[str], str], Any], str]
@@ -47,7 +52,9 @@ class LLMContextLengthExceededError(BadAIAnswer):
         model: str | None = None,
     ):
         if message is None:
-            message = "LLM context length exceeded" + (f" for model '{model}'" if model else "")
+            message = "LLM context length exceeded" + (
+                f" for model '{model}'" if model else ""
+            )
             if actual_tokens:
                 message += f", actual tokens: {actual_tokens}"
             if max_tokens:
@@ -71,6 +78,7 @@ class LLMAuthError(BadAIAnswer):
     """
     LLM authentication error
     """
+
     def __init__(
         self,
         message: str = "LLM authentication error",

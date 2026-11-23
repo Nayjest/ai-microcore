@@ -51,7 +51,7 @@ from openai.types.responses import (
 from openai.types.responses.response import IncompleteDetails
 
 import microcore as mc
-from microcore import ToolCall
+from microcore import ToolCall, ToolDefinition, ToolResult
 from microcore.ai_func import ToolSet, ai_func
 from microcore.llm.shared import ToolCallAccumulator, resolve_finish_reason
 
@@ -74,6 +74,40 @@ def test_tool_call_args():
     assert ToolCall("ping").args == {}
     with pytest.raises(mc.BadAIJsonAnswer):
         _ = ToolCall("ping", '{"broken').args
+
+
+def test_portable_tool_messages():
+    tool = ToolDefinition(
+        "get_weather",
+        "Returns the current weather in the city.",
+        {
+            "type": "object",
+            "properties": {"city": {"type": "string"}},
+            "required": ["city"],
+        },
+    )
+    result = ToolResult(WEATHER_CALL, "Sunny in Kyiv")
+    response = mc.LLMResponse(
+        "Checking.",
+        response={"provider": "turn"},
+        api_type=mc.ApiType.OPENAI,
+        tool_calls=[WEATHER_CALL],
+    )
+
+    assert tool.name == "get_weather"
+    assert tool.parameters["required"] == ["city"]
+    assert result.role == mc.Role.TOOL
+    assert result.call == WEATHER_CALL
+    assert result.content == "Sunny in Kyiv"
+    message = response.as_message()
+    assert message == mc.AssistantMsg(
+        content="Checking.",
+        tool_calls=[WEATHER_CALL],
+        _provider_data={"provider": "turn"},
+        _api_type=mc.ApiType.OPENAI,
+    )
+    assert message._provider_data == {"provider": "turn"}
+    assert message._api_type == mc.ApiType.OPENAI
 
 
 def test_tool_call_accumulator():
