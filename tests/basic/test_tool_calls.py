@@ -21,6 +21,7 @@ from anthropic.types import (
     ServerToolUseBlock,
     TextBlock,
     TextDelta,
+    ThinkingBlock,
     ToolUseBlock,
     Usage,
 )
@@ -652,6 +653,9 @@ def test_anthropic_portable_tool_round_trip(anthropic_config, mocker):
         side_effect=[
             _anthropic_message(
                 [
+                    ThinkingBlock(
+                        type="thinking", thinking="Checking weather", signature="sig"
+                    ),
                     ToolUseBlock(
                         type="tool_use",
                         id="call_1",
@@ -688,7 +692,9 @@ def test_anthropic_portable_tool_round_trip(anthropic_config, mocker):
     ]
     messages = create.call_args_list[1].kwargs["messages"]
     assert messages[1]["role"] == mc.Role.ASSISTANT
-    assert messages[1]["content"][0].type == "tool_use"
+    assert messages[1]["content"][0].type == "thinking"
+    assert messages[1]["content"][0].signature == "sig"
+    assert messages[1]["content"][1].type == "tool_use"
     assert messages[2] == {
         "role": mc.Role.USER,
         "content": [
@@ -773,9 +779,10 @@ def google_config(setup):
 
 
 def _google_response(
-    text=None, tool_calls=(), finish_reason="STOP"
+    text=None, tool_calls=(), finish_reason="STOP", extra_parts=()
 ) -> genai_types.GenerateContentResponse:
-    parts = [genai_types.Part(text=text)] if text else []
+    parts = list(extra_parts)
+    parts += [genai_types.Part(text=text)] if text else []
     parts += [
         genai_types.Part(
             function_call=genai_types.FunctionCall(
@@ -821,7 +828,16 @@ def test_google_portable_tool_round_trip(google_config, mocker):
     create = mocker.patch(
         "google.genai.models.Models.generate_content",
         side_effect=[
-            _google_response(tool_calls=[WEATHER_CALL]),
+            _google_response(
+                tool_calls=[WEATHER_CALL],
+                extra_parts=[
+                    genai_types.Part(
+                        thought=True,
+                        text="Checking weather",
+                        thought_signature=b"signature",
+                    )
+                ],
+            ),
             _google_response(text="It is sunny."),
         ],
     )
@@ -839,7 +855,8 @@ def test_google_portable_tool_round_trip(google_config, mocker):
     assert declaration.parameters.required == ["city"]
     contents = create.call_args_list[1].kwargs["contents"]
     assert contents[1]["role"] == "model"
-    assert contents[1]["parts"][0].function_call.name == "get_weather"
+    assert contents[1]["parts"][0].thought_signature == b"signature"
+    assert contents[1]["parts"][1].function_call.name == "get_weather"
     function_response = contents[2]["parts"][0].function_response
     assert function_response.id == "call_1"
     assert function_response.name == "get_weather"
