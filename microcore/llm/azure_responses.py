@@ -116,14 +116,23 @@ def build_responses_client_params(
 
 def prompt_to_responses_input(
     prompt: TPrompt,
-    _convert_to_messages: Callable[[TPrompt], list[dict[str, Any]]],
+    convert_to_messages: Callable[[TPrompt], list[dict[str, Any]]],
 ) -> str | list[dict[str, Any]]:
     if isinstance(prompt, str):
         return prompt
 
-    # Chat Completions conversion would flatten tool results and discard the
-    # original Responses output items, so begin with neutral messages here.
-    messages = prompt_to_message_dicts(prompt)
+    neutral_messages = prompt_to_message_dicts(prompt)
+    converted_messages = convert_to_messages(prompt)
+    messages = [
+        neutral
+        if isinstance(neutral, dict)
+        and any(
+            key in neutral
+            for key in ("_provider_data", "tool_calls", "tool_call")
+        )
+        else converted
+        for neutral, converted in zip(neutral_messages, converted_messages)
+    ]
     result: list[dict[str, Any]] = []
     for message in messages:
         if not isinstance(message, dict):
