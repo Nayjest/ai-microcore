@@ -266,6 +266,7 @@ See [Token Usage](https://github.com/Nayjest/ai-microcore/blob/main/doc/features
 
 Tool calls requested by the model and the reason the generation stopped
 are provider-agnostic too: `response.is_tool_call()`, `response.tool_calls` and `response.finish_reason`.
+`response.is_tool_call()` and `response.as_tool_call()` inspect the current response without sending another model request.
 See [Tool Calls and Finish Reason](https://github.com/Nayjest/ai-microcore/blob/main/doc/features/tool_calls.md).
 
 ### tpl(file_path, \*\*params) → str

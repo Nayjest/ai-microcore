@@ -168,7 +168,7 @@ class AIFunctionWrapper:
 
 def extract_json_tool_params(
     llm_response: LLMResponse | str,
-    raise_errors=False
+    raise_errors=False,
 ) -> tuple[str, list, dict] | None:
     if not isinstance(llm_response, LLMResponse):
         llm_response = LLMResponse(llm_response)
@@ -176,6 +176,7 @@ def extract_json_tool_params(
     params = llm_response.parse_json(
         raise_errors=raise_errors,
         required_fields=[env().config.AI_SYNTAX_FUNCTION_NAME_FIELD],
+        retry=False,
     )
     if not params:
         return None
