@@ -79,7 +79,11 @@ class BaseAIChatClient(BaseAIClient, abc.ABC):
         return [self._convert_message(m) for m in messages]
 
     def _convert_message(self, message: dict) -> dict | Any:
-        message["content"] = self._convert_message_content(message["content"])
+        message = dict(message)  # do not change the caller's dict in place
+        if "content" in message:
+            # Assistant messages that only call tools may have no content,
+            # pass them through as they are (see issue #213)
+            message["content"] = self._convert_message_content(message["content"])
         return message
 
     def _convert_message_content_part(
@@ -96,6 +100,10 @@ class BaseAIChatClient(BaseAIClient, abc.ABC):
         """
         Convert message content to format suitable for the LLM inference chat API.
         """
+        if message_content is None:
+            # content=None is valid (e.g. an assistant message that only
+            # calls tools): keep it None instead of converting to []
+            return None
         # Split multipart content into parts
         if isinstance(message_content, MsgMultipartContent):
             message_content = message_content.parts()

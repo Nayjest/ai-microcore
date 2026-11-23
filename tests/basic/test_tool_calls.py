@@ -3,6 +3,7 @@ Native tool calls and finish reason are reported the same way by every backend,
 for streamed and non-streamed responses.
 """
 
+import copy
 import pickle
 from unittest.mock import AsyncMock
 
@@ -238,6 +239,36 @@ def test_openai_text_response(setup, mocker):
     assert response == "Trunca"
     assert response.tool_calls == []
     assert response.finish_reason == "length"
+
+
+def test_assistant_tool_call_message_without_content(setup, mocker):
+    # Regression test for https://github.com/Nayjest/ai-microcore/issues/213
+    create = mocker.patch(
+        "openai.resources.chat.Completions.create",
+        return_value=_oai_completion(content="Sunny in Kyiv"),
+    )
+    tool_calls = [
+        {
+            "id": "call_1",
+            "type": "function",
+            "function": {"name": "get_weather", "arguments": '{"city": "Kyiv"}'},
+        }
+    ]
+    messages = [
+        {"role": "user", "content": "What is the weather in Kyiv?"},
+        {"role": "assistant", "tool_calls": tool_calls},
+        {"role": "tool", "tool_call_id": "call_1", "content": "Sunny"},
+    ]
+    snapshot = copy.deepcopy(messages)
+    assert mc.llm(messages) == "Sunny in Kyiv"
+    sent = create.call_args.kwargs["messages"]
+    assert "content" not in sent[1]
+    assert messages == snapshot  # the caller's dicts are not changed in place
+
+    messages[1]["content"] = None
+    mc.llm(messages)
+    sent = create.call_args.kwargs["messages"]
+    assert sent[1]["content"] is None
 
 
 def test_openai_hidden_output_with_tool_call_only(setup, mocker):
