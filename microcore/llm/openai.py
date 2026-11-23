@@ -9,7 +9,7 @@ import openai
 from openai.types import CompletionChoice, ImagesResponse
 
 from ..lm_client import BaseAIChatClient, BaseAsyncAIClient
-from ..message_types import TMsgContentPart, TMsgContent, ToolCall
+from ..message_types import Role, TMsgContentPart, TMsgContent, ToolCall
 from ..configuration import Config, LLMConfigError
 from ..llm_backends import ApiType, ApiPlatform
 from .._prepare_llm_args import prepare_prompt
@@ -39,6 +39,7 @@ from .shared import (
     streaming_usage_attrs,
     ToolCallAccumulator,
 )
+from .tool_conversion import convert_tool_definitions, openai_chat_tool
 from ..images import (
     Image,
     FileImage,
@@ -110,6 +111,10 @@ class AsyncOpenAIClient(BaseAsyncAIClient):
             )
         if is_chat_model(args["model"], config):
             messages = self.sync_client.convert_prompt_to_chat_input(prompt)
+            if "tools" in args:
+                args["tools"] = convert_tool_definitions(
+                    args["tools"], openai_chat_tool
+                )
             response = await self.oai_client.chat.completions.create(
                 messages=messages, **args
             )
@@ -250,6 +255,39 @@ class OpenAIClient(BaseAIChatClient):
             return message_content
         return super()._convert_message_content(message_content)
 
+    def _convert_message(self, message: dict) -> dict | Any:
+        """Convert portable tool turns to the Chat Completions message shape."""
+        message.pop("_provider_data", None)
+        message.pop("_api_type", None)
+        role = message.get("role")
+        tool_calls = message.pop("tool_calls", None)
+        tool_call = message.pop("tool_call", None)
+
+        if role == Role.ASSISTANT and tool_calls:
+            content = message.get("content")
+            return {
+                "role": Role.ASSISTANT,
+                "content": self._convert_message_content(content) if content else None,
+                "tool_calls": [
+                    {
+                        "id": call.id,
+                        "type": "function",
+                        "function": {
+                            "name": call.name,
+                            "arguments": call.arguments or "{}",
+                        },
+                    }
+                    for call in tool_calls
+                ],
+            }
+        if role == Role.TOOL and tool_call:
+            return {
+                "role": Role.TOOL,
+                "tool_call_id": tool_call.id,
+                "content": message.get("content", ""),
+            }
+        return super()._convert_message(message)
+
     def load_models(self, **kwargs) -> dict:
         models_iter = self.oai_client.models.list(**kwargs)
         return {model.id: model for model in models_iter}
@@ -278,6 +316,10 @@ class OpenAIClient(BaseAIChatClient):
         is_chat: bool = is_chat_model(args["model"], self.config)
         if is_chat:
             messages = self.convert_prompt_to_chat_input(prompt)
+            if "tools" in args:
+                args["tools"] = convert_tool_definitions(
+                    args["tools"], openai_chat_tool
+                )
             response = self.oai_client.chat.completions.create(
                 messages=messages, **args
             )

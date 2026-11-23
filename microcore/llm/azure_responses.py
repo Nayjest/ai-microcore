@@ -6,10 +6,13 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Any, AsyncIterator, Callable, Iterator
 
+from .._prepare_llm_args import prompt_to_message_dicts
 from ..configuration import Config, LLMApiBaseError, LLMApiKeyError
-from ..message_types import ToolCall
+from ..llm_backends import ApiType
+from ..message_types import Role, ToolCall
 from ..types import TPrompt
 from .shared import resolve_finish_reason
+from .tool_conversion import convert_tool_definitions, openai_responses_tool
 
 _RESPONSES_EXCLUDED_ARGS = frozenset({
     "messages",
@@ -113,18 +116,60 @@ def build_responses_client_params(
 
 def prompt_to_responses_input(
     prompt: TPrompt,
-    convert_to_messages: Callable[[TPrompt], list[dict[str, Any]]],
+    _convert_to_messages: Callable[[TPrompt], list[dict[str, Any]]],
 ) -> str | list[dict[str, Any]]:
     if isinstance(prompt, str):
         return prompt
 
-    messages = convert_to_messages(prompt)
+    # Chat Completions conversion would flatten tool results and discard the
+    # original Responses output items, so begin with neutral messages here.
+    messages = prompt_to_message_dicts(prompt)
     result: list[dict[str, Any]] = []
     for message in messages:
         if not isinstance(message, dict):
             continue
         role = message.get("role")
         if role is None:
+            continue
+        provider_data = message.get("_provider_data")
+        if (
+            role == Role.ASSISTANT
+            and message.get("_api_type") == ApiType.OPENAI
+            and getattr(provider_data, "output", None) is not None
+        ):
+            for item in provider_data.output:
+                if hasattr(item, "model_dump"):
+                    result.append(item.model_dump(exclude_none=True))
+                elif isinstance(item, dict):
+                    result.append(item)
+            continue
+        if role == Role.ASSISTANT and message.get("tool_calls"):
+            if message.get("content"):
+                result.append(
+                    {
+                        "type": "message",
+                        "role": Role.ASSISTANT,
+                        "content": message["content"],
+                    }
+                )
+            result.extend(
+                {
+                    "type": "function_call",
+                    "call_id": call.id,
+                    "name": call.name,
+                    "arguments": call.arguments or "{}",
+                }
+                for call in message["tool_calls"]
+            )
+            continue
+        if role == Role.TOOL and (call := message.get("tool_call")):
+            result.append(
+                {
+                    "type": "function_call_output",
+                    "call_id": call.id,
+                    "output": message.get("content", ""),
+                }
+            )
             continue
         result.append(
             {
@@ -152,6 +197,10 @@ def prepare_responses_args(args: dict[str, Any]) -> dict[str, Any]:
     responses_args["reasoning"] = {"effort": reasoning_effort}
     responses_args["store"] = False
     responses_args["include"] = ["reasoning.encrypted_content"]
+    if "tools" in responses_args:
+        responses_args["tools"] = convert_tool_definitions(
+            responses_args["tools"], openai_responses_tool
+        )
     return responses_args
 
 

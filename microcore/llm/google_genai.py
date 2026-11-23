@@ -28,6 +28,7 @@ from .shared import (
     resolve_finish_reason,
     streaming_usage_attrs,
 )
+from .tool_conversion import convert_tool_definitions, google_tool
 from ..lm_client import BaseAsyncAIClient, BaseAIChatClient
 from ..images import Image, ImageInterface
 from ..llm_backends import ApiPlatform, ApiType
@@ -191,6 +192,49 @@ class GoogleClient(BaseAIChatClient):
     def _convert_message(self, message: dict) -> dict | Any:
         # OpenAI-shaped messages (lm-proxy / ChatBox): only role + parts are valid for GenAI.
         role = message.get("role") or "user"
+        provider_data = message.pop("_provider_data", None)
+        api_type = message.pop("_api_type", None)
+        tool_calls = message.pop("tool_calls", None)
+        tool_call = message.pop("tool_call", None)
+
+        if role == Role.ASSISTANT and api_type == ApiType.GOOGLE:
+            candidates = getattr(provider_data, "candidates", None) or []
+            raw_calls = _tool_calls(provider_data) if candidates else []
+            raw_text = getattr(provider_data, "text", None) or ""
+            if (
+                candidates
+                and getattr(candidates[0], "content", None)
+                and raw_calls == (tool_calls or [])
+                and raw_text == (message.get("content") or "")
+            ):
+                content = candidates[0].content
+                return {"role": content.role, "parts": content.parts}
+        if role == Role.ASSISTANT and tool_calls:
+            parts = []
+            if message.get("content"):
+                parts.append(types.Part(text=str(message["content"])))
+            parts.extend(
+                types.Part(
+                    function_call=types.FunctionCall(
+                        id=call.id, name=call.name, args=call.args
+                    )
+                )
+                for call in tool_calls
+            )
+            return {"role": "model", "parts": parts}
+        if role == Role.TOOL and tool_call:
+            return {
+                "role": "user",
+                "parts": [
+                    types.Part(
+                        function_response=types.FunctionResponse(
+                            id=tool_call.id,
+                            name=tool_call.name,
+                            response={"output": message.get("content", "")},
+                        )
+                    )
+                ],
+            }
         content = message.pop("content", None)
         if content is None:
             content = ""
@@ -338,6 +382,8 @@ class _GenerationContext:
             inject_headers(extra_headers, kwargs)
 
         kwargs.pop("stream_options", None)
+        if "tools" in kwargs:
+            kwargs["tools"] = convert_tool_definitions(kwargs["tools"], google_tool)
 
         return _GenerationContext(
             model_name=model_name,
