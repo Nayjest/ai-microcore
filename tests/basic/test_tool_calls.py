@@ -743,3 +743,33 @@ def test_response_cached_by_an_older_version(setup):
     assert restored.tool_calls == []
     assert restored.finish_reason is None
     assert restored.as_tool_call() == ("get_weather", [], {"city": "Kyiv"})
+
+
+@pytest.mark.usefixtures("setup")
+@pytest.mark.parametrize("method", ["is_tool_call", "as_tool_call"])
+def test_tool_call_probe_does_not_retry_a_plain_answer(method):
+    requests = []
+
+    def fake_inference(prompt, **kwargs):
+        requests.append(prompt)
+        return "The weather in Kyiv is sunny."
+
+    mc.configure(
+        USE_DOT_ENV=False,
+        LLM_API_TYPE=mc.ApiType.FUNCTION,
+        INFERENCE_FUNC=fake_inference,
+        CHAT_MODE=True,
+    )
+    response = mc.llm("What is the weather in Kyiv?", retries=2)
+
+    assert not getattr(response, method)()
+    assert len(requests) == 1
+
+
+@pytest.mark.usefixtures("setup")
+def test_toolset_does_not_retry_a_plain_answer():
+    response = mc.LLMResponse("It is sunny.")
+    response._retry_callback = lambda: pytest.fail("The LLM request was repeated")
+
+    toolset = ToolSet([ai_func(get_weather)], verbose=False)
+    assert response.as_tool_call(toolset) is None
