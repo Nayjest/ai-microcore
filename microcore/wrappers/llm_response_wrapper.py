@@ -89,7 +89,12 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
                 except Exception as e:
                     raise BadAIAnswer(f"Language model response validation failed: {e}") from None
         except Exception as e:  # pylint: disable=W0718
-            if hasattr(self, "_retry_callback"):
+            # The retry callback sends the request to the model again,
+            # so it may only fire when the caller asked for strict parsing
+            # (raise_errors=True). Lenient probes with raise_errors=False,
+            # e.g. tool-call detection via is_tool_call()/as_tool_call(),
+            # must never trigger new requests (see issue #210).
+            if raise_errors and hasattr(self, "_retry_callback"):
                 res = self._retry_callback()
                 if isinstance(res, DictFromLLMResponse):
                     return res
