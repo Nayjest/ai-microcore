@@ -224,6 +224,15 @@ class OpenAIClient(BaseAIChatClient):
         )
         self.remove_hidden_output: callable = make_remove_hidden_output(config)
 
+    def _convert_message(self, message: dict) -> dict | Any:
+        if (
+            message.get("role") == "assistant"
+            and message.get("tool_calls")
+            and message.get("content") is None
+        ):
+            return message.copy()
+        return super()._convert_message(message)
+
     def _convert_message_content_part(
         self,
         content_part: TMsgContentPart,

@@ -215,6 +215,36 @@ def test_openai(setup, mocker):
     assert response.usage["total_tokens"] == 15
 
 
+@pytest.mark.parametrize("content_fields", [{}, {"content": None}])
+@pytest.mark.usefixtures("setup")
+def test_openai_replays_tool_call_messages_without_text(mocker, content_fields):
+    assistant = {
+        "role": "assistant",
+        "tool_calls": [
+            {
+                "id": "call_1",
+                "type": "function",
+                "function": {"name": "get_weather", "arguments": '{"city":"Kyiv"}'},
+            }
+        ],
+        **content_fields,
+    }
+    messages = [
+        {"role": "user", "content": "What is the weather in Kyiv?"},
+        assistant,
+        {"role": "tool", "tool_call_id": "call_1", "content": "Sunny"},
+    ]
+    original = assistant.copy()
+    create = mocker.patch(
+        "openai.resources.chat.Completions.create",
+        return_value=_oai_completion(content="It is sunny."),
+    )
+
+    assert mc.llm(messages) == "It is sunny."
+    assert create.call_args.kwargs["messages"][1] == original
+    assert assistant == original
+
+
 async def test_openai_async(setup, mocker):
     mocker.patch(
         "openai.resources.chat.AsyncCompletions.create",
