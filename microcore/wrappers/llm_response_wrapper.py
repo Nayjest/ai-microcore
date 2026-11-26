@@ -80,6 +80,7 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
         raise_errors: bool = True,
         required_fields: list[str] = None,
         validator: callable = None,
+        retry: bool = True,
     ) -> list | dict | float | int | str | DictFromLLMResponse:
         try:
             res = super().parse_json(raise_errors=True, required_fields=required_fields)
@@ -89,7 +90,9 @@ class LLMResponse(ExtendedString, ConvertableToMessage):
                 except Exception as e:
                     raise BadAIAnswer(f"Language model response validation failed: {e}") from None
         except Exception as e:  # pylint: disable=W0718
-            if hasattr(self, "_retry_callback"):
+            # retry=False only inspects this answer: no new request is sent
+            # (used by tool-call detection, see microcore.ai_func).
+            if retry and hasattr(self, "_retry_callback"):
                 res = self._retry_callback()
                 if isinstance(res, DictFromLLMResponse):
                     return res

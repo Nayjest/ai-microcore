@@ -118,6 +118,31 @@ def test_backend_without_native_tool_calling(setup):
     assert response.finish_reason is None
 
 
+def test_tool_call_check_does_not_resend_request(setup):
+    # Issue #210: with retries, checking a plain-text answer for a tool call
+    # used to send the same request again until the retries ran out.
+    requests = []
+
+    def fake_llm(prompt, **kwargs):
+        requests.append(prompt)
+        return "The weather in Kyiv is sunny."
+
+    mc.configure(
+        USE_DOT_ENV=False,
+        LLM_API_TYPE=mc.ApiType.FUNCTION,
+        INFERENCE_FUNC=fake_llm,
+        CHAT_MODE=True,
+    )
+    response = mc.llm("What is the weather in Kyiv?", retries=2)
+    assert len(requests) == 1
+    assert response.is_tool_call() is False
+    assert response.as_tool_call() is None
+    assert len(requests) == 1
+    # parse_json() itself still retries a malformed answer.
+    assert response.parse_json(raise_errors=False) is False
+    assert len(requests) == 3
+
+
 # ---------------------------------------------------------------- OpenAI Chat Completions
 
 

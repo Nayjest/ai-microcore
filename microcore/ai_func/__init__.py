@@ -176,6 +176,8 @@ def extract_json_tool_params(
     params = llm_response.parse_json(
         raise_errors=raise_errors,
         required_fields=[env().config.AI_SYNTAX_FUNCTION_NAME_FIELD],
+        # Checking for a tool call must not send the request again.
+        retry=False,
     )
     if not params:
         return None
