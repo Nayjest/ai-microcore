@@ -120,6 +120,7 @@ class ApiPlatform(SafeStrEnum):
     TOGETHER_AI = "together_ai"
     OPENROUTER = "openrouter"
     PERPLEXITY = "perplexity"
+    STRAITLY = "straitly"
 
     # Google
     GOOGLE_AI_STUDIO = "google_ai_studio"
@@ -206,6 +207,7 @@ OPENAI_API_PLATFORMS: list[ApiPlatform] = [
     ApiPlatform.TOGETHER_AI,
     ApiPlatform.OPENROUTER,
     ApiPlatform.PERPLEXITY,
+    ApiPlatform.STRAITLY,
 ]
 API_PLATFORMS_BY_API_TYPE: dict[ApiType, list] = {
     ApiType.OPENAI: OPENAI_API_PLATFORMS,
@@ -228,6 +230,7 @@ LLM_API_BASE_URLS = {
         ApiPlatform.TOGETHER_AI: "https://api.together.xyz/v1",
         ApiPlatform.OPENROUTER: "https://openrouter.ai/api/v1",
         ApiPlatform.PERPLEXITY: "https://api.perplexity.ai",
+        ApiPlatform.STRAITLY: "https://api.straitly.ai/v1",
     },
     ApiType.ANTHROPIC: {
         ApiPlatform.ANTHROPIC: "https://api.anthropic.com/",
