@@ -40,12 +40,6 @@ _GENERATION_DEFAULT_ARGS = types.GenerateContentConfig.model_fields.keys() | {
     "save",
     "stream",
 }
-# Generation argument name in the Gemini REST API (maxOutputTokens): its name in the SDK
-_GENERATION_ARG_ALIASES = {
-    field.alias: name
-    for name, field in types.GenerateContentConfig.model_fields.items()
-    if field.alias
-}
 
 FINISH_REASONS = {  # Google finish reason: finish reason in Chat Completions terms
     "STOP": "stop",
@@ -343,13 +337,12 @@ class _GenerationContext:
         prompt: TPrompt,
         kwargs: dict
     ) -> "_GenerationContext":
-        defaults = _with_sdk_arg_names(client.config.LLM_DEFAULT_ARGS)
         default_args = {
             key: value
-            for key, value in defaults.items()
+            for key, value in client.config.LLM_DEFAULT_ARGS.items()
             if key in _GENERATION_DEFAULT_ARGS
         }
-        kwargs = {**default_args, **_with_sdk_arg_names(kwargs)}
+        kwargs = {**default_args, **kwargs}
         model_name = kwargs.pop("model", client.config.MODEL)
         callbacks = prepare_callbacks(client.config, kwargs, set_stream=False)
         is_image = is_image_model(model_name)
@@ -371,14 +364,6 @@ class _GenerationContext:
             is_image_model=is_image,
             stream=stream,
         )
-
-
-def _with_sdk_arg_names(args: Mapping[str, Any]) -> dict:
-    """
-    Renames generation arguments spelled as in the Gemini REST API (maxOutputTokens)
-    to their SDK names (max_output_tokens), so both spellings address one argument.
-    """
-    return {_GENERATION_ARG_ALIASES.get(key, key): value for key, value in args.items()}
 
 
 def _google_image_response_to_images(response: genai.types.GenerateContentResponse) -> list[Image]:
