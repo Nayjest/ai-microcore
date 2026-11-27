@@ -5,7 +5,7 @@ whichever backend is configured and whether the response was streamed or not.
 
 |                        | [Tools described in the prompt](#tools-described-in-the-prompt)     | [Native tool calling](#native-tool-calling)                  |
 |------------------------|----------------------------------------------------------------------|--------------------------------------------------------------|
-| Tool definitions       | Python functions or MCP tools, rendered into the prompt as text      | `tools=...` passed to `llm()` in the provider's own format   |
+| Tool definitions       | Python functions or MCP tools, rendered into the prompt as text      | Portable `ToolDefinition` objects or provider-native values  |
 | The model calls a tool | In the text of its answer, as JSON                                   | In a separate field of the provider's response               |
 | Backends               | Any, including CLI tools and local models                            | OpenAI and compatible APIs, Responses API, Anthropic, Gemini |
 
@@ -65,26 +65,30 @@ See [MCP](../../README.md#-mcp-model-context-protocol) in the README and the exa
 
 ## Native tool calling
 
-The tools are defined in the provider's own format and passed to `llm()` as they are:
+`ToolDefinition` describes a function once for OpenAI Chat Completions, the Responses API,
+Anthropic, and Gemini:
 
 ```python
-tools = [{  # OpenAI Chat Completions format
-    "type": "function",
-    "function": {
-        "name": "get_weather",
-        "description": "Returns the current weather in the city.",
-        "parameters": {
-            "type": "object",
-            "properties": {"city": {"type": "string"}},
-            "required": ["city"],
-        },
+from microcore import ToolDefinition, ToolResult, UserMsg, llm
+
+tools = [ToolDefinition(
+    name="get_weather",
+    description="Returns the current weather in the city.",
+    parameters={
+        "type": "object",
+        "properties": {"city": {"type": "string"}},
+        "required": ["city"],
     },
-}]
-response = llm("What is the weather in Kyiv?", tools=tools)
+)]
+
+messages = [UserMsg("What is the weather in Kyiv?")]
+response = llm(messages, tools=tools)
 
 for call in response.tool_calls:
     print(call.name, call.args)  # get_weather {'city': 'Kyiv'}
 ```
+
+Provider-native tool definitions remain supported and are passed through unchanged.
 
 The call is run by the same code as before, here with `toolset` from the first example:
 
@@ -105,6 +109,28 @@ returns the first one. Each `ToolCall` has:
 
 An MCP server runs a native call too: `await server.exec(response)` for the first one,
 or `await server.exec(call)` for each `call` in `response.tool_calls`.
+
+### Sending results back
+
+`response.as_message()` preserves the assistant turn, including its tool calls.
+Add one `ToolResult` for every call, then send the same message list again:
+
+```python
+messages.append(response.as_message())
+for call in response.tool_calls:
+    if call.name == "get_weather":
+        result = get_weather(**call.args)
+    else:
+        raise ValueError(f"Unknown tool: {call.name}")
+    messages.append(ToolResult(call, result))
+
+response = llm(messages, tools=tools)
+print(response)
+```
+
+MicroCore converts the assistant turn and each result to the configured provider's format.
+When the original non-streamed provider response is available, it is retained internally so
+provider metadata needed for a follow-up request, such as thinking signatures, is not lost.
 
 A response that only calls tools has no text, so it is an empty string.
 Text and tool calls may also come together.
@@ -130,15 +156,10 @@ so a cache hit returns them as well.
 
 ### What native tool calling does not cover
 
-- **Tool definitions.** `tools=...` and related parameters are passed to the provider as they are,
-  so they follow the provider's format.
-- **Sending tool results back.** Messages with tool calls and tool results
-  follow the provider's format as well.
 - **Tools executed by the provider** (web search, code execution, etc.) are not tool calls
   for your application and are not listed in `tool_calls`.
 
-The first two do not apply to tools described in the prompt:
-their definitions and results are plain text, the same for every backend.
+Tools described in the prompt are also unaffected: their definitions and results are plain text.
 
 ## Finish reason
 

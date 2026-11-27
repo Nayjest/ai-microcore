@@ -17,7 +17,17 @@ from .embedding_db import SearchResult, AbstractEmbeddingDB, SearchResults
 from .file_storage import storage
 from ._env import configure, env, config, min_setup
 from .logging import use_logging
-from .message_types import UserMsg, AssistantMsg, SysMsg, Msg, PartialMsg, Role, ToolCall
+from .message_types import (
+    UserMsg,
+    AssistantMsg,
+    SysMsg,
+    Msg,
+    PartialMsg,
+    Role,
+    ToolCall,
+    ToolDefinition,
+    ToolResult,
+)
 from .configuration import (
     LLMApiBaseError,
     LLMApiDeploymentIdError,
@@ -217,6 +227,8 @@ __all__ = [
     "LLMContextLengthExceededError",
     "LLMResponse",
     "ToolCall",
+    "ToolDefinition",
+    "ToolResult",
     "PromptWrapper",
     "Role",
     "parse",

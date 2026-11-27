@@ -21,6 +21,7 @@ from anthropic.types import (
     ServerToolUseBlock,
     TextBlock,
     TextDelta,
+    ThinkingBlock,
     ToolUseBlock,
     Usage,
 )
@@ -51,7 +52,7 @@ from openai.types.responses import (
 from openai.types.responses.response import IncompleteDetails
 
 import microcore as mc
-from microcore import ToolCall
+from microcore import ToolCall, ToolDefinition, ToolResult
 from microcore.ai_func import ToolSet, ai_func
 from microcore.llm.shared import ToolCallAccumulator, resolve_finish_reason
 
@@ -59,6 +60,15 @@ from . import setup  # noqa
 
 WEATHER_CALL = ToolCall("get_weather", '{"city": "Kyiv"}', "call_1")
 TIME_CALL = ToolCall("get_time", "{}", "call_2")
+WEATHER_TOOL = ToolDefinition(
+    "get_weather",
+    "Returns the current weather in the city.",
+    {
+        "type": "object",
+        "properties": {"city": {"type": "string"}},
+        "required": ["city"],
+    },
+)
 
 
 async def _async_iter(items):
@@ -74,6 +84,31 @@ def test_tool_call_args():
     assert ToolCall("ping").args == {}
     with pytest.raises(mc.BadAIJsonAnswer):
         _ = ToolCall("ping", '{"broken').args
+
+
+def test_portable_tool_messages():
+    result = ToolResult(WEATHER_CALL, "Sunny in Kyiv")
+    response = mc.LLMResponse(
+        "Checking.",
+        response={"provider": "turn"},
+        api_type=mc.ApiType.OPENAI,
+        tool_calls=[WEATHER_CALL],
+    )
+
+    assert WEATHER_TOOL.name == "get_weather"
+    assert WEATHER_TOOL.parameters["required"] == ["city"]
+    assert result.role == mc.Role.TOOL
+    assert result.call == WEATHER_CALL
+    assert result.content == "Sunny in Kyiv"
+    message = response.as_message()
+    assert message == mc.AssistantMsg(
+        content="Checking.",
+        tool_calls=[WEATHER_CALL],
+        _provider_data={"provider": "turn"},
+        _api_type=mc.ApiType.OPENAI,
+    )
+    assert message._provider_data == {"provider": "turn"}
+    assert message._api_type == mc.ApiType.OPENAI
 
 
 def test_tool_call_accumulator():
@@ -213,6 +248,50 @@ def test_openai(setup, mocker):
     assert response.tool_calls == [WEATHER_CALL]
     assert response.finish_reason == "tool_calls"
     assert response.usage["total_tokens"] == 15
+
+
+def test_openai_portable_tool_round_trip(setup, mocker):
+    create = mocker.patch(
+        "openai.resources.chat.Completions.create",
+        side_effect=[
+            _oai_completion(tool_calls=[WEATHER_CALL], finish_reason="tool_calls"),
+            _oai_completion(content="It is sunny."),
+        ],
+    )
+    prompt = mc.UserMsg("What is the weather in Kyiv?")
+    response = mc.llm(prompt, tools=[WEATHER_TOOL])
+    mc.llm(
+        [prompt, response.as_message(), ToolResult(WEATHER_CALL, "Sunny")],
+        tools=[WEATHER_TOOL],
+    )
+
+    expected_tool = {
+        "type": "function",
+        "function": {
+            "name": WEATHER_TOOL.name,
+            "description": WEATHER_TOOL.description,
+            "parameters": WEATHER_TOOL.parameters,
+        },
+    }
+    assert create.call_args_list[0].kwargs["tools"] == [expected_tool]
+    assert create.call_args_list[1].kwargs["messages"] == [
+        {"role": mc.Role.USER, "content": "What is the weather in Kyiv?"},
+        {
+            "role": mc.Role.ASSISTANT,
+            "content": None,
+            "tool_calls": [
+                {
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {
+                        "name": "get_weather",
+                        "arguments": '{"city": "Kyiv"}',
+                    },
+                }
+            ],
+        },
+        {"role": mc.Role.TOOL, "tool_call_id": "call_1", "content": "Sunny"},
+    ]
 
 
 async def test_openai_async(setup, mocker):
@@ -368,6 +447,48 @@ def test_openai_responses_api(setup, mocker):
     assert response == ""
     assert response.tool_calls == [WEATHER_CALL]
     assert response.finish_reason == "tool_calls"
+
+
+def test_openai_responses_portable_tool_round_trip(setup, mocker):
+    first = Response.model_construct(
+        output=[_function_call_item(WEATHER_CALL)], status="completed", usage=None
+    )
+    create = mocker.patch(
+        "openai.resources.responses.Responses.create",
+        side_effect=[
+            first,
+            Response.model_construct(output=[], status="completed", usage=None),
+        ],
+    )
+    prompt = mc.UserMsg("What is the weather in Kyiv?")
+    response = mc.llm(prompt, tools=[WEATHER_TOOL], use_responses_api=True)
+    mc.llm(
+        [prompt, response.as_message(), ToolResult(WEATHER_CALL, "Sunny")],
+        tools=[WEATHER_TOOL],
+        use_responses_api=True,
+    )
+
+    assert create.call_args_list[0].kwargs["tools"] == [
+        {
+            "type": "function",
+            "name": WEATHER_TOOL.name,
+            "description": WEATHER_TOOL.description,
+            "parameters": WEATHER_TOOL.parameters,
+        }
+    ]
+    second_input = create.call_args_list[1].kwargs["input"]
+    assert second_input[0] == {
+        "type": "message",
+        "role": mc.Role.USER,
+        "content": "What is the weather in Kyiv?",
+    }
+    assert second_input[1]["type"] == "function_call"
+    assert second_input[1]["call_id"] == "call_1"
+    assert second_input[2] == {
+        "type": "function_call_output",
+        "call_id": "call_1",
+        "output": "Sunny",
+    }
 
 
 def test_openai_responses_api_stream(setup, mocker):
@@ -526,6 +647,71 @@ def test_anthropic(anthropic_config, mocker):
     assert response.finish_reason == "tool_calls"
 
 
+def test_anthropic_portable_tool_round_trip(anthropic_config, mocker):
+    create = mocker.patch(
+        "anthropic.resources.Messages.create",
+        side_effect=[
+            _anthropic_message(
+                [
+                    ThinkingBlock(
+                        type="thinking", thinking="Checking weather", signature="sig"
+                    ),
+                    ToolUseBlock(
+                        type="tool_use",
+                        id="call_1",
+                        name="get_weather",
+                        input={"city": "Kyiv"},
+                    ),
+                    ToolUseBlock(
+                        type="tool_use", id="call_2", name="get_time", input={}
+                    ),
+                ],
+                stop_reason="tool_use",
+            ),
+            _anthropic_message([TextBlock(type="text", text="It is sunny.")]),
+        ],
+    )
+    prompt = mc.UserMsg("What is the weather in Kyiv?")
+    response = mc.llm(prompt, tools=[WEATHER_TOOL])
+    mc.llm(
+        [
+            prompt,
+            response.as_message(),
+            ToolResult(WEATHER_CALL, "Sunny"),
+            ToolResult(TIME_CALL, "10:00"),
+        ],
+        tools=[WEATHER_TOOL],
+    )
+
+    assert create.call_args_list[0].kwargs["tools"] == [
+        {
+            "name": WEATHER_TOOL.name,
+            "description": WEATHER_TOOL.description,
+            "input_schema": WEATHER_TOOL.parameters,
+        }
+    ]
+    messages = create.call_args_list[1].kwargs["messages"]
+    assert messages[1]["role"] == mc.Role.ASSISTANT
+    assert messages[1]["content"][0].type == "thinking"
+    assert messages[1]["content"][0].signature == "sig"
+    assert messages[1]["content"][1].type == "tool_use"
+    assert messages[2] == {
+        "role": mc.Role.USER,
+        "content": [
+            {
+                "type": "tool_result",
+                "tool_use_id": "call_1",
+                "content": "Sunny",
+            },
+            {
+                "type": "tool_result",
+                "tool_use_id": "call_2",
+                "content": "10:00",
+            },
+        ],
+    }
+
+
 @pytest.mark.parametrize(
     "stop_reason, finish_reason",
     [
@@ -593,9 +779,10 @@ def google_config(setup):
 
 
 def _google_response(
-    text=None, tool_calls=(), finish_reason="STOP"
+    text=None, tool_calls=(), finish_reason="STOP", extra_parts=()
 ) -> genai_types.GenerateContentResponse:
-    parts = [genai_types.Part(text=text)] if text else []
+    parts = list(extra_parts)
+    parts += [genai_types.Part(text=text)] if text else []
     parts += [
         genai_types.Part(
             function_call=genai_types.FunctionCall(
@@ -635,6 +822,45 @@ def test_google(google_config, mocker):
     assert response.tool_calls == [WEATHER_CALL, TIME_CALL]
     assert response.finish_reason == "tool_calls"
     assert response.usage["total_tokens"] == 15
+
+
+def test_google_portable_tool_round_trip(google_config, mocker):
+    create = mocker.patch(
+        "google.genai.models.Models.generate_content",
+        side_effect=[
+            _google_response(
+                tool_calls=[WEATHER_CALL],
+                extra_parts=[
+                    genai_types.Part(
+                        thought=True,
+                        text="Checking weather",
+                        thought_signature=b"signature",
+                    )
+                ],
+            ),
+            _google_response(text="It is sunny."),
+        ],
+    )
+    prompt = mc.UserMsg("What is the weather in Kyiv?")
+    response = mc.llm(prompt, tools=[WEATHER_TOOL])
+    mc.llm(
+        [prompt, response.as_message(), ToolResult(WEATHER_CALL, "Sunny")],
+        tools=[WEATHER_TOOL],
+    )
+
+    config = create.call_args_list[0].kwargs["config"]
+    declaration = config.tools[0].function_declarations[0]
+    assert declaration.name == WEATHER_TOOL.name
+    assert declaration.description == WEATHER_TOOL.description
+    assert declaration.parameters.required == ["city"]
+    contents = create.call_args_list[1].kwargs["contents"]
+    assert contents[1]["role"] == "model"
+    assert contents[1]["parts"][0].thought_signature == b"signature"
+    assert contents[1]["parts"][1].function_call.name == "get_weather"
+    function_response = contents[2]["parts"][0].function_response
+    assert function_response.id == "call_1"
+    assert function_response.name == "get_weather"
+    assert function_response.response == {"output": "Sunny"}
 
 
 @pytest.mark.parametrize(

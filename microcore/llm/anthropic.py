@@ -27,6 +27,7 @@ from .shared import (
     streaming_usage_attrs,
     ToolCallAccumulator,
 )
+from .tool_conversion import anthropic_tool, convert_tool_definitions
 
 THINK_OPEN, THINK_CLOSE = "<think>", "</think>\n"
 PART_SEPARATOR = "\n"
@@ -286,7 +287,63 @@ def _prepare_llm_arguments(config: Config, kwargs: dict, api_version: str):
     callbacks = prepare_callbacks(config, args)
     if "max_tokens" not in args:
         args["max_tokens"] = _default_max_tokens(args["model"], args.get("stream"))
+    if "tools" in args:
+        args["tools"] = convert_tool_definitions(args["tools"], anthropic_tool)
     return args, {"callbacks": callbacks, "show_thinking": show_thinking}
+
+
+def _prepare_messages(prompt) -> list[dict]:
+    """Convert portable tool turns to Anthropic content blocks."""
+    prepared = []
+    for message in prompt_to_message_dicts(prompt):
+        role = message.get("role")
+        provider_data = message.pop("_provider_data", None)
+        api_type = message.pop("_api_type", None)
+        tool_calls = message.pop("tool_calls", None)
+        tool_call = message.pop("tool_call", None)
+
+        if (
+            role == Role.ASSISTANT
+            and api_type == ApiType.ANTHROPIC
+            and getattr(provider_data, "content", None) is not None
+        ):
+            prepared.append({"role": Role.ASSISTANT, "content": provider_data.content})
+        elif role == Role.ASSISTANT and tool_calls:
+            content = []
+            if message.get("content"):
+                content.append({"type": "text", "text": message["content"]})
+            content.extend(
+                {
+                    "type": "tool_use",
+                    "id": call.id,
+                    "name": call.name,
+                    "input": call.args,
+                }
+                for call in tool_calls
+            )
+            prepared.append({"role": Role.ASSISTANT, "content": content})
+        elif role == Role.TOOL and tool_call:
+            block = {
+                "type": "tool_result",
+                "tool_use_id": tool_call.id,
+                "content": message.get("content", ""),
+            }
+            previous_content = prepared[-1].get("content") if prepared else None
+            if (
+                prepared
+                and prepared[-1].get("role") == Role.USER
+                and isinstance(previous_content, list)
+                and all(
+                    isinstance(i, dict) and i.get("type") == "tool_result"
+                    for i in previous_content
+                )
+            ):
+                previous_content.append(block)
+            else:
+                prepared.append({"role": Role.USER, "content": [block]})
+        else:
+            prepared.append(message)
+    return prepared
 
 
 def _extract_sys_msg(prepared_messages: list[dict]) -> tuple[str, list[dict]]:
@@ -342,7 +399,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
     async def allm(prompt, **kwargs):
         args, options = _prepare_llm_arguments(config, kwargs, api_version)
         args["system"], args["messages"] = _extract_sys_msg(
-            prompt_to_message_dicts(prompt)
+            _prepare_messages(prompt)
         )
         response = await async_client.messages.create(**args)
         if args.get("stream"):
@@ -367,7 +424,7 @@ def make_llm_functions(config: Config) -> tuple[LLMFunctionType, LLMAsyncFunctio
     def llm(prompt, **kwargs):
         args, options = _prepare_llm_arguments(config, kwargs, api_version)
         args["system"], args["messages"] = _extract_sys_msg(
-            prompt_to_message_dicts(prompt)
+            _prepare_messages(prompt)
         )
         response = sync_client.messages.create(**args)
         if args.get("stream"):

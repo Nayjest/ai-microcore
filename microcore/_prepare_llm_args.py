@@ -1,7 +1,13 @@
 from dataclasses import asdict
 from typing import Any
 
-from .message_types import DEFAULT_MESSAGE_ROLE, Msg, MsgContent
+from .message_types import (
+    DEFAULT_MESSAGE_ROLE,
+    AssistantMsg,
+    Msg,
+    MsgContent,
+    ToolResult,
+)
 from .types import TPrompt
 
 
@@ -25,7 +31,21 @@ def prompt_item_to_message_dict(item: Any, strict=False) -> dict | Any:
         A dict representing the message,
         or the original item if not convertible and strict is False.
     """
-    if isinstance(item, Msg):
+    if isinstance(item, ToolResult):
+        message_dict = {
+            "role": item.role,
+            "content": item.content,
+            "tool_call": item.call,
+        }
+    elif isinstance(item, AssistantMsg):
+        message_dict = {"role": item.role, "content": item.content}
+        if item.tool_calls:
+            message_dict["tool_calls"] = item.tool_calls
+        provider_data = getattr(item, "_provider_data")
+        if provider_data is not None:
+            message_dict["_provider_data"] = provider_data
+            message_dict["_api_type"] = getattr(item, "_api_type")
+    elif isinstance(item, Msg):
         message_dict = asdict(item, dict_factory=item.DICT_FACTORY)
     elif isinstance(item, dict):
         message_dict = item
