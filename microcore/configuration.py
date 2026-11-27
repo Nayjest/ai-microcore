@@ -208,6 +208,8 @@ class LLMConfig(
     """
     You may specify here default arguments for the LLM API calls,
     i. e. temperature, max_tokens, etc.
+    For Gemini, use Google GenAI argument names such as ``max_output_tokens``.
+    The Google adapter ignores global defaults it does not support.
     """
 
     LLM_USE_RESPONSES_API: bool | None = from_env(default=None, dtype=bool)
