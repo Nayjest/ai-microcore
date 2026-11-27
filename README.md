@@ -418,6 +418,7 @@ Tested with the following services:
 - [Fireworks](https://fireworks.ai)
 - [Together AI](https://www.together.ai/inference)
 - [OpenRouter](https://openrouter.ai/)
+- [Straitly](https://straitly.ai)
 - [01.AI](https://www.01.ai/)
 
 And more via Google / Anthropic / OpenAI API.
