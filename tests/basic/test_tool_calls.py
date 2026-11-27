@@ -722,6 +722,28 @@ def test_plain_answer_is_not_a_tool_call(setup):
     assert response.as_tool_call() is None
 
 
+def test_tool_call_check_does_not_retry_llm_request(setup):
+    # Regression test for https://github.com/Nayjest/ai-microcore/issues/210
+    requests = []
+
+    def fake_llm(prompt, **kwargs):
+        requests.append(prompt)
+        return "The weather in Kyiv is sunny."
+
+    mc.configure(
+        USE_DOT_ENV=False,
+        USE_LOGGING=False,
+        LLM_API_TYPE=mc.ApiType.FUNCTION,
+        INFERENCE_FUNC=fake_llm,
+        CHAT_MODE=True,
+    )
+    response = mc.llm("What is the weather in Kyiv?", retries=2)
+    assert len(requests) == 1
+    assert not response.is_tool_call()
+    assert response.as_tool_call() is None
+    assert len(requests) == 1
+
+
 def test_native_tool_call_comes_before_the_one_in_text(setup):
     response = mc.LLMResponse('{"call": "get_time"}', tool_calls=[WEATHER_CALL])
     assert response.as_tool_call() == ("get_weather", [], {"city": "Kyiv"})
