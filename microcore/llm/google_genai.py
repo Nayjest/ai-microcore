@@ -32,6 +32,15 @@ from ..lm_client import BaseAsyncAIClient, BaseAIChatClient
 from ..images import Image, ImageInterface
 from ..llm_backends import ApiPlatform, ApiType
 
+_GENERATION_DEFAULT_ARGS = types.GenerateContentConfig.model_fields.keys() | {
+    "callback",
+    "callbacks",
+    "extra_headers",
+    "model",
+    "save",
+    "stream",
+}
+
 FINISH_REASONS = {  # Google finish reason: finish reason in Chat Completions terms
     "STOP": "stop",
     "MAX_TOKENS": "length",
@@ -95,17 +104,16 @@ def inject_headers(headers: Mapping[str, str], params: dict) -> None:
     """
     Inject extra HTTP headers into the params dictionary for Google GenAI client.
     """
-    if "http_options" not in params:
-        params["http_options"] = {}
-    http_options = params["http_options"]
+    http_options = params.get("http_options", {})
     if isinstance(http_options, dict):
-        if "headers" not in http_options:
-            http_options["headers"] = {}
-        http_options["headers"].update(headers)
+        params["http_options"] = {
+            **http_options,
+            "headers": {**(http_options.get("headers") or {}), **headers},
+        }
     elif isinstance(http_options, HttpOptions):
-        if http_options.headers is None:
-            http_options.headers = {}
-        http_options.headers.update(headers)
+        params["http_options"] = http_options.model_copy(
+            update={"headers": {**(http_options.headers or {}), **headers}}
+        )
 
 
 def inject_base_url(base_url: str, params: dict) -> None:
@@ -329,6 +337,12 @@ class _GenerationContext:
         prompt: TPrompt,
         kwargs: dict
     ) -> "_GenerationContext":
+        default_args = {
+            key: value
+            for key, value in client.config.LLM_DEFAULT_ARGS.items()
+            if key in _GENERATION_DEFAULT_ARGS
+        }
+        kwargs = {**default_args, **kwargs}
         model_name = kwargs.pop("model", client.config.MODEL)
         callbacks = prepare_callbacks(client.config, kwargs, set_stream=False)
         is_image = is_image_model(model_name)
