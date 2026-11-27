@@ -240,16 +240,16 @@ DEFAULT_PLATFORMS = {
 }
 
 HIGH_END_MODELS: dict[ApiPlatform, str] = {
-    ApiPlatform.OPENAI: "gpt-6-astra",  # I/O: $10/$50 /M tokens
+    ApiPlatform.OPENAI: "gpt-6.2-astra",  # I/O: $8/$40 /M tokens
     ApiPlatform.ANTHROPIC: "claude-opus-5-5",  # I/O: $4/$20 /M tokens
-    ApiPlatform.GOOGLE_AI_STUDIO: "gemini-4-argon",  # I/O: $2/$10 /M tokens (intro to Nov 2026)
-    ApiPlatform.GOOGLE_VERTEX_AI: "gemini-4-argon",
+    ApiPlatform.GOOGLE_AI_STUDIO: "gemini-4-carbon",  # I/O: $4/$20 /M tokens (from Dec 1, 2026)
+    ApiPlatform.GOOGLE_VERTEX_AI: "gemini-4-carbon",
     ApiPlatform.MISTRAL: "mistral-large-latest",  # I/O: $0.70/$2.10 /M tokens
     ApiPlatform.XAI: "grok-4.7",  # I/O: $2/$6 /M tokens
     ApiPlatform.DEEPSEEK: "deepseek-v4-pro",  # I/O: $1.32/$3.96 /M tokens (peak)
-    ApiPlatform.CEREBRAS: "gpt-oss-120b",
+    ApiPlatform.CEREBRAS: "gpt-oss-120b",  # I/O: $0.35/$0.75 /M tokens
     ApiPlatform.GROQ: "openai/gpt-oss-120b",  # I/O: $0.15/$0.60 /M tokens
-    ApiPlatform.FIREWORKS: "accounts/fireworks/models/kimi-k3",  # I/O: $3/$15 /M tokens
+    ApiPlatform.FIREWORKS: "accounts/fireworks/models/kimi-k3p1-pro",  # I/O: $2/$10 /M tokens
     ApiPlatform.PERPLEXITY: "sonar-deep-research",  # I/O: $2/$8 /M tokens
 }
 LOW_END_MODELS: dict[ApiPlatform, str] = {
@@ -260,13 +260,13 @@ LOW_END_MODELS: dict[ApiPlatform, str] = {
     ApiPlatform.XAI: "grok-4.3",  # I/O: $1.25/$2.50 /M tokens
     ApiPlatform.MISTRAL: "ministral-3b-2512",  # I/O: $0.10/$0.10 /M tokens
     ApiPlatform.DEEPSEEK: "deepseek-flash",  # I/O: $0.30/$1.20 /M tokens (peak)
-    ApiPlatform.CEREBRAS: "qwen-3.8-27b",
+    ApiPlatform.CEREBRAS: "qwen-3.8-27b",  # I/O: $0.99/$1.49 /M tokens
     ApiPlatform.GROQ: "openai/gpt-oss-20b",  # I/O: $0.075/$0.30 /M tokens
     ApiPlatform.FIREWORKS: "accounts/fireworks/models/glm-5p3-flash",  # I/O: $0.15/$0.50 /M tokens
     ApiPlatform.PERPLEXITY: "sonar",  # I/O: $1/$1 /M tokens
 }
 MID_END_MODELS: dict[ApiPlatform, str] = {
-    ApiPlatform.OPENAI: "gpt-6.1-sol",  # I/O: $2/$10 /M tokens
+    ApiPlatform.OPENAI: "gpt-6.2-sol",  # I/O: $2/$10 /M tokens
     ApiPlatform.ANTHROPIC: "claude-sonnet-5-5",  # I/O: $2/$10 /M tokens
     ApiPlatform.PERPLEXITY: "sonar-pro",  # I/O: $3/$15 /M tokens
     ApiPlatform.GOOGLE_AI_STUDIO: "gemini-3.8-flash",  # I/O: $0.75/$3.75 /M tokens (intro to 2026)
